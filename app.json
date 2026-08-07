@@ -5,13 +5,15 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.thechiguru.owner"
     },
     "android": {
+      "package": "com.thechiguru.owner",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#EDEBF7",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -20,6 +22,48 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-sqlite",
+      "expo-web-browser",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-light.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#F8F7FC",
+          "dark": {
+            "image": "./assets/splash-dark.png",
+            "backgroundColor": "#2E2A54"
+          }
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Chiguru uses the camera to capture attendance, work update, and expense receipt photos."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Chiguru uses your photos to attach receipts and work update images."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Chiguru uses your location to geo-tag work updates and set up your farm's location."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#2E2A54"
+        }
+      ]
+    ]
   }
 }
