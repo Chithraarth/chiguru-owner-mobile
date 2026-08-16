@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from "react";
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronDown, ChevronUp } from "lucide-react-native";
+import { ChevronDown, ChevronUp, Clock3, Wheat } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
+import { ChipSelect } from "../../../components/ChipSelect";
 import { TextField } from "../../../components/TextField";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
 import { colors, spacing } from "../../../components/theme";
@@ -12,13 +13,34 @@ import { useWorkGroups } from "../../work-groups/hooks/useWorkGroups";
 import { describeDevice } from "../../../lib/device";
 import { useSyncStore } from "../../../store/syncStore";
 
+const SETTLEMENT_MODES: { value: string; label: string }[] = [
+  { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "final", label: "Final account" },
+];
+
+function inr(n: number) {
+  return `₹${Math.round(n).toLocaleString("en-IN")}`;
+}
+
 export function AttendanceScreen({ route }: { route: any }) {
   const { workGroupId } = route.params as {
     workGroupId: number;
     workGroupName: string;
   };
-  const { workers, attendance, isLoading, refetch, markAttendance, date } =
-    useAttendance(workGroupId);
+  const {
+    workers,
+    attendance,
+    isLoading,
+    refetch,
+    markAttendance,
+    date,
+    overtimeSummary,
+    harvestBonusSummary,
+    settleOvertime,
+    settleHarvestBonus,
+    updateWorkGroup,
+  } = useAttendance(workGroupId);
   const { data: workGroups } = useWorkGroups();
   const workGroup = workGroups?.find((g) => g.id === workGroupId);
   const rate = Number(workGroup?.rate ?? 0);
@@ -34,6 +56,14 @@ export function AttendanceScreen({ route }: { route: any }) {
   const [otRate, setOtRate] = useState<Record<number, string>>({});
   const [harvestKg, setHarvestKg] = useState<Record<number, string>>({});
   const [refreshing, setRefreshing] = useState(false);
+  // Picking-bonus rule editor (threshold kg + pay/kg above it). Prefilled
+  // from the group's saved rule, editable inline like the web app.
+  const [pickThreshold, setPickThreshold] = useState(
+    workGroup?.harvestThresholdKg != null ? String(Number(workGroup.harvestThresholdKg)) : ""
+  );
+  const [pickBonus, setPickBonus] = useState(
+    workGroup?.harvestBonusPerKg != null ? String(Number(workGroup.harvestBonusPerKg)) : ""
+  );
   const isOnline = useSyncStore((s) => s.isOnline);
   const insets = useSafeAreaInsets();
 
@@ -67,6 +97,21 @@ export function AttendanceScreen({ route }: { route: any }) {
 
   async function save() {
     const deviceLabel = describeDevice();
+    // Picking-bonus rule (target kg + pay/kg above it) is owned by the work
+    // group, not the attendance row - save it once here if it changed, same
+    // as the web app does right before writing today's attendance.
+    if (isHarvestGroup) {
+      const threshold = Math.max(0, Number(pickThreshold) || 0);
+      const bonusPerKg = Math.max(0, Number(pickBonus) || 0);
+      const savedThreshold = Number(workGroup?.harvestThresholdKg ?? 0);
+      const savedBonus = Number(workGroup?.harvestBonusPerKg ?? 0);
+      if (threshold !== savedThreshold || bonusPerKg !== savedBonus) {
+        await updateWorkGroup.mutateAsync({
+          harvestThresholdKg: threshold > 0 ? String(threshold) : null,
+          harvestBonusPerKg: bonusPerKg > 0 ? String(bonusPerKg) : null,
+        });
+      }
+    }
     for (const workerId of selected) {
       const hoursWorked = paymentType === "Per hour" ? 8 : undefined;
       const baseWage = isHarvestGroup ? Number(harvestKg[workerId] ?? 0) * rate : paymentType === "Per hour" ? rate * 8 : rate;
@@ -111,6 +156,114 @@ export function AttendanceScreen({ route }: { route: any }) {
         keyExtractor={(w) => String(w.id)}
         contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        ListHeaderComponent={
+          <View style={{ gap: spacing.sm, marginBottom: spacing.sm }}>
+            {isHarvestGroup ? (
+              <Card>
+                <Text style={styles.ruleTitle}>Picking bonus rule</Text>
+                <Text style={styles.ruleSubtitle}>
+                  Pay extra for every kg picked above the daily target - applies to this whole group.
+                </Text>
+                <View style={{ flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm }}>
+                  <View style={{ flex: 1 }}>
+                    <TextField
+                      label="Target/person (kg)"
+                      keyboardType="decimal-pad"
+                      placeholder="e.g. 80"
+                      value={pickThreshold}
+                      onChangeText={setPickThreshold}
+                      containerStyle={{ marginBottom: 0 }}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <TextField
+                      label="Bonus/kg above (₹)"
+                      keyboardType="decimal-pad"
+                      placeholder="e.g. 5"
+                      value={pickBonus}
+                      onChangeText={setPickBonus}
+                      containerStyle={{ marginBottom: 0 }}
+                    />
+                  </View>
+                </View>
+              </Card>
+            ) : null}
+
+            {!isHarvestGroup && overtimeSummary && overtimeSummary.pendingAmount + overtimeSummary.clearedAmount > 0 ? (
+              <Card style={{ padding: 0, overflow: "hidden" }}>
+                <View style={styles.settleHeader}>
+                  <Clock3 size={14} color="#fff" />
+                  <Text style={styles.settleHeaderText}>Overtime settlement</Text>
+                </View>
+                <View style={{ padding: spacing.md, gap: spacing.sm }}>
+                  {overtimeSummary.pendingAmount > 0 ? (
+                    <Text style={styles.settleLine}>
+                      <Text style={{ fontWeight: "700" }}>{inr(overtimeSummary.pendingAmount)}</Text> pending for{" "}
+                      {overtimeSummary.pendingHours.toFixed(1)} overtime hr{overtimeSummary.pendingHours !== 1 ? "s" : ""}
+                    </Text>
+                  ) : null}
+                  {overtimeSummary.clearedAmount > 0 ? (
+                    <Text style={styles.settleLineMuted}>{inr(overtimeSummary.clearedAmount)} already paid out</Text>
+                  ) : null}
+                  <ChipSelect
+                    label="Settle overtime"
+                    options={SETTLEMENT_MODES.map((m) => m.label)}
+                    value={SETTLEMENT_MODES.find((m) => m.value === overtimeSummary.overtimeSettlement)?.label ?? "Weekly"}
+                    onChange={(label) => {
+                      const mode = SETTLEMENT_MODES.find((m) => m.label === label)?.value ?? "weekly";
+                      updateWorkGroup.mutate({ overtimeSettlement: mode });
+                    }}
+                  />
+                  {overtimeSummary.pendingAmount > 0 ? (
+                    <Button
+                      title={`Mark ${inr(overtimeSummary.pendingAmount)} overtime as paid`}
+                      variant="secondary"
+                      onPress={() => settleOvertime.mutate()}
+                      loading={settleOvertime.isPending}
+                    />
+                  ) : null}
+                </View>
+              </Card>
+            ) : null}
+
+            {isHarvestGroup && harvestBonusSummary && harvestBonusSummary.pendingAmount + harvestBonusSummary.clearedAmount > 0 ? (
+              <Card style={{ padding: 0, overflow: "hidden" }}>
+                <View style={[styles.settleHeader, { backgroundColor: "#7CB342" }]}>
+                  <Wheat size={14} color="#fff" />
+                  <Text style={styles.settleHeaderText}>Picking bonus settlement</Text>
+                </View>
+                <View style={{ padding: spacing.md, gap: spacing.sm }}>
+                  {harvestBonusSummary.pendingAmount > 0 ? (
+                    <Text style={styles.settleLine}>
+                      <Text style={{ fontWeight: "700" }}>{inr(harvestBonusSummary.pendingAmount)}</Text> pending for{" "}
+                      {harvestBonusSummary.pendingKg.toFixed(0)} kg picked
+                    </Text>
+                  ) : null}
+                  {harvestBonusSummary.clearedAmount > 0 ? (
+                    <Text style={styles.settleLineMuted}>{inr(harvestBonusSummary.clearedAmount)} already paid out</Text>
+                  ) : null}
+                  <ChipSelect
+                    label="Settle picking bonus"
+                    options={SETTLEMENT_MODES.map((m) => m.label)}
+                    value={SETTLEMENT_MODES.find((m) => m.value === harvestBonusSummary.harvestBonusSettlement)?.label ?? "Weekly"}
+                    onChange={(label) => {
+                      const mode = SETTLEMENT_MODES.find((m) => m.label === label)?.value ?? "weekly";
+                      updateWorkGroup.mutate({ harvestBonusSettlement: mode });
+                    }}
+                  />
+                  {harvestBonusSummary.pendingAmount > 0 ? (
+                    <Button
+                      title={`Mark ${inr(harvestBonusSummary.pendingAmount)} bonus as paid`}
+                      variant="secondary"
+                      onPress={() => settleHarvestBonus.mutate()}
+                      loading={settleHarvestBonus.isPending}
+                    />
+                  ) : null}
+                </View>
+              </Card>
+            ) : null}
+          </View>
+        }
         ListEmptyComponent={
           <EmptyState title="No workers yet" subtitle="Add workers before marking attendance." />
         }
@@ -119,16 +272,18 @@ export function AttendanceScreen({ route }: { route: any }) {
           const isSelected = selected.has(item.id);
           const expanded = expandedId === item.id;
           return (
-            <Card style={[styles.workerRow, isSelected && styles.workerRowSelected, marked && styles.workerRowMarked]}>
-              <Pressable disabled={marked} onPress={() => toggle(item.id)} style={styles.workerRowMain}>
+            <Card style={[styles.workerRow, isSelected && styles.workerRowSelected, marked && !isSelected && styles.workerRowMarked]}>
+              <Pressable onPress={() => toggle(item.id)} style={styles.workerRowMain}>
                 <Text style={styles.workerName}>{item.name}</Text>
                 {marked ? (
-                  <Text style={styles.markedLabel}>Marked present ✓</Text>
+                  <Text style={styles.markedLabel}>
+                    {isSelected ? "Editing entry…" : "Marked present ✓ · tap to edit"}
+                  </Text>
                 ) : (
                   <View style={[styles.checkbox, isSelected && styles.checkboxSelected]} />
                 )}
               </Pressable>
-              {isSelected && !marked ? (
+              {isSelected ? (
                 <>
                   <Pressable style={styles.extraToggle} onPress={() => setExpandedId(expanded ? null : item.id)}>
                     <Text style={styles.extraToggleText}>
@@ -221,4 +376,17 @@ const styles = StyleSheet.create({
   extraToggleText: { fontSize: 12.5, color: colors.primary, fontWeight: "600" },
   extraFields: { marginTop: spacing.sm },
   footer: { padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
+  ruleTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
+  ruleSubtitle: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  settleHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    backgroundColor: colors.warning,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+  },
+  settleHeaderText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  settleLine: { fontSize: 13, color: colors.text },
+  settleLineMuted: { fontSize: 12, color: colors.textMuted },
 });

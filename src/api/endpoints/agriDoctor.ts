@@ -41,8 +41,17 @@ export function getConsultationMessages(id: number) {
   return apiFetch<ConsultationMessage[]>(`/consultations/${id}/messages`);
 }
 
-export function sendConsultationMessage(id: number, text: string) {
-  return apiMutate<ConsultationMessage>("POST", `/consultations/${id}/messages`, { text });
+export function sendConsultationMessage(
+  id: number,
+  text: string,
+  media?: { mediaType: "image" | "audio"; mediaUrl: string }
+) {
+  return apiMutate<ConsultationMessage>(
+    "POST",
+    `/consultations/${id}/messages`,
+    { text, ...media },
+    { mediaTimeout: true }
+  );
 }
 
 export function endConsultation(id: number) {

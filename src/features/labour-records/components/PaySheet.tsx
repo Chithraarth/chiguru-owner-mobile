@@ -53,6 +53,7 @@ export function PaySheet({
   groupName,
   groupUpiId,
   suggestedAmount,
+  initialWorkerId,
   onClose,
 }: {
   visible: boolean;
@@ -60,6 +61,8 @@ export function PaySheet({
   groupName: string;
   groupUpiId?: string | null;
   suggestedAmount?: number;
+  /** Pre-select "one worker" and lock the payee to this worker (per-employee drill-down). */
+  initialWorkerId?: number | null;
   onClose: () => void;
 }) {
   const qc = useQueryClient();
@@ -69,8 +72,10 @@ export function PaySheet({
     enabled: visible,
   });
 
-  const [payeeKind, setPayeeKind] = useState<"group" | "worker">(groupId != null ? "group" : "worker");
-  const [workerId, setWorkerId] = useState<number | null>(null);
+  const [payeeKind, setPayeeKind] = useState<"group" | "worker">(
+    initialWorkerId != null ? "worker" : groupId != null ? "group" : "worker",
+  );
+  const [workerId, setWorkerId] = useState<number | null>(initialWorkerId ?? null);
   const [wagesMonth, setWagesMonth] = useState(currentMonth());
   const [method, setMethod] = useState<PayMethod>(METHODS[0]);
   const [amount, setAmount] = useState("");
@@ -82,12 +87,12 @@ export function PaySheet({
 
   useEffect(() => {
     if (visible) {
-      setPayeeKind(groupId != null ? "group" : "worker");
-      setWorkerId(null);
+      setPayeeKind(initialWorkerId != null ? "worker" : groupId != null ? "group" : "worker");
+      setWorkerId(initialWorkerId ?? null);
       setWagesMonth(currentMonth());
       setMethod(METHODS[0]);
       setAmount(suggestedAmount && suggestedAmount > 0 ? String(Math.round(suggestedAmount)) : "");
-      setHandle(groupId != null ? groupUpiId ?? "" : "");
+      setHandle(initialWorkerId == null && groupId != null ? groupUpiId ?? "" : "");
       setNote("");
       setUpiOpened(false);
     }
@@ -156,41 +161,45 @@ export function PaySheet({
       <View style={styles.sheet}>
         <ScrollView contentContainerStyle={{ paddingBottom: spacing.lg }}>
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Pay Workers</Text>
+            <Text style={styles.headerTitle}>{initialWorkerId != null ? `Pay ${payeeName || "Worker"}` : "Pay Workers"}</Text>
             <Pressable onPress={onClose} hitSlop={10}>
               <X size={20} color={colors.text} />
             </Pressable>
           </View>
 
-          <Text style={styles.label}>Pay to</Text>
-          <View style={styles.row}>
-            {groupId != null ? (
-              <Pressable
-                style={[styles.payeeOption, payeeKind === "group" && styles.payeeOptionActive]}
-                onPress={() => setPayeeKind("group")}
-              >
-                <Text style={[styles.payeeOptionTitle, payeeKind === "group" && styles.payeeOptionTitleActive]}>
-                  👥 Whole group
-                </Text>
-                <Text style={[styles.payeeOptionSub, payeeKind === "group" && styles.payeeOptionSubActive]} numberOfLines={1}>
-                  {groupName}
-                </Text>
-              </Pressable>
-            ) : null}
-            <Pressable
-              style={[styles.payeeOption, payeeKind === "worker" && styles.payeeOptionActive]}
-              onPress={() => setPayeeKind("worker")}
-            >
-              <Text style={[styles.payeeOptionTitle, payeeKind === "worker" && styles.payeeOptionTitleActive]}>
-                🧑‍🌾 One worker
-              </Text>
-              <Text style={[styles.payeeOptionSub, payeeKind === "worker" && styles.payeeOptionSubActive]}>
-                Pick by name
-              </Text>
-            </Pressable>
-          </View>
+          {initialWorkerId == null ? (
+            <>
+              <Text style={styles.label}>Pay to</Text>
+              <View style={styles.row}>
+                {groupId != null ? (
+                  <Pressable
+                    style={[styles.payeeOption, payeeKind === "group" && styles.payeeOptionActive]}
+                    onPress={() => setPayeeKind("group")}
+                  >
+                    <Text style={[styles.payeeOptionTitle, payeeKind === "group" && styles.payeeOptionTitleActive]}>
+                      👥 Whole group
+                    </Text>
+                    <Text style={[styles.payeeOptionSub, payeeKind === "group" && styles.payeeOptionSubActive]} numberOfLines={1}>
+                      {groupName}
+                    </Text>
+                  </Pressable>
+                ) : null}
+                <Pressable
+                  style={[styles.payeeOption, payeeKind === "worker" && styles.payeeOptionActive]}
+                  onPress={() => setPayeeKind("worker")}
+                >
+                  <Text style={[styles.payeeOptionTitle, payeeKind === "worker" && styles.payeeOptionTitleActive]}>
+                    🧑‍🌾 One worker
+                  </Text>
+                  <Text style={[styles.payeeOptionSub, payeeKind === "worker" && styles.payeeOptionSubActive]}>
+                    Pick by name
+                  </Text>
+                </Pressable>
+              </View>
+            </>
+          ) : null}
 
-          {payeeKind === "worker" ? (
+          {payeeKind === "worker" && initialWorkerId == null ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.md }}>
               <View style={{ flexDirection: "row", gap: spacing.sm }}>
                 {workers.map((w) => (

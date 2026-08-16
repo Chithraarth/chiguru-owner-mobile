@@ -1,40 +1,41 @@
 import { apiFetch, apiMutate } from "../client";
 import type {
-  CheckoutResponse,
   Payment,
   ShareRewardResponse,
+  SubscriptionActionResponse,
+  SubscriptionMeResponse,
   SubscriptionPlansResponse,
-  SubscriptionStatusResponse,
+  VerifyAndroidPurchaseRequest,
 } from "../../types/api";
 
 export function getPlans() {
-  return apiFetch<SubscriptionPlansResponse>("/subscription/plans");
+  return apiFetch<SubscriptionPlansResponse>("/subscriptions/plans");
 }
 
 export function getSubscription() {
-  return apiFetch<SubscriptionStatusResponse>("/subscription");
+  return apiFetch<SubscriptionMeResponse>("/subscriptions/me");
 }
 
 export function getPayments() {
   return apiFetch<Payment[]>("/payments");
 }
 
-export function checkoutPlan(planId: string) {
-  return apiMutate<CheckoutResponse>("POST", "/subscription/checkout", { planId });
-}
-
-export function checkoutEstateAddon() {
-  return apiMutate<CheckoutResponse>("POST", "/subscription/estate-addon/checkout");
-}
-
-export function checkoutDeviceAddon() {
-  return apiMutate<CheckoutResponse>("POST", "/subscription/device-addon/checkout");
+/** purchaseToken comes from react-native-iap's purchase-updated listener after Play Billing's native purchase sheet completes. */
+export function verifyAndroidPurchase(req: VerifyAndroidPurchaseRequest) {
+  return apiMutate<SubscriptionActionResponse>("POST", "/subscriptions/android/verify", req);
 }
 
 export function shareToEarn(platform: string) {
-  return apiMutate<ShareRewardResponse>("POST", "/subscription/share", { platform });
+  return apiMutate<ShareRewardResponse>("POST", "/subscriptions/share", { platform });
 }
 
-export function cancelAutoRenew() {
-  return apiMutate<{ ok: true }>("POST", "/subscription/cancel-autorenew");
+/**
+ * Only meaningful for a subscription actually started through this screen
+ * (provider RAZORPAY on web — never true for this Android app's own
+ * purchases). For a Google Play subscription, the backend responds 409
+ * MANAGE_VIA_GOOGLE_PLAY — the caller should catch that and deep-link to
+ * Play Store's subscription management page instead.
+ */
+export function cancelSubscription() {
+  return apiMutate<SubscriptionActionResponse>("POST", "/subscriptions/cancel");
 }

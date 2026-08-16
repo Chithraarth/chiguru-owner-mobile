@@ -63,6 +63,12 @@
         {
           "color": "#2E2A54"
         }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Chiguru uses your microphone to record voice notes for the Agri Doctor chat."
+        }
       ]
     ]
   }

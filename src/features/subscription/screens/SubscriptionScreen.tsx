@@ -1,16 +1,24 @@
-import React from "react";
-import * as WebBrowser from "expo-web-browser";
+import React, { useEffect, useRef, useState } from "react";
 import { Alert, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  initConnection,
+  endConnection,
+  requestSubscription,
+  getSubscriptions,
+  purchaseUpdatedListener,
+  finishTransaction,
+  deepLinkToSubscriptions,
+  type Purchase,
+  type SubscriptionPurchase,
+  type SubscriptionAndroid,
+} from "react-native-iap";
+import {
   Check,
   Crown,
-  Landmark,
   Lock,
-  MapPinned,
   PartyPopper,
   Share2,
-  Smartphone,
   Sprout,
 } from "lucide-react-native";
 import { Card } from "../../../components/Card";
@@ -18,15 +26,14 @@ import { Button } from "../../../components/Button";
 import { LoadingView } from "../../../components/StateViews";
 import { colors, radius, spacing } from "../../../components/theme";
 import {
-  cancelAutoRenew,
-  checkoutDeviceAddon,
-  checkoutEstateAddon,
-  checkoutPlan,
+  cancelSubscription,
   getPayments,
   getPlans,
   getSubscription,
   shareToEarn,
+  verifyAndroidPurchase,
 } from "../../../api/endpoints/subscription";
+import { ApiError } from "../../../api/errors";
 import type { SubscriptionPlan } from "../../../types/api";
 
 function inr(n: number) {
@@ -55,56 +62,120 @@ const SHARE_OPTIONS: ShareOption[] = [
   { id: "other", label: "Instagram / more", url: null },
 ];
 
-function PlanIcon({ plan }: { plan: SubscriptionPlan }) {
-  if (plan.id === "farmer") return <Sprout size={20} color={colors.primary} />;
-  if (plan.id === "planter") return <Smartphone size={20} color="#2F9E67" />;
-  return <Landmark size={20} color="#B7791F" />;
-}
-
-function AutoPayNote() {
-  return <Text style={styles.autoPayNote}>Renews automatically each month until cancelled.</Text>;
+function PlanIcon() {
+  return <Sprout size={20} color={colors.primary} />;
 }
 
 export function SubscriptionScreen() {
   const queryClient = useQueryClient();
+  const [purchasingPlanId, setPurchasingPlanId] = useState<number | null>(null);
+  const [verifying, setVerifying] = useState(false);
+  // A purchase can complete after this screen (or the whole app) has been
+  // backgrounded — the listener must always see the *current* plan list to
+  // resolve a productId back to our own plan id, not a stale closure's.
+  const plansRef = useRef<SubscriptionPlan[]>([]);
 
   const plansQuery = useQuery({ queryKey: ["subscription-plans"], queryFn: getPlans });
   const subQuery = useQuery({ queryKey: ["subscription"], queryFn: getSubscription });
   const paymentsQuery = useQuery({ queryKey: ["payments"], queryFn: getPayments });
+
+  const plans = plansQuery.data?.plans ?? [];
+  plansRef.current = plans;
+
+  // Play Billing v5+ requires the specific offerToken of the base plan/offer
+  // being bought, not just the bare product id — fetched once the plan list
+  // (and therefore the set of Google Play product ids) is known.
+  const productIds = plans.map((p) => p.googlePlayProductId).filter((id): id is string => !!id);
+  const offersQuery = useQuery({
+    queryKey: ["google-play-offers", productIds],
+    queryFn: async () => {
+      const subs = await getSubscriptions({ skus: productIds });
+      const tokenByProductId: Record<string, string> = {};
+      for (const s of subs as SubscriptionAndroid[]) {
+        const offerToken = s.subscriptionOfferDetails?.[0]?.offerToken;
+        if (offerToken) tokenByProductId[s.productId] = offerToken;
+      }
+      return tokenByProductId;
+    },
+    enabled: productIds.length > 0,
+  });
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ["subscription"] });
     queryClient.invalidateQueries({ queryKey: ["payments"] });
   };
 
-  const openCheckout = async (res: { url: string } | null) => {
-    if (res?.url) {
-      await WebBrowser.openBrowserAsync(res.url);
-      invalidateAll();
-    } else {
-      Alert.alert("Couldn't start checkout", "Please try again.");
-    }
-  };
+  // Play Billing connection + purchase listener — set up once for the life of
+  // this screen. A purchase's result never comes back from requestSubscription
+  // itself; it always arrives here, asynchronously.
+  useEffect(() => {
+    let mounted = true;
+    initConnection().catch((err: unknown) => console.warn("IAP initConnection failed", err));
 
-  const checkoutMutation = useMutation({
-    mutationFn: (planId: string) => checkoutPlan(planId),
-    onSuccess: openCheckout,
-  });
-  const estateAddonMutation = useMutation({
-    mutationFn: checkoutEstateAddon,
-    onSuccess: openCheckout,
-  });
-  const deviceAddonMutation = useMutation({
-    mutationFn: checkoutDeviceAddon,
-    onSuccess: openCheckout,
-  });
+    const sub = purchaseUpdatedListener(async (purchase: Purchase) => {
+      const purchaseToken = (purchase as SubscriptionPurchase).purchaseToken;
+      const productId = purchase.productId;
+      if (!purchaseToken || !productId) return;
+
+      if (mounted) setVerifying(true);
+      try {
+        const res = await verifyAndroidPurchase({ purchaseToken, productId });
+        if (!res) {
+          // Offline — apiMutate queued it; the purchase itself is already
+          // done on Google's side, so don't finish/ack locally either. It'll
+          // verify (and finishTransaction below) once connectivity returns
+          // and this listener fires again on next launch's getAvailablePurchases.
+          if (mounted) Alert.alert("Payment received", "You're offline — this will finish activating once you're back online.");
+          return;
+        }
+        await finishTransaction({ purchase, isConsumable: false });
+        invalidateAll();
+        if (mounted) Alert.alert("Subscription active", "Your plan is now active.");
+      } catch (err) {
+        const msg = err instanceof ApiError ? err.message : "Please contact support if this keeps happening.";
+        if (mounted) Alert.alert("Couldn't verify your payment", msg);
+      } finally {
+        if (mounted) {
+          setVerifying(false);
+          setPurchasingPlanId(null);
+        }
+      }
+    });
+
+    return () => {
+      mounted = false;
+      sub.remove();
+      endConnection();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const cancelMutation = useMutation({
-    mutationFn: cancelAutoRenew,
-    onSuccess: () => {
-      Alert.alert("Auto-renew cancelled", "Your plan stays active until the current period ends.");
+    mutationFn: cancelSubscription,
+    onSuccess: (res) => {
+      if (!res) {
+        Alert.alert("Couldn't cancel", "You're offline — please try again once connected.");
+        return;
+      }
+      Alert.alert("Subscription cancelled", "Your plan stays active until the current period ends.");
       invalidateAll();
     },
+    onError: (err: unknown) => {
+      if (err instanceof ApiError && err.is("MANAGE_VIA_GOOGLE_PLAY")) {
+        // Google's own guidance: subscriptions bought via Play Billing are
+        // managed from Play Store's own UI, not from inside the app.
+        const currentPlanId = subQuery.data?.subscription?.plan?.id;
+        const productId = plansRef.current.find((p) => p.id === currentPlanId)?.googlePlayProductId;
+        deepLinkToSubscriptions({ sku: productId ?? undefined }).catch(() =>
+          Alert.alert("Couldn't open Play Store", "Open the Play Store app and go to Subscriptions to manage this."),
+        );
+        return;
+      }
+      const msg = err instanceof ApiError ? err.message : "Please try again.";
+      Alert.alert("Couldn't cancel", msg);
+    },
   });
+
   const shareMutation = useMutation({
     mutationFn: (platform: string) => shareToEarn(platform),
     onSuccess: (res) => {
@@ -118,14 +189,39 @@ export function SubscriptionScreen() {
 
   if (plansQuery.isLoading || subQuery.isLoading) return <LoadingView label="Loading plans..." />;
 
-  const plans = plansQuery.data?.plans ?? [];
   const current = subQuery.data?.subscription ?? null;
-  const isActive = current?.status === "active";
+  const isActive = current?.status === "ACTIVE" || current?.status === "GRACE_PERIOD";
   const sharePlatforms = subQuery.data?.sharePlatforms ?? "";
   const shared = new Set(sharePlatforms.split(",").filter(Boolean));
   const shareClaimed = !!subQuery.data?.shareRewardClaimedAt;
   const shareCount = Math.min(shared.size, SHARE_TARGET);
   const freeMonthPending = !!subQuery.data?.freeMonthPending;
+
+  async function onChoosePlan(plan: SubscriptionPlan) {
+    if (!plan.googlePlayProductId) {
+      Alert.alert("Not available yet", "This plan isn't set up for purchase on Android yet.");
+      return;
+    }
+    const offerToken = offersQuery.data?.[plan.googlePlayProductId];
+    if (!offerToken) {
+      Alert.alert("Not ready yet", "Still loading this plan's pricing — please try again in a moment.");
+      return;
+    }
+    setPurchasingPlanId(plan.id);
+    try {
+      await requestSubscription({
+        subscriptionOffers: [{ sku: plan.googlePlayProductId, offerToken }],
+      });
+      // Result arrives via purchaseUpdatedListener above, not here.
+    } catch (err) {
+      setPurchasingPlanId(null);
+      // User closing Play Billing's own sheet also lands here — not a real error.
+      const message = err instanceof Error ? err.message : "";
+      if (!/cancel/i.test(message)) {
+        Alert.alert("Couldn't start purchase", "Please try again.");
+      }
+    }
+  }
 
   async function onShare(opt: ShareOption) {
     if (opt.url) {
@@ -146,15 +242,19 @@ export function SubscriptionScreen() {
         <View style={styles.statusCard}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
             <Crown size={18} color="#fff" />
-            <Text style={styles.statusTitle}>{current!.planName} plan active</Text>
+            <Text style={styles.statusTitle}>{current!.plan?.name} plan active</Text>
           </View>
-          <Text style={styles.statusDesc}>Your farm is fully active — everything is unlocked, including selling on Chiguru.</Text>
-          {current!.renewalDate ? (
-            <Text style={styles.statusMeta}>Renews on {fmtDate(current!.renewalDate)}</Text>
+          <Text style={styles.statusDesc}>Your farm is fully active — everything is unlocked.</Text>
+          {current!.expiryDate ? (
+            <Text style={styles.statusMeta}>
+              {current!.autoRenew ? `Renews on ${fmtDate(current!.expiryDate)}` : `Access continues until ${fmtDate(current!.expiryDate)}`}
+            </Text>
           ) : null}
-          <View style={{ marginTop: spacing.sm }}>
-            <Button title="Cancel auto-renew" variant="secondary" onPress={() => cancelMutation.mutate()} loading={cancelMutation.isPending} />
-          </View>
+          {current!.autoRenew ? (
+            <View style={{ marginTop: spacing.sm }}>
+              <Button title="Cancel subscription" variant="secondary" onPress={() => cancelMutation.mutate()} loading={cancelMutation.isPending} />
+            </View>
+          ) : null}
         </View>
       ) : (
         <View style={styles.statusCard}>
@@ -162,9 +262,15 @@ export function SubscriptionScreen() {
             <Lock size={18} color="#fff" />
             <Text style={styles.statusTitle}>Subscribe to unlock</Text>
           </View>
-          <Text style={styles.statusDesc}>Pick a plan below to run your whole farm — attendance, expenses, harvest, Agri Doctor and selling on Chiguru.</Text>
+          <Text style={styles.statusDesc}>Pick a plan below to run your whole farm and add managers.</Text>
         </View>
       )}
+
+      {verifying ? (
+        <Card style={{ backgroundColor: "#FFF8E6", borderColor: "#F0DFA6" }}>
+          <Text style={{ color: "#8A6D1D", fontSize: 12.5 }}>Payment received. Verifying your subscription...</Text>
+        </Card>
+      ) : null}
 
       {/* Share on 3 apps → 1 month free */}
       <Card style={styles.shareCard}>
@@ -174,12 +280,12 @@ export function SubscriptionScreen() {
         </View>
         {shareClaimed ? (
           <Text style={styles.shareDesc}>
-            Thanks for sharing Chiguru{current?.renewalDate ? ` — your plan is active till ${fmtDate(current.renewalDate)}` : freeMonthPending ? ". Your free month will apply the moment you pick a plan below." : "."}
+            Thanks for sharing Chiguru{isActive ? "." : freeMonthPending ? " — your free month applies the moment you pick a plan below." : "."}
           </Text>
         ) : (
           <>
             <Text style={styles.shareDesc}>
-              Post about Chiguru on any 3 different apps — WhatsApp, Facebook, Instagram, X, TikTok or others — and get 1 month of your plan free.
+              Post about Chiguru on any 3 different apps — WhatsApp, Facebook, Instagram, X, TikTok or others — and get 1 month free.
             </Text>
             <View style={styles.shareDots}>
               {Array.from({ length: SHARE_TARGET }).map((_, i) => (
@@ -208,108 +314,39 @@ export function SubscriptionScreen() {
 
       <View style={styles.honestCard}>
         <Text style={styles.honestTitle}>Simple, honest prices</Text>
-        <Text style={styles.honestDesc}>Every plan runs your whole farm — everything included. Just pick the size that fits: Farmer, Planter or Company Estate.</Text>
+        <Text style={styles.honestDesc}>Every plan runs your whole farm — everything included. Just pick the size that fits.</Text>
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
+      <View style={{ gap: spacing.sm }}>
         {plans.map((plan) => {
-          const isCurrent = isActive && current?.planName === plan.name;
-          const isFarmer = plan.id === "farmer";
-          const features = [
-            "Attendance + AI count",
-            "Advances + loans",
-            "Profit / loss",
-            "Agri Doctor",
-            "Sell + works offline",
-            plan.maxEstates == null ? "Unlimited estates" : `${plan.maxEstates} estate${plan.maxEstates > 1 ? "s" : ""} included`,
-            `${plan.maxManagerDevices} manager device${plan.maxManagerDevices > 1 ? "s" : ""} included`,
-          ];
+          const isCurrent = isActive && current?.plan?.id === plan.id;
+          const purchasing = purchasingPlanId === plan.id;
           return (
-            <View key={plan.id} style={[styles.planCard, isCurrent ? styles.planCardCurrent : isFarmer && styles.planCardBest]}>
-              <View style={[styles.planBadge, (isCurrent || isFarmer) && styles.planBadgeHighlight]}>
-                <Text style={[styles.planBadgeText, (isCurrent || isFarmer) && styles.planBadgeTextHighlight]}>
-                  {isCurrent ? "CURRENT" : isFarmer ? "BEST VALUE" : plan.id === "planter" ? "FOR PLANTATIONS" : "FOR COMPANIES"}
-                </Text>
-              </View>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: spacing.sm }}>
-                <View style={styles.planIconWrap}><PlanIcon plan={plan} /></View>
-                <View>
+            <Card key={plan.id} style={isCurrent ? styles.planCardCurrent : undefined}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
+                <View style={styles.planIconWrap}><PlanIcon /></View>
+                <View style={{ flex: 1 }}>
                   <Text style={styles.planName}>{plan.name}</Text>
-                  <Text style={styles.planTagline} numberOfLines={2}>{plan.tagline}</Text>
+                  {plan.description ? <Text style={styles.planTagline} numberOfLines={2}>{plan.description}</Text> : null}
                 </View>
               </View>
-              <Text style={styles.planPrice}>{inr(plan.amount)}</Text>
-              <Text style={styles.planPerMonth}>per month</Text>
-              <View style={{ gap: 5, marginTop: spacing.sm }}>
-                {features.map((f) => (
-                  <View key={f} style={{ flexDirection: "row", alignItems: "flex-start", gap: 6 }}>
-                    <Check size={13} color={colors.primary} style={{ marginTop: 2 }} />
-                    <Text style={styles.planFeature}>{f}</Text>
-                  </View>
-                ))}
+              <Text style={styles.planPrice}>{inr(plan.price)}</Text>
+              <Text style={styles.planPerMonth}>per {plan.billingPeriod === "monthly" ? "month" : plan.billingPeriod}</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: spacing.sm }}>
+                <Check size={13} color={colors.primary} />
+                <Text style={styles.planFeature}>{plan.managerLimit} manager{plan.managerLimit > 1 ? "s" : ""} included</Text>
               </View>
               <View style={{ marginTop: spacing.md }}>
                 <Button
                   title={isCurrent ? "Current plan" : "Choose"}
-                  disabled={checkoutMutation.isPending || isCurrent}
-                  loading={checkoutMutation.isPending}
-                  onPress={() => checkoutMutation.mutate(plan.id)}
+                  disabled={purchasing || isCurrent || !plan.googlePlayProductId}
+                  loading={purchasing}
+                  onPress={() => onChoosePlan(plan)}
                 />
               </View>
-            </View>
+            </Card>
           );
         })}
-      </ScrollView>
-
-      <View>
-        <Text style={styles.sectionTitle}>Add-ons — grow beyond your plan</Text>
-        <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
-          <Card>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
-              <View style={[styles.addonIconWrap, { backgroundColor: "#E6F5EC" }]}>
-                <MapPinned size={18} color="#2F9E67" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.addonTitle}>Extra estate add-on</Text>
-                <Text style={styles.addonSub}>Add one more estate on top of your plan</Text>
-              </View>
-            </View>
-            <Text style={styles.addonPrice}>{inr(plansQuery.data?.estateAddon.amount ?? 199)} <Text style={styles.addonPriceUnit}>per month, each</Text></Text>
-            {(current?.extraEstates ?? 0) > 0 ? (
-              <Text style={styles.addonOwned}>You have {current?.extraEstates} extra estate add-on{(current?.extraEstates ?? 0) > 1 ? "s" : ""}</Text>
-            ) : null}
-            <AutoPayNote />
-            <View style={{ marginTop: spacing.sm }}>
-              <Button
-                title="Add an estate"
-                onPress={() => estateAddonMutation.mutate()}
-                loading={estateAddonMutation.isPending}
-                variant="secondary"
-              />
-            </View>
-          </Card>
-
-          <Card>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
-              <View style={[styles.addonIconWrap, { backgroundColor: "#E3E0EC" }]}>
-                <Smartphone size={18} color={colors.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.addonTitle}>Extra manager device add-on</Text>
-                <Text style={styles.addonSub}>Add one more manager phone on top of your plan</Text>
-              </View>
-            </View>
-            <Text style={styles.addonPrice}>{inr(plansQuery.data?.managerDeviceAddon.amount ?? 199)} <Text style={styles.addonPriceUnit}>per month, each</Text></Text>
-            <AutoPayNote />
-            <View style={{ marginTop: spacing.sm }}>
-              <Button
-                title="Add a device"
-                onPress={() => deviceAddonMutation.mutate()}
-                loading={deviceAddonMutation.isPending}
-              />
-            </View>
-          </Card>
-        </View>
       </View>
 
       <Card style={{ gap: spacing.sm }}>
@@ -318,23 +355,21 @@ export function SubscriptionScreen() {
           Your plan runs your whole farm: attendance with AI face recognition, employee pay and advances, expenses, harvest, profit & loss, Agri Doctor, selling on Chiguru — and it all works offline.
         </Text>
         <Text style={styles.whyText}>
-          The AI features cost us real money. Our technology partners charge us for every photo the AI checks — every face marked in attendance and every crop photo Agri Doctor looks at. Your subscription pays those bills.
+          The AI features cost us real money. Our technology partners charge us for every photo the AI checks. Your subscription pays those bills.
         </Text>
         <Text style={styles.whyText}>
-          We make little to no profit from this. Chiguru exists to help farmers and planters improve their farms — better records, better growth, better yield. Farming builds so many lives, and we are here to help it grow.
+          We make little to no profit from this. Chiguru exists to help farmers and planters improve their farms.
         </Text>
       </Card>
 
       <View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs, marginBottom: spacing.sm }}>
-          <Text style={styles.sectionTitle}>Payment history</Text>
-        </View>
+        <Text style={styles.sectionTitle}>Payment history</Text>
         {(paymentsQuery.data?.length ?? 0) === 0 ? (
-          <Card style={{ alignItems: "center" }}>
+          <Card style={{ alignItems: "center", marginTop: spacing.sm }}>
             <Text style={styles.emptyText}>No payments yet.</Text>
           </Card>
         ) : (
-          <View style={{ gap: spacing.sm }}>
+          <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
             {paymentsQuery.data?.map((p) => (
               <Card key={p.id} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                 <View>
@@ -378,28 +413,15 @@ const styles = StyleSheet.create({
   honestTitle: { fontSize: 14.5, fontWeight: "700", color: colors.primary, textAlign: "center" },
   honestDesc: { fontSize: 12, color: colors.primary, opacity: 0.8, marginTop: spacing.xs, textAlign: "center", lineHeight: 16 },
 
-  planCard: { width: 260, borderRadius: radius.md, borderWidth: 2, borderColor: colors.border, backgroundColor: colors.card, padding: spacing.md },
   planCardCurrent: { borderColor: colors.primary, backgroundColor: "#F5F4FA" },
-  planCardBest: { borderColor: colors.primary },
-  planBadge: { alignSelf: "flex-start", borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 3, backgroundColor: colors.muted },
-  planBadgeHighlight: { backgroundColor: colors.primary },
-  planBadgeText: { fontSize: 9.5, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", letterSpacing: 0.3 },
-  planBadgeTextHighlight: { color: "#fff" },
   planIconWrap: { width: 36, height: 36, borderRadius: radius.sm, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" },
   planName: { fontSize: 15, fontWeight: "700", color: colors.text },
-  planTagline: { fontSize: 10.5, color: colors.textMuted, marginTop: 1, width: 170 },
+  planTagline: { fontSize: 11.5, color: colors.textMuted, marginTop: 1 },
   planPrice: { fontSize: 26, fontWeight: "700", color: colors.text, marginTop: spacing.sm },
   planPerMonth: { fontSize: 12, color: colors.textMuted },
   planFeature: { fontSize: 12, color: colors.text, flex: 1 },
 
   sectionTitle: { fontSize: 14.5, fontWeight: "700", color: colors.text },
-  addonIconWrap: { width: 38, height: 38, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
-  addonTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
-  addonSub: { fontSize: 11.5, color: colors.textMuted, marginTop: 1 },
-  addonPrice: { fontSize: 20, fontWeight: "700", color: colors.text, marginTop: spacing.sm },
-  addonPriceUnit: { fontSize: 12, fontWeight: "400", color: colors.textMuted },
-  addonOwned: { fontSize: 11.5, color: "#2F9E67", fontWeight: "600", marginTop: 2 },
-  autoPayNote: { fontSize: 11, color: colors.textMuted, marginTop: spacing.xs },
 
   whyTitle: { fontSize: 14.5, fontWeight: "700", color: colors.text },
   whyText: { fontSize: 12, color: colors.text, lineHeight: 17 },

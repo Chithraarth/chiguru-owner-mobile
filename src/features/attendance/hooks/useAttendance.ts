@@ -5,6 +5,14 @@ import {
   getWorkers,
   markAttendance,
 } from "../../../api/endpoints/attendance";
+import {
+  getHarvestBonusSummary,
+  getOvertimeSummary,
+  settleHarvestBonus,
+  settleOvertime,
+  updateWorkGroup,
+} from "../../../api/endpoints/workGroups";
+import { newClientId } from "../../../lib/idempotency";
 import { useEstateStore } from "../../estate/store/estateStore";
 import type { MarkAttendanceRequest } from "../../../types/api";
 
@@ -44,6 +52,46 @@ export function useAttendance(workGroupId: number) {
     },
   });
 
+  const overtimeSummaryQuery = useQuery({
+    queryKey: ["overtime-summary", workGroupId],
+    queryFn: () => getOvertimeSummary(workGroupId),
+    enabled: !!workGroupId,
+  });
+
+  const harvestBonusSummaryQuery = useQuery({
+    queryKey: ["harvest-bonus-summary", workGroupId],
+    queryFn: () => getHarvestBonusSummary(workGroupId),
+    enabled: !!workGroupId,
+  });
+
+  const settleOvertimeMutation = useMutation({
+    mutationFn: () => settleOvertime(workGroupId, newClientId()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["overtime-summary", workGroupId] });
+      queryClient.invalidateQueries({ queryKey: ["advance-payments", workGroupId] });
+    },
+  });
+
+  const settleHarvestBonusMutation = useMutation({
+    mutationFn: () => settleHarvestBonus(workGroupId, newClientId()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["harvest-bonus-summary", workGroupId] });
+      queryClient.invalidateQueries({ queryKey: ["advance-payments", workGroupId] });
+    },
+  });
+
+  // Used both for the settlement-frequency picker (weekly/monthly/final) and
+  // for saving the harvest picking-bonus rule (threshold + pay/kg) - mirrors
+  // the web app's single PATCH /work-groups/:id for both.
+  const updateWorkGroupMutation = useMutation({
+    mutationFn: (data: Parameters<typeof updateWorkGroup>[1]) => updateWorkGroup(workGroupId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["overtime-summary", workGroupId] });
+      queryClient.invalidateQueries({ queryKey: ["harvest-bonus-summary", workGroupId] });
+      queryClient.invalidateQueries({ queryKey: ["work-groups", activeEstateId] });
+    },
+  });
+
   return {
     date,
     workers: workersQuery.data ?? [],
@@ -55,5 +103,10 @@ export function useAttendance(workGroupId: number) {
       attendanceQuery.refetch();
     },
     markAttendance: markMutation,
+    overtimeSummary: overtimeSummaryQuery.data,
+    harvestBonusSummary: harvestBonusSummaryQuery.data,
+    settleOvertime: settleOvertimeMutation,
+    settleHarvestBonus: settleHarvestBonusMutation,
+    updateWorkGroup: updateWorkGroupMutation,
   };
 }

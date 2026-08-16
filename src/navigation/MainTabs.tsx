@@ -50,12 +50,14 @@ import { AgriDoctorRegisterScreen } from "../features/agri-doctor/screens/AgriDo
 import { AgriDoctorEarningsScreen } from "../features/agri-doctor/screens/AgriDoctorEarningsScreen";
 import { ConsultationScreen } from "../features/agri-doctor/screens/ConsultationScreen";
 import { SubscriptionScreen } from "../features/subscription/screens/SubscriptionScreen";
+import { WalletScreen } from "../features/wallet/screens/WalletScreen";
 import { BinScreen } from "../features/bin/screens/BinScreen";
 import { SyncLogScreen } from "../features/sync-log/screens/SyncLogScreen";
 import { ManagerDevicesScreen } from "../features/manager-devices/screens/ManagerDevicesScreen";
 import { SettingsScreen } from "../features/settings/screens/SettingsScreen";
 import { HelpScreen } from "../features/help/screens/HelpScreen";
 import { OnboardingScreen } from "../features/onboarding/screens/OnboardingScreen";
+import { WelcomeScreen } from "../features/welcome/screens/WelcomeScreen";
 import { EstateEditScreen } from "../features/estate/screens/EstateEditScreen";
 import { ProfileScreen } from "../features/profile/screens/ProfileScreen";
 import { BackupRestoreScreen } from "../features/profile/screens/BackupRestoreScreen";
@@ -146,6 +148,7 @@ function registerSharedScreens(Nav: ReturnType<typeof createNativeStackNavigator
       <Nav.Screen name="AgriDoctorEarnings" component={AgriDoctorEarningsScreen} options={{ title: "Earnings & Payouts" }} />
       <Nav.Screen name="Consultation" component={ConsultationScreen} options={{ title: "Consultation" }} />
       <Nav.Screen name="Subscription" component={SubscriptionScreen} options={{ title: "Subscription" }} />
+      <Nav.Screen name="Wallet" component={WalletScreen} options={{ title: "Wallet" }} />
       <Nav.Screen name="ManagerDevices" component={ManagerDevicesScreen} options={{ title: "Manager Devices" }} />
       <Nav.Screen name="Bin" component={BinScreen} options={{ title: "Recycle Bin" }} />
       <Nav.Screen name="SyncLog" component={SyncLogScreen} options={{ title: "Sync Log" }} />
@@ -155,6 +158,9 @@ function registerSharedScreens(Nav: ReturnType<typeof createNativeStackNavigator
       <Nav.Screen name="BackupRestore" component={BackupRestoreScreen} options={{ title: "Backup & Restore" }} />
       <Nav.Screen name="Onboarding" component={OnboardingScreen} options={{ title: "Set Up Your Farm" }} />
       <Nav.Screen name="EstateEdit" component={EstateEditScreen} options={{ title: "Edit Farm" }} />
+      <Nav.Screen name="Welcome" options={{ title: "How Chiguru Works" }}>
+        {({ navigation }: any) => <WelcomeScreen onDone={() => navigation.goBack()} />}
+      </Nav.Screen>
     </>
   );
 }

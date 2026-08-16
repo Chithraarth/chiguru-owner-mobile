@@ -39,11 +39,13 @@ function sections(t: (k: string) => string) {
       items: [
         { label: `👤 ${t("profile.title")}`, screen: "Profile" },
         { label: `💳 ${t("more.subscription")}`, screen: "Subscription" },
+        { label: "👛 Wallet", screen: "Wallet" },
         { label: `🧑‍🤝‍🧑 ${t("more.managerDevices")}`, screen: "ManagerDevices" },
         { label: `🗑️ ${t("bin.title")}`, screen: "Bin" },
         { label: `🔄 ${t("more.syncLog")}`, screen: "SyncLog" },
         { label: `⚙️ ${t("more.settings")}`, screen: "Settings" },
         { label: "❓ Help", screen: "Help" },
+        { label: "🌱 How Chiguru works", screen: "Welcome" },
       ],
     },
   ];

@@ -7,6 +7,8 @@ import { useDeviceRegistration } from "../features/device-gate/hooks/useDeviceRe
 import { DeviceLimitScreen } from "../features/device-gate/screens/DeviceLimitScreen";
 import { useEstateStore } from "../features/estate/store/estateStore";
 import { useEstates } from "../features/estate/hooks/useEstates";
+import { useWelcomeStore } from "../features/welcome/store/welcomeStore";
+import { WelcomeScreen } from "../features/welcome/screens/WelcomeScreen";
 import { useSessionStore } from "../store/sessionStore";
 import { useSyncStore } from "../store/syncStore";
 import { runSync } from "../lib/syncManager";
@@ -22,6 +24,10 @@ export function RootNavigator() {
   const authLoading = useSessionStore((s) => s.authLoading);
   const hydrateEstate = useEstateStore((s) => s.hydrate);
   const estateHydrated = useEstateStore((s) => s.hydrated);
+  const hydrateWelcome = useWelcomeStore((s) => s.hydrate);
+  const welcomeHydrated = useWelcomeStore((s) => s.hydrated);
+  const welcomeSeen = useWelcomeStore((s) => s.seen);
+  const markWelcomeSeen = useWelcomeStore((s) => s.markSeen);
   const setOnline = useSyncStore((s) => s.setOnline);
 
   const { blocked, devices, maxDevices, recheck } = useDeviceRegistration(!!user);
@@ -53,6 +59,10 @@ export function RootNavigator() {
   }, [hydrateEstate]);
 
   useEffect(() => {
+    hydrateWelcome();
+  }, [hydrateWelcome]);
+
+  useEffect(() => {
     if (!user) return;
     runSync();
     const unsubscribe = NetInfo.addEventListener((state) => {
@@ -62,7 +72,7 @@ export function RootNavigator() {
     return unsubscribe;
   }, [user, setOnline]);
 
-  if (authLoading || (user && !estateHydrated)) {
+  if (authLoading || (user && (!estateHydrated || !welcomeHydrated))) {
     return <LoadingView label="Loading..." />;
   }
 
@@ -80,6 +90,15 @@ export function RootNavigator() {
 
   if (estatesQuery.isLoading) {
     return <LoadingView label="Loading your farms..." />;
+  }
+
+  // First-time-only walkthrough (chiguru-owner-web's src/pages/welcome.tsx
+  // is a normal, always-navigable route there; the mobile equivalent of a
+  // "first-time" welcome is to gate it here, once, right after sign-in -
+  // it never blocks a returning user again once markSeen() has run).
+  // Still reachable afterwards from More > How Chiguru works for a replay.
+  if (!welcomeSeen) {
+    return <WelcomeScreen onDone={markWelcomeSeen} />;
   }
 
   // Setting up a farm is NOT mandatory (matches chiguru-owner-web - a new

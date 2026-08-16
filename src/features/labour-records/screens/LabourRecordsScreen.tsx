@@ -1,13 +1,26 @@
 import React, { useLayoutEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Banknote, Calendar, Clock3, CreditCard, Scale, Send, Trash2, Wheat } from "lucide-react-native";
+import {
+  ArrowLeft,
+  Banknote,
+  Calendar,
+  CheckCircle2,
+  ChevronRight,
+  Clock3,
+  CreditCard,
+  Scale,
+  Send,
+  Trash2,
+  Wheat,
+} from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { LoadingView, EmptyState } from "../../../components/StateViews";
 import { colors, radius, spacing } from "../../../components/theme";
-import { getAllAttendance, getAdvancePayments } from "../../../api/endpoints/attendance";
+import { getAllAttendance, getAdvancePayments, getWorkerMoney } from "../../../api/endpoints/attendance";
 import {
+  clearWorkGroup,
   getHarvestBonusSummary,
   getOvertimeSummary,
   getWorkGroups,
@@ -19,7 +32,7 @@ import { getWorkerPayments, deleteWorkerPayment } from "../../../api/endpoints/w
 import { PaySheet } from "../components/PaySheet";
 import { newClientId } from "../../../lib/idempotency";
 import { useT } from "../../../lib/i18n";
-import type { AttendanceRecord } from "../../../types/api";
+import type { AttendanceRecord, WorkerMoney } from "../../../types/api";
 
 type ViewMode = "weekly" | "monthly" | "yearly" | "final";
 
@@ -61,25 +74,30 @@ interface PeriodTotals { days: number; wages: number; advances: number; loans: n
 
 export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   const [openFolder, setOpenFolder] = useState<{ id: number | null; name: string } | null>(null);
+  const [openWorker, setOpenWorker] = useState<{ id: number; name: string } | null>(null);
   const [view, setView] = useState<ViewMode>("weekly");
   const [showPaySheet, setShowPaySheet] = useState(false);
   const qc = useQueryClient();
   const { t } = useT();
 
-  // Mirrors the web app's PageShell: title + back button swap to "close this
-  // folder" instead of leaving the screen, while a folder is open.
+  // Mirrors the web app's PageShell: title + back button swap one level at a
+  // time — worker drill-down closes to the folder, folder closes to the list.
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: openFolder ? openFolder.name : t("farmAcct.labour"),
-      headerLeft: openFolder
+      title: openWorker ? openWorker.name : openFolder ? openFolder.name : t("farmAcct.labour"),
+      headerLeft: openWorker || openFolder
         ? () => (
-            <Pressable onPress={() => setOpenFolder(null)} hitSlop={10} style={{ marginLeft: spacing.sm }}>
+            <Pressable
+              onPress={() => (openWorker ? setOpenWorker(null) : setOpenFolder(null))}
+              hitSlop={10}
+              style={{ marginLeft: spacing.sm }}
+            >
               <ArrowLeft size={22} color={colors.text} />
             </Pressable>
           )
         : undefined,
     });
-  }, [navigation, openFolder]);
+  }, [navigation, openFolder, openWorker]);
 
   const { data: records = [], isLoading } = useQuery<AttendanceRecord[]>({
     queryKey: ["attendance-all"],
@@ -125,6 +143,23 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   const payments = openFolder != null ? allPayments.filter((pm) => (pm.workGroupId ?? null) === openFolder.id) : [];
   const paymentsTotal = payments.reduce((s, pm) => s + Number(pm.amount), 0);
 
+  // Per-employee all-time money summary (days, wages, loans, payments, netDue).
+  const { data: workerMoney, isLoading: moneyLoading } = useQuery<WorkerMoney>({
+    queryKey: ["worker-money", openWorker?.id],
+    queryFn: () => getWorkerMoney(openWorker!.id),
+    enabled: openWorker != null,
+  });
+
+  // Archive a fully-settled work group into Accounts history (idempotent server-side).
+  const clearAccountMutation = useMutation({
+    mutationFn: (id: number) => clearWorkGroup(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["work-groups"] });
+      setOpenFolder(null);
+    },
+    onError: () => Alert.alert("Could not clear the account", "Please try again."),
+  });
+
   function confirmDeletePayment(id: number) {
     Alert.alert("Delete this payment record?", undefined, [
       { text: t("scan.cancel"), style: "cancel" },
@@ -141,13 +176,18 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
 
   if (isLoading) return <LoadingView label="Loading labour records..." />;
 
-  // Folders: one per active work group (+ orphaned group ids referenced by
-  // records), plus "General Records" for entries with no group.
+  // Cleared groups live in "Accounts history" — view-only, out of the active
+  // folder list below.
+  const clearedGroups = workGroups.filter((g) => g.clearedAt != null);
+  const clearedIds = new Set(clearedGroups.map((g) => g.id));
+
+  // Folders: one per active (not-yet-cleared) work group (+ orphaned group ids
+  // referenced by records), plus "General Records" for entries with no group.
   const knownGroupIds = new Set(workGroups.map((g) => g.id));
   const orphanIds = [...new Set(records.filter((r) => r.workGroupId != null && !knownGroupIds.has(r.workGroupId)).map((r) => r.workGroupId as number))];
   const groupList = [
-    ...workGroups.map((g) => ({ id: g.id, name: g.name })),
-    ...orphanIds.map((id) => ({ id, name: records.find((r) => r.workGroupId === id)?.workGroupName ?? `Group #${id}` })),
+    ...workGroups.filter((g) => !clearedIds.has(g.id)).map((g) => ({ id: g.id, name: g.name })),
+    ...orphanIds.filter((id) => !clearedIds.has(id)).map((id) => ({ id, name: records.find((r) => r.workGroupId === id)?.workGroupName ?? `Group #${id}` })),
   ];
   const generalRecords = records.filter((r) => r.workGroupId == null);
 
@@ -170,6 +210,7 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   const folderRecords = openFolder ? records.filter((r) => (r.workGroupId ?? null) === openFolder.id) : records;
 
   const group = groupOpen ? workGroups.find((g) => g.id === openFolder!.id) : undefined;
+  const isCleared = group?.clearedAt != null;
   const groupRate = Number(group?.rate ?? 0);
   const isPerDay = (group?.paymentType ?? "").toLowerCase().includes("day");
   const advPerDay = Number(group?.advancePerUnit ?? 0);
@@ -185,6 +226,22 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   const loanRepaid = groupLoans.reduce((s, l) => s + Number(l.repaidAmount), 0);
   const loanOutstanding = groupLoans.reduce((s, l) => s + Math.max(0, Number(l.totalDue) - Number(l.repaidAmount)), 0);
   const finalPayable = totalEarned - totalAdvances - loanOutstanding - paymentsTotal;
+
+  // ── "Payment due now" — owner pays on whichever day they choose (Sat, Wed…).
+  // Everything earned after the last recorded payment is what's due now. A
+  // payment covers all work up to and including its date, so only work AFTER
+  // the last payment date counts.
+  const lastPaymentDate = [
+    ...payments.map((pm) => pm.paymentDate),
+    ...advances.map((a) => a.paymentDate),
+  ].sort().pop() ?? null;
+  const dueRecords = lastPaymentDate ? folderRecords.filter((r) => r.date > lastPaymentDate) : folderRecords;
+  const dueDays = dueRecords.length;
+  const dueEarned = dueRecords.reduce((s, r) => s + earnOf(r), 0);
+  const dueAdvance = dueDays * advPerDay;
+  // Advance-structure groups pay only the advance-per-day now; the rest is
+  // held for the Final Account. Other groups pay everything earned since.
+  const dueWages = hasAdvanceStructure ? dueAdvance : dueEarned;
 
   const emptyPeriod = (): PeriodTotals => ({ days: 0, wages: 0, advances: 0, loans: 0 });
   const weekly = new Map<string, PeriodTotals>();
@@ -224,31 +281,200 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   }, {});
   const sortedDates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
 
+  // Distinct employees in this folder (for the per-person money drill-down).
+  const folderWorkers = (() => {
+    const map = new Map<number, { id: number; name: string; days: number; earned: number }>();
+    for (const r of folderRecords) {
+      if (r.workerId == null) continue;
+      const w = map.get(r.workerId) ?? { id: r.workerId, name: r.workerName ?? "Unknown", days: 0, earned: 0 };
+      w.days += 1;
+      w.earned += earnOf(r);
+      map.set(r.workerId, w);
+    }
+    return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+  })();
+
   if (openFolder === null) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md }}>
-        <Text style={styles.sectionLabel}>👥 YOUR WORK GROUPS</Text>
-        <View style={{ gap: spacing.sm }}>
-          {folders.map((f) => (
-            <Pressable key={f.id ?? "general"} onPress={() => { setView("weekly"); setOpenFolder({ id: f.id, name: f.name }); }}>
-              <Card style={styles.folderRow}>
-                <View style={styles.folderIcon}>
-                  <Text style={{ fontSize: 20 }}>{f.id == null ? "📋" : "👥"}</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.folderName}>{f.name}</Text>
-                  <Text style={styles.folderSubtitle}>{f.subtitle}</Text>
-                </View>
-                {f.count > 0 ? (
-                  <View style={styles.countBadge}>
-                    <Text style={styles.countBadgeText}>{f.count}</Text>
+      <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+        <View>
+          <Text style={styles.sectionLabel}>👥 YOUR WORK GROUPS</Text>
+          <View style={{ gap: spacing.sm }}>
+            {folders.map((f) => (
+              <Pressable key={f.id ?? "general"} onPress={() => { setView("weekly"); setOpenFolder({ id: f.id, name: f.name }); }}>
+                <Card style={styles.folderRow}>
+                  <View style={styles.folderIcon}>
+                    <Text style={{ fontSize: 20 }}>{f.id == null ? "📋" : "👥"}</Text>
                   </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.folderName}>{f.name}</Text>
+                    <Text style={styles.folderSubtitle}>{f.subtitle}</Text>
+                  </View>
+                  {f.count > 0 ? (
+                    <View style={styles.countBadge}>
+                      <Text style={styles.countBadgeText}>{f.count}</Text>
+                    </View>
+                  ) : null}
+                </Card>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        {clearedGroups.length > 0 ? (
+          <View>
+            <Text style={styles.sectionLabel}>✅ ACCOUNTS HISTORY</Text>
+            <View style={{ gap: spacing.sm }}>
+              {clearedGroups.map((g) => (
+                <Pressable key={g.id} onPress={() => { setView("final"); setOpenFolder({ id: g.id, name: g.name }); }}>
+                  <Card style={styles.folderRow}>
+                    <View style={[styles.folderIcon, { backgroundColor: "#D8F3E6" }]}>
+                      <CheckCircle2 size={20} color="#1F9E5C" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.folderName}>{g.name}</Text>
+                      <Text style={[styles.folderSubtitle, { color: "#1F9E5C" }]}>
+                        Account cleared{g.clearedAt ? ` · ${formatDate(g.clearedAt)}` : ""}
+                      </Text>
+                    </View>
+                    <ChevronRight size={16} color={colors.textMuted} />
+                  </Card>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        ) : null}
+      </ScrollView>
+    );
+  }
+
+  // ── Per-employee money page (wages, loans, payments, net due) ──────────
+  if (openWorker != null) {
+    const m = workerMoney;
+    return (
+      <View style={styles.container}>
+        <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+          {moneyLoading ? <LoadingView label="Loading account..." /> : null}
+
+          {m ? (
+            <>
+              <Card style={[styles.netDueCard, m.netDue >= 0 ? styles.netDuePositive : styles.netDueNegative]}>
+                <Text style={styles.netDueLabel}>
+                  {m.netDue >= 0 ? "Balance to pay" : "Employee owes (advance/loan exceeds earnings)"}
+                </Text>
+                <Text style={[styles.netDueValue, { color: m.netDue >= 0 ? colors.primary : colors.danger }]}>
+                  {inr(Math.abs(m.netDue))}
+                </Text>
+                {m.lastWorkedDate ? (
+                  <Text style={styles.netDueMeta}>Last worked {formatDate(m.lastWorkedDate)}</Text>
                 ) : null}
               </Card>
-            </Pressable>
-          ))}
-        </View>
-      </ScrollView>
+
+              <Card style={{ padding: 0, overflow: "hidden" }}>
+                <Text style={styles.blockTitle}>ACCOUNT SUMMARY</Text>
+                <View style={styles.simpleRow}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <Calendar size={14} color={colors.primary} />
+                    <Text style={styles.simpleRowMutedLabel}>Days worked</Text>
+                  </View>
+                  <Text style={styles.simpleRowTitle}>{m.totalDays}</Text>
+                </View>
+                <View style={[styles.simpleRow, styles.periodRowBorder]}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <Banknote size={14} color={colors.primary} />
+                    <Text style={styles.simpleRowMutedLabel}>Wages earned</Text>
+                  </View>
+                  <Text style={styles.simpleRowTitle}>{inr(m.totalWage)}</Text>
+                </View>
+                <View style={[styles.simpleRow, styles.periodRowBorder]}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <CreditCard size={14} color={colors.danger} />
+                    <Text style={styles.simpleRowMutedLabel}>Loan pending</Text>
+                  </View>
+                  <Text style={[styles.simpleRowTitle, { color: m.loanOutstanding > 0 ? colors.danger : colors.textMuted }]}>
+                    {m.loanOutstanding > 0 ? `− ${inr(m.loanOutstanding)}` : inr(0)}
+                  </Text>
+                </View>
+                {m.loanTaken > 0 ? (
+                  <Text style={styles.finalNote}>Loans taken {inr(m.loanTaken)} · already repaid {inr(m.loanRepaid)}</Text>
+                ) : null}
+                <View style={[styles.simpleRow, styles.periodRowBorder]}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <Send size={14} color="#1F9E92" />
+                    <Text style={styles.simpleRowMutedLabel}>Payments received ({m.paymentsCount})</Text>
+                  </View>
+                  <Text style={[styles.simpleRowTitle, { color: m.paymentsTotal > 0 ? "#1F9E92" : colors.textMuted }]}>
+                    {m.paymentsTotal > 0 ? `− ${inr(m.paymentsTotal)}` : inr(0)}
+                  </Text>
+                </View>
+                <View style={[styles.finalTotal, { backgroundColor: m.netDue >= 0 ? colors.bg : "#FDEAEA" }]}>
+                  <Text style={[styles.finalTotalLabel, { color: m.netDue >= 0 ? colors.primary : colors.danger }]}>Net due</Text>
+                  <Text style={[styles.finalTotalValue, { color: m.netDue >= 0 ? colors.primary : colors.danger }]}>
+                    {m.netDue >= 0 ? inr(m.netDue) : `− ${inr(Math.abs(m.netDue))}`}
+                  </Text>
+                </View>
+              </Card>
+
+              <Pressable style={styles.payButton} onPress={() => setShowPaySheet(true)}>
+                <Send size={16} color="#fff" />
+                <Text style={styles.payButtonText}>
+                  Pay {m.workerName.split(" ")[0]}{m.netDue > 0 ? ` ${inr(m.netDue)}` : ""}
+                </Text>
+              </Pressable>
+
+              {m.loans.length > 0 ? (
+                <Card style={{ padding: 0, overflow: "hidden" }}>
+                  <Text style={styles.blockTitle}>LOANS</Text>
+                  {m.loans.map((l, idx) => {
+                    const left = Math.max(0, Number(l.totalDue) - Number(l.repaidAmount));
+                    return (
+                      <View key={l.id} style={[styles.simpleRow, idx > 0 && styles.periodRowBorder]}>
+                        <View>
+                          <Text style={styles.simpleRowTitle}>{inr(Number(l.amount))} loan</Text>
+                          <Text style={styles.simpleRowMeta}>
+                            {l.issuedDate ? formatDate(l.issuedDate) : ""} · repaid {inr(Number(l.repaidAmount))}
+                          </Text>
+                        </View>
+                        <Text style={[styles.simpleRowValue, { color: left > 0 ? colors.danger : "#1F9E5C" }]}>
+                          {left > 0 ? `${inr(left)} left` : "Cleared"}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </Card>
+              ) : null}
+
+              {m.payments.length > 0 ? (
+                <Card style={{ padding: 0, overflow: "hidden" }}>
+                  <Text style={styles.blockTitle}>PAYMENTS RECEIVED</Text>
+                  {m.payments.map((pm, idx) => (
+                    <View key={pm.id} style={[styles.simpleRow, idx > 0 && styles.periodRowBorder]}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.simpleRowTitle}>{formatDate(pm.paymentDate)}</Text>
+                        <Text style={styles.simpleRowMeta}>{pm.methodLabel || pm.method}{pm.note ? ` · ${pm.note}` : ""}</Text>
+                      </View>
+                      <Text style={[styles.simpleRowValue, { color: "#1F9E92" }]}>{inr(Number(pm.amount))}</Text>
+                    </View>
+                  ))}
+                </Card>
+              ) : null}
+            </>
+          ) : null}
+        </ScrollView>
+
+        <PaySheet
+          visible={showPaySheet}
+          groupId={openFolder?.id ?? null}
+          groupName={openFolder?.name ?? ""}
+          groupUpiId={group?.upiId}
+          initialWorkerId={openWorker.id}
+          suggestedAmount={m && m.netDue > 0 ? m.netDue : undefined}
+          onClose={() => {
+            setShowPaySheet(false);
+            qc.invalidateQueries({ queryKey: ["worker-money", openWorker.id] });
+          }}
+        />
+      </View>
     );
   }
 
@@ -265,10 +491,81 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
           </View>
         ) : null}
 
-        <Pressable style={styles.payButton} onPress={() => setShowPaySheet(true)}>
-          <Send size={16} color="#fff" />
-          <Text style={styles.payButtonText}>Pay Workers</Text>
-        </Pressable>
+        {groupOpen && !isCleared ? (
+          <Card style={{ padding: 0, overflow: "hidden" }}>
+            <View style={styles.dueHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.blockTitleLight}>PAYMENT DUE NOW</Text>
+                <Text style={styles.dueSubtitle}>
+                  {lastPaymentDate ? `for work after ${formatDate(lastPaymentDate)}` : "no payment made yet"}
+                </Text>
+              </View>
+              <Text style={styles.dueHeaderValue}>{inr(Math.max(0, dueWages))}</Text>
+            </View>
+            <View style={styles.simpleRow}>
+              <Text style={styles.simpleRowMutedLabel}>
+                {hasAdvanceStructure
+                  ? `Advance due (${dueDays} × ${inr(advPerDay)})`
+                  : `Wages due (${dueDays} work${dueDays !== 1 ? "s" : ""}${isPerDay && groupRate > 0 ? ` · ${inr(groupRate)}/day` : ""})`}
+              </Text>
+              <Text style={[styles.simpleRowTitle, { color: colors.primary }]}>
+                {inr(hasAdvanceStructure ? dueAdvance : dueEarned)}
+              </Text>
+            </View>
+            <View style={[styles.simpleRow, styles.periodRowBorder]}>
+              <Text style={styles.simpleRowMutedLabel}>Loan pending</Text>
+              <Text style={[styles.simpleRowTitle, { color: loanOutstanding > 0 ? colors.danger : colors.textMuted }]}>
+                {loanOutstanding > 0 ? inr(loanOutstanding) : inr(0)}
+              </Text>
+            </View>
+            <View style={[styles.finalTotal, { backgroundColor: colors.bg }]}>
+              <Text style={[styles.finalTotalLabel, { color: colors.primary }]}>To pay this time</Text>
+              <Text style={[styles.finalTotalValue, { color: colors.primary }]}>{inr(Math.max(0, dueWages))}</Text>
+            </View>
+            {loanOutstanding > 0 && dueWages > 0 ? (
+              <View style={styles.simpleRow}>
+                <Text style={styles.simpleRowMeta}>If you cut the loan now</Text>
+                <Text style={styles.simpleRowMeta}>
+                  {inr(Math.max(0, dueWages - loanOutstanding))}
+                  {loanOutstanding > dueWages ? ` (loan ${inr(loanOutstanding - dueWages)} still left)` : ""}
+                </Text>
+              </View>
+            ) : null}
+          </Card>
+        ) : null}
+
+        {openFolder !== null && !isCleared ? (
+          <Pressable style={styles.payButton} onPress={() => setShowPaySheet(true)}>
+            <Send size={16} color="#fff" />
+            <Text style={styles.payButtonText}>Pay Workers</Text>
+          </Pressable>
+        ) : null}
+
+        {openFolder !== null && folderWorkers.length > 0 ? (
+          <Card style={{ padding: 0, overflow: "hidden" }}>
+            <View style={[styles.dueHeader, { paddingVertical: spacing.sm + 2 }]}>
+              <Text style={styles.blockTitleLight}>EMPLOYEES</Text>
+              <Text style={styles.dueSubtitle}>tap for wages, loans & payments</Text>
+            </View>
+            {folderWorkers.map((w, idx) => (
+              <Pressable
+                key={w.id}
+                style={[styles.employeeRow, idx > 0 && styles.periodRowBorder]}
+                onPress={() => setOpenWorker({ id: w.id, name: w.name })}
+              >
+                <View style={styles.employeeAvatar}>
+                  <Text style={styles.employeeAvatarText}>{w.name.charAt(0).toUpperCase()}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.simpleRowTitle}>{w.name}</Text>
+                  <Text style={styles.simpleRowMeta}>{w.days} day{w.days !== 1 ? "s" : ""} worked</Text>
+                </View>
+                <Text style={[styles.simpleRowValue, { color: colors.primary }]}>{inr(w.earned)}</Text>
+                <ChevronRight size={16} color={colors.textMuted} />
+              </Pressable>
+            ))}
+          </Card>
+        ) : null}
 
         {groupOpen && view === "final" ? (
           <Card style={{ padding: 0, overflow: "hidden" }}>
@@ -319,6 +616,38 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
               </Text>
             </View>
           </Card>
+        ) : null}
+
+        {groupOpen && view === "final" ? (
+          isCleared ? (
+            <View style={styles.clearedBanner}>
+              <CheckCircle2 size={22} color="#1F9E5C" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.clearedBannerTitle}>Account cleared</Text>
+                <Text style={styles.clearedBannerSubtitle}>
+                  {group?.clearedAt
+                    ? `Settled on ${formatDate(group.clearedAt)} — kept here in Accounts history.`
+                    : "Kept here in Accounts history."}
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <Pressable
+              style={styles.clearButton}
+              onPress={() => {
+                if (finalPayable > 0) {
+                  Alert.alert(`${inr(finalPayable)} still to pay`, "Record the payment first, then clear the account.");
+                  return;
+                }
+                if (!clearAccountMutation.isPending) clearAccountMutation.mutate(openFolder!.id as number);
+              }}
+            >
+              <CheckCircle2 size={16} color="#fff" />
+              <Text style={styles.clearButtonText}>
+                {clearAccountMutation.isPending ? "Clearing…" : "Account cleared — everything is paid"}
+              </Text>
+            </Pressable>
+          )
         ) : null}
 
         {groupOpen && view !== "final" ? (() => {
@@ -558,10 +887,37 @@ const styles = StyleSheet.create({
   periodMeta: { fontSize: 11, color: colors.textMuted },
 
   blockTitle: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, padding: spacing.md, paddingBottom: spacing.xs },
+  blockTitleLight: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5 },
   simpleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
   simpleRowTitle: { fontSize: 13, fontWeight: "600", color: colors.text },
+  simpleRowMutedLabel: { fontSize: 13, color: colors.textMuted },
   simpleRowMeta: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
   simpleRowValue: { fontSize: 13, fontWeight: "700" },
+
+  // "Payment due now" card
+  dueHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, borderBottomWidth: 1, borderBottomColor: colors.bg },
+  dueSubtitle: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
+  dueHeaderValue: { fontSize: 17, fontWeight: "700", color: colors.primary },
+
+  // Employees list
+  employeeRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 4 },
+  employeeAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#E9E6FB", alignItems: "center", justifyContent: "center" },
+  employeeAvatarText: { fontSize: 14, fontWeight: "700", color: colors.accent },
+
+  // Per-employee net-due summary card
+  netDueCard: { alignItems: "center", padding: spacing.lg },
+  netDuePositive: { backgroundColor: "#EEF0FB", borderColor: "#D8DCF3" },
+  netDueNegative: { backgroundColor: "#FDEAEA", borderColor: "#F6D2D9" },
+  netDueLabel: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, textTransform: "uppercase" },
+  netDueValue: { fontSize: 28, fontWeight: "700", marginTop: 4 },
+  netDueMeta: { fontSize: 11, color: colors.textMuted, marginTop: 4 },
+
+  // Account cleared (archival)
+  clearedBanner: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: "#D8F3E6", borderWidth: 1, borderColor: "#B7E4CB", borderRadius: radius.md, padding: spacing.md },
+  clearedBannerTitle: { fontSize: 14, fontWeight: "700", color: "#1F9E5C" },
+  clearedBannerSubtitle: { fontSize: 12, color: "#1F9E5C", marginTop: 2 },
+  clearButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.xs, backgroundColor: "#1F9E5C", borderRadius: radius.lg, paddingVertical: spacing.md },
+  clearButtonText: { color: "#fff", fontWeight: "700", fontSize: 14 },
 
   dateHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: colors.primary, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
   dateHeaderText: { color: "#fff", fontWeight: "700", fontSize: 13 },

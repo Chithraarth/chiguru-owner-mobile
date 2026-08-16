@@ -1,5 +1,5 @@
 import { apiFetch, apiMutate } from "../client";
-import type { AdvancePayment, Attendance, AttendanceRecord, MarkAttendanceRequest, Worker, WorkerWages } from "../../types/api";
+import type { AdvancePayment, Attendance, AttendanceRecord, MarkAttendanceRequest, Worker, WorkerMoney, WorkerWages } from "../../types/api";
 
 export function getWorkers() {
   return apiFetch<Worker[]>("/workers");
@@ -33,4 +33,11 @@ export function getAdvancePayments(workGroupId: number) {
 export function getWorkerWages(workerId: number, month?: string) {
   const q = month ? `?month=${month}` : "";
   return apiFetch<WorkerWages>(`/workers/${workerId}/wages${q}`);
+}
+
+// All-time money summary for one worker (days worked, wages + overtime,
+// harvest kg, loans, direct payments, netDue) — powers the per-employee
+// drill-down on the Labour Records screen.
+export function getWorkerMoney(workerId: number) {
+  return apiFetch<WorkerMoney>(`/workers/${workerId}/money`);
 }

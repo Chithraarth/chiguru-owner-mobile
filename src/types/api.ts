@@ -139,6 +139,10 @@ export interface WorkGroup {
   harvestBonusPerKg?: string | null;
   seasonClosed: boolean;
   seasonSummary: string | null;
+  // Set once the owner archives this group's account via POST
+  // /work-groups/:id/clear — non-null means it's settled and moved to
+  // Accounts history.
+  clearedAt?: string | null;
   isActive: boolean;
   deletedAt: string | null;
   createdAt: string;
@@ -745,36 +749,39 @@ export interface MandiPricesResponse {
 // ---- Ads (recent activity, already in dashboard) ----
 
 // ---- Subscription ----
+// Mirrors chiguru-backend's actual routes/subscription.ts response shapes —
+// androidPlayProductId is what react-native-iap needs to launch a purchase;
+// there's no server-side "create" step for Play purchases the way Razorpay
+// has one on web, so the client must already know the product id up front.
 export interface SubscriptionPlan {
-  id: string;
+  id: number;
   name: string;
-  amount: number;
-  billingCycle: string;
-  tagline: string;
-  maxEstates: number | null;
-  maxManagerDevices: number;
+  description: string | null;
+  price: number;
+  currency: string;
+  billingPeriod: string;
+  managerLimit: number;
+  googlePlayProductId: string | null;
 }
 
 export interface SubscriptionPlansResponse {
   plans: SubscriptionPlan[];
-  estateAddon: { amount: number };
-  managerDeviceAddon: { amount: number };
 }
 
-export interface Subscription {
-  id: number;
-  planName: string;
-  billingCycle: string;
-  amount: string;
+export interface CurrentSubscription {
   status: string;
+  platform: string;
+  provider: string;
   startDate: string | null;
-  renewalDate: string | null;
-  managerSeats: number;
-  extraEstates: number;
+  expiryDate: string | null;
+  autoRenew: boolean;
+  cancelledAt: string | null;
+  plan: { id: number; name: string; managerLimit: number; price: number } | null;
 }
 
-export interface SubscriptionStatusResponse {
-  subscription: Subscription | null;
+export interface SubscriptionMeResponse {
+  subscription: CurrentSubscription | null;
+  entitlement: { managerLimit: number; managersUsed: number; remainingManagers: number };
   sharePlatforms: string | null;
   shareRewardClaimedAt: string | null;
   freeMonthPending: boolean;
@@ -792,12 +799,76 @@ export interface Payment {
   amount: string;
   currency: string;
   paymentStatus: string;
-  paymentMethod: string | null;
   createdAt: string;
 }
 
-export interface CheckoutResponse {
-  url: string;
+export interface VerifyAndroidPurchaseRequest {
+  purchaseToken: string;
+  productId: string;
+}
+
+export interface SubscriptionActionResponse {
+  status: string;
+  expiryDate?: string | null;
+}
+
+// ---- Wallet ----
+// Mirrors chiguru-backend's routes/wallet.ts response shapes. The wallet is a
+// per-use AI credit balance on top of (not instead of) the subscription,
+// recharged via a real Razorpay one-time order — verified the same way
+// subscription checkout is verified, never self-reported.
+export interface WalletAiPrice {
+  price: number;
+  label: string;
+}
+
+export interface WalletTransaction {
+  id: number;
+  type: string;
+  feature: string | null;
+  amount: string;
+  createdAt: string;
+}
+
+export interface WalletMeResponse {
+  balance: number;
+  rechargeAmounts: number[];
+  aiPrices: Record<string, WalletAiPrice>;
+  share: {
+    target: number;
+    reward: number;
+    platforms: string[];
+    rewarded: boolean;
+  };
+  transactions: WalletTransaction[];
+  usage: { month: { count: number; total: number } };
+}
+
+export interface WalletRechargeOrderResponse {
+  orderId: string;
+  amount: number;
+  currency: string;
+  keyId: string;
+}
+
+export interface WalletRechargeVerifyRequest {
+  orderId: string;
+  paymentId: string;
+  signature: string;
+  amount: number;
+}
+
+export interface WalletRechargeVerifyResponse {
+  ok: boolean;
+  balance: number;
+  duplicate: boolean;
+}
+
+export interface WalletShareResponse {
+  platforms: string[];
+  rewarded: boolean;
+  creditGiven: boolean;
+  balance: number;
 }
 
 // ---- Bin ----
@@ -991,6 +1062,8 @@ export interface ConsultationMessage {
   consultationId: number;
   sender: "farmer" | "doctor";
   text: string;
+  mediaType: "image" | "audio" | null;
+  mediaUrl: string | null;
   createdAt: string;
 }
 
@@ -1060,6 +1133,47 @@ export interface WorkerWages {
   netPayable: number;
   pendingLoanBalance: number;
   month: string;
+}
+
+// All-time per-worker money summary from GET /workers/:id/money — days worked,
+// wages + overtime earned, loans, direct payments, and one net-due balance.
+export interface WorkerMoney {
+  workerId: number;
+  workerName: string;
+  upiId: string | null;
+  totalDays: number;
+  totalWage: number;
+  totalOvertimeHours: number;
+  totalOvertimeAmount: number;
+  totalHarvestedKg: number;
+  totalEarned: number;
+  lastWorkedDate: string | null;
+  loanTaken: number;
+  loanRepaid: number;
+  loanOutstanding: number;
+  paymentsTotal: number;
+  paymentsCount: number;
+  netDue: number;
+  payments: {
+    id: number;
+    amount: string;
+    method: string;
+    methodLabel: string | null;
+    paymentDate: string;
+    note: string | null;
+  }[];
+  loans: {
+    id: number;
+    amount: string;
+    totalDue: string;
+    repaidAmount: string;
+    status: string;
+    issuedDate: string;
+  }[];
+}
+
+export interface ClearWorkGroupResult {
+  clearedAt: string | null;
 }
 
 export type PlanTaskCategory = "fertilizer" | "spray" | "irrigation" | "pruning" | "harvest" | "other";

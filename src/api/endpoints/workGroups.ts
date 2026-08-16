@@ -1,5 +1,6 @@
 import { apiFetch, apiMutate } from "../client";
 import type {
+  ClearWorkGroupResult,
   CountWorkersResponse,
   CreateWorkGroupRequest,
   HarvestBonusSummary,
@@ -18,6 +19,16 @@ export function createWorkGroup(data: CreateWorkGroupRequest) {
 
 export function deleteWorkGroup(id: number) {
   return apiMutate<null>("DELETE", `/work-groups/${id}`);
+}
+
+export function updateWorkGroup(id: number, data: Partial<WorkGroup>) {
+  return apiMutate<WorkGroup>("PATCH", `/work-groups/${id}`, data);
+}
+
+// Archive a fully-settled work group into Accounts history. Idempotent on the
+// server: a second press keeps the original cleared date.
+export function clearWorkGroup(id: number) {
+  return apiMutate<ClearWorkGroupResult>("POST", `/work-groups/${id}/clear`);
 }
 
 export function getOvertimeSummary(workGroupId: number) {
