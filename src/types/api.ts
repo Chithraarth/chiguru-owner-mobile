@@ -781,10 +781,35 @@ export interface CurrentSubscription {
 
 export interface SubscriptionMeResponse {
   subscription: CurrentSubscription | null;
-  entitlement: { managerLimit: number; managersUsed: number; remainingManagers: number };
+  entitlement: {
+    managerLimit: number;
+    managersUsed: number;
+    remainingManagers: number;
+    extraManagerSeats: number;
+    managerSeatAddonPrice: number;
+  };
   sharePlatforms: string | null;
   shareRewardClaimedAt: string | null;
   freeMonthPending: boolean;
+}
+
+export interface ManagerSeatAddonOrderResponse {
+  orderId: string;
+  amount: number;
+  currency: string;
+  keyId: string;
+}
+
+export interface ManagerSeatAddonVerifyRequest {
+  orderId: string;
+  paymentId: string;
+  signature: string;
+}
+
+export interface ManagerSeatAddonVerifyResponse {
+  ok: boolean;
+  extraManagerSeats: number;
+  duplicate: boolean;
 }
 
 export interface ShareRewardResponse {

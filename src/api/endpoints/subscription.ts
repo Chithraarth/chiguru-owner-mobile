@@ -1,5 +1,8 @@
 import { apiFetch, apiMutate } from "../client";
 import type {
+  ManagerSeatAddonOrderResponse,
+  ManagerSeatAddonVerifyRequest,
+  ManagerSeatAddonVerifyResponse,
   Payment,
   ShareRewardResponse,
   SubscriptionActionResponse,
@@ -38,4 +41,14 @@ export function shareToEarn(platform: string) {
  */
 export function cancelSubscription() {
   return apiMutate<SubscriptionActionResponse>("POST", "/subscriptions/cancel");
+}
+
+/** Step 1 of a manager-seat add-on purchase: create the fixed-price Razorpay order the checkout WebView opens. */
+export function createManagerSeatAddonOrder() {
+  return apiMutate<ManagerSeatAddonOrderResponse>("POST", "/subscriptions/manager-seat-addon/order");
+}
+
+/** Step 2: verify the signature Razorpay's checkout returns, then permanently add +1 manager seat. */
+export function verifyManagerSeatAddon(req: ManagerSeatAddonVerifyRequest) {
+  return apiMutate<ManagerSeatAddonVerifyResponse>("POST", "/subscriptions/manager-seat-addon/verify", req);
 }

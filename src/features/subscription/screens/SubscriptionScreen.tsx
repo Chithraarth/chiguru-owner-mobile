@@ -20,6 +20,7 @@ import {
   PartyPopper,
   Share2,
   Sprout,
+  Users,
 } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
@@ -27,14 +28,17 @@ import { LoadingView } from "../../../components/StateViews";
 import { colors, radius, spacing } from "../../../components/theme";
 import {
   cancelSubscription,
+  createManagerSeatAddonOrder,
   getPayments,
   getPlans,
   getSubscription,
   shareToEarn,
   verifyAndroidPurchase,
+  verifyManagerSeatAddon,
 } from "../../../api/endpoints/subscription";
+import { RazorpayCheckoutModal } from "../../wallet/components/RazorpayCheckoutModal";
 import { ApiError } from "../../../api/errors";
-import type { SubscriptionPlan } from "../../../types/api";
+import type { ManagerSeatAddonOrderResponse, SubscriptionPlan } from "../../../types/api";
 
 function inr(n: number) {
   return `₹${Math.round(n).toLocaleString("en-IN")}`;
@@ -70,6 +74,10 @@ export function SubscriptionScreen() {
   const queryClient = useQueryClient();
   const [purchasingPlanId, setPurchasingPlanId] = useState<number | null>(null);
   const [verifying, setVerifying] = useState(false);
+  const [seatAddonOrder, setSeatAddonOrder] = useState<ManagerSeatAddonOrderResponse | null>(null);
+  const [seatAddonCheckoutVisible, setSeatAddonCheckoutVisible] = useState(false);
+  const [buyingSeatAddon, setBuyingSeatAddon] = useState(false);
+  const [verifyingSeatAddon, setVerifyingSeatAddon] = useState(false);
   // A purchase can complete after this screen (or the whole app) has been
   // backgrounded — the listener must always see the *current* plan list to
   // resolve a productId back to our own plan id, not a stale closure's.
@@ -223,6 +231,62 @@ export function SubscriptionScreen() {
     }
   }
 
+  async function onBuySeatAddon() {
+    setBuyingSeatAddon(true);
+    try {
+      const created = await createManagerSeatAddonOrder();
+      if (!created) {
+        Alert.alert("You're offline", "Connect to the internet to buy an extra manager seat.");
+        setBuyingSeatAddon(false);
+        return;
+      }
+      setSeatAddonOrder(created);
+      setSeatAddonCheckoutVisible(true);
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : "Please try again.";
+      Alert.alert("Couldn't start checkout", msg);
+      setBuyingSeatAddon(false);
+    }
+  }
+
+  async function onSeatAddonCheckoutSuccess(result: { paymentId: string; orderId: string; signature: string }) {
+    setSeatAddonCheckoutVisible(false);
+    setVerifyingSeatAddon(true);
+    try {
+      const res = await verifyManagerSeatAddon({
+        orderId: result.orderId,
+        paymentId: result.paymentId,
+        signature: result.signature,
+      });
+      if (!res) {
+        Alert.alert("Payment received", "You're offline — this will finish activating once you're back online.");
+        return;
+      }
+      invalidateAll();
+      Alert.alert("Manager seat added", "You can now add one more manager — this seat never expires.");
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : "Please contact support if this keeps happening.";
+      Alert.alert("Couldn't verify your payment", msg);
+    } finally {
+      setVerifyingSeatAddon(false);
+      setBuyingSeatAddon(false);
+      setSeatAddonOrder(null);
+    }
+  }
+
+  function onSeatAddonCheckoutDismiss() {
+    setSeatAddonCheckoutVisible(false);
+    setBuyingSeatAddon(false);
+    setSeatAddonOrder(null);
+  }
+
+  function onSeatAddonCheckoutError(message: string) {
+    setSeatAddonCheckoutVisible(false);
+    setBuyingSeatAddon(false);
+    setSeatAddonOrder(null);
+    Alert.alert("Payment failed", message);
+  }
+
   async function onShare(opt: ShareOption) {
     if (opt.url) {
       await Linking.openURL(opt.url(SHARE_MESSAGE, SHARE_LINK));
@@ -255,6 +319,26 @@ export function SubscriptionScreen() {
               <Button title="Cancel subscription" variant="secondary" onPress={() => cancelMutation.mutate()} loading={cancelMutation.isPending} />
             </View>
           ) : null}
+          {subQuery.data ? (
+            <View style={styles.seatRow}>
+              <Users size={14} color="#fff" />
+              <Text style={styles.seatText}>
+                {subQuery.data.entitlement.managersUsed}/{subQuery.data.entitlement.managerLimit} managers used
+                {" · "}
+                {subQuery.data.entitlement.remainingManagers} remaining
+                {subQuery.data.entitlement.extraManagerSeats ? ` (includes ${subQuery.data.entitlement.extraManagerSeats} purchased)` : ""}
+              </Text>
+            </View>
+          ) : null}
+          <View style={{ marginTop: spacing.sm }}>
+            <Button
+              title={`Add extra manager seat — ${inr(subQuery.data?.entitlement.managerSeatAddonPrice ?? 199)} one-time`}
+              variant="secondary"
+              onPress={onBuySeatAddon}
+              loading={buyingSeatAddon && !seatAddonCheckoutVisible}
+              disabled={buyingSeatAddon}
+            />
+          </View>
         </View>
       ) : (
         <View style={styles.statusCard}>
@@ -269,6 +353,12 @@ export function SubscriptionScreen() {
       {verifying ? (
         <Card style={{ backgroundColor: "#FFF8E6", borderColor: "#F0DFA6" }}>
           <Text style={{ color: "#8A6D1D", fontSize: 12.5 }}>Payment received. Verifying your subscription...</Text>
+        </Card>
+      ) : null}
+
+      {verifyingSeatAddon ? (
+        <Card style={{ backgroundColor: "#FFF8E6", borderColor: "#F0DFA6" }}>
+          <Text style={{ color: "#8A6D1D", fontSize: 12.5 }}>Payment received. Verifying your manager seat...</Text>
         </Card>
       ) : null}
 
@@ -384,6 +474,15 @@ export function SubscriptionScreen() {
           </View>
         )}
       </View>
+
+      <RazorpayCheckoutModal
+        visible={seatAddonCheckoutVisible}
+        order={seatAddonOrder}
+        description="Extra manager seat (one-time)"
+        onSuccess={onSeatAddonCheckoutSuccess}
+        onDismiss={onSeatAddonCheckoutDismiss}
+        onError={onSeatAddonCheckoutError}
+      />
     </ScrollView>
   );
 }
@@ -395,6 +494,8 @@ const styles = StyleSheet.create({
   statusTitle: { color: "#fff", fontSize: 15, fontWeight: "700" },
   statusDesc: { color: "rgba(255,255,255,0.85)", fontSize: 12.5, marginTop: spacing.xs, lineHeight: 17 },
   statusMeta: { color: "rgba(255,255,255,0.6)", fontSize: 11, marginTop: spacing.sm },
+  seatRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs, marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.2)" },
+  seatText: { color: "#fff", fontSize: 12.5, flex: 1 },
 
   shareCard: { borderColor: "#BEE6CD", backgroundColor: "#F0FBF4" },
   shareTitle: { fontSize: 14.5, fontWeight: "700", color: colors.text },
