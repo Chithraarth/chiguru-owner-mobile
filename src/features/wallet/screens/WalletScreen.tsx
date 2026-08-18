@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Wallet as WalletIcon, PartyPopper, Share2, Sparkles, Zap } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
+import { TextField } from "../../../components/TextField";
 import { LoadingView } from "../../../components/StateViews";
 import { colors, radius, spacing } from "../../../components/theme";
 import { createRechargeOrder, getWallet, shareWalletReward, verifyRecharge } from "../../../api/endpoints/wallet";
@@ -45,6 +46,7 @@ const TXN_LABELS: Record<string, string> = {
 export function WalletScreen() {
   const queryClient = useQueryClient();
   const [rechargingAmount, setRechargingAmount] = useState<number | null>(null);
+  const [rechargeInput, setRechargeInput] = useState("");
   const [order, setOrder] = useState<WalletRechargeOrderResponse | null>(null);
   const [checkoutVisible, setCheckoutVisible] = useState(false);
   const [verifying, setVerifying] = useState(false);
@@ -98,6 +100,7 @@ export function WalletScreen() {
         return;
       }
       invalidateAll();
+      setRechargeInput("");
       Alert.alert("Wallet recharged", `${inr(rechargingAmount)} has been added to your wallet.`);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : "Please contact support if this keeps happening.";
@@ -139,7 +142,9 @@ export function WalletScreen() {
 
   const data = walletQuery.data;
   const balance = data?.balance ?? 0;
-  const rechargeAmounts = data?.rechargeAmounts ?? [5000, 10000];
+  const minRechargeAmount = data?.minRechargeAmount ?? 199;
+  const rechargeValue = Math.floor(Number(rechargeInput));
+  const rechargeValid = Number.isFinite(rechargeValue) && rechargeValue >= minRechargeAmount;
   const aiPrices = Object.entries(data?.aiPrices ?? {});
   const shareTarget = data?.share.target ?? 3;
   const shared = new Set(data?.share.platforms ?? []);
@@ -166,18 +171,24 @@ export function WalletScreen() {
 
       <View>
         <Text style={styles.sectionTitle}>Recharge wallet</Text>
-        <View style={{ flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm }}>
-          {rechargeAmounts.map((amount) => (
-            <View key={amount} style={{ flex: 1 }}>
-              <Button
-                title={inr(amount)}
-                onPress={() => onRecharge(amount)}
-                loading={rechargingAmount === amount && (!checkoutVisible)}
-                disabled={rechargingAmount !== null && rechargingAmount !== amount}
-              />
-            </View>
-          ))}
+        <View style={{ flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm, alignItems: "flex-start" }}>
+          <View style={{ flex: 1 }}>
+            <TextField
+              placeholder={`Min ${inr(minRechargeAmount)}`}
+              keyboardType="number-pad"
+              value={rechargeInput}
+              onChangeText={setRechargeInput}
+              editable={rechargingAmount === null}
+            />
+          </View>
+          <Button
+            title="Add"
+            onPress={() => onRecharge(rechargeValue)}
+            loading={rechargingAmount !== null && !checkoutVisible}
+            disabled={!rechargeValid || rechargingAmount !== null}
+          />
         </View>
+        <Text style={styles.minRechargeNote}>Minimum {inr(minRechargeAmount)}</Text>
       </View>
 
       {/* Share on 3 apps → ₹300 wallet credit */}
@@ -286,6 +297,7 @@ const styles = StyleSheet.create({
   balanceDesc: { color: "rgba(255,255,255,0.85)", fontSize: 12.5, marginTop: spacing.xs, lineHeight: 17 },
 
   sectionTitle: { fontSize: 14.5, fontWeight: "700", color: colors.text },
+  minRechargeNote: { fontSize: 11, color: colors.textMuted, marginTop: spacing.xs },
 
   shareCard: { borderColor: "#BEE6CD", backgroundColor: "#F0FBF4" },
   shareTitle: { fontSize: 14.5, fontWeight: "700", color: colors.text, flexShrink: 1 },

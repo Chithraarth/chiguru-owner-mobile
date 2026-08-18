@@ -161,9 +161,9 @@ function ListingCard({ listing, dist, tab, onDelete }: { listing: HireListing; d
   );
 }
 
-export function HireScreen({ navigation }: { navigation: any }) {
+export function HireScreen({ navigation, route }: { navigation: any; route?: { params?: { initialTab?: Tab } } }) {
   const { t } = useT();
-  const [tab, setTab] = useState<Tab | null>(null);
+  const [tab, setTab] = useState<Tab | null>(route?.params?.initialTab ?? null);
   const [filter, setFilter] = useState("all");
   const [mineOnly, setMineOnly] = useState(false);
   const [districtQ, setDistrictQ] = useState("");

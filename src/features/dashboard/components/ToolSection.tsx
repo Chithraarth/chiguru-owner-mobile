@@ -11,6 +11,7 @@ export interface ToolItem {
   title: string;
   desc: string;
   screen: string;
+  params?: Record<string, unknown>;
 }
 
 function ToolTile({
@@ -65,7 +66,7 @@ export function ToolSection({
           chipColor={item.chipColor}
           title={item.title}
           desc={item.desc}
-          onPress={() => navigation.navigate(item.screen)}
+          onPress={() => navigation.navigate(item.screen, item.params)}
         />
       ))}
       <Pressable style={styles.tile} onPress={onToggleMore}>
@@ -90,7 +91,7 @@ export function MoreGrid({ items, navigation }: { items: ToolItem[]; navigation:
           chipColor={item.chipColor}
           title={item.title}
           compact
-          onPress={() => navigation.navigate(item.screen)}
+          onPress={() => navigation.navigate(item.screen, item.params)}
         />
       ))}
     </View>

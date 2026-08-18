@@ -72,6 +72,8 @@ const en: Dict = {
 
   // More section
   "more.farmManager": "Hire",
+  "more.rentMachines": "Rent Machines",
+  "more.findWorkers": "Find Workers",
   "more.shop": "Shop",
   "more.nursery": "Nursery",
   "more.market": "Buy Direct from Farmer",
@@ -342,6 +344,8 @@ const hi: Dict = {
   "home.listen": "सुनें",
 
   "more.farmManager": "किराया व मज़दूर",
+  "more.rentMachines": "मशीन किराये पर",
+  "more.findWorkers": "मज़दूर खोजें",
   "more.shop": "दुकान",
   "more.nursery": "नर्सरी",
   "more.market": "सीधे किसान से खरीदें",
@@ -608,6 +612,8 @@ const kn: Dict = {
   "home.listen": "ಕೇಳಿ",
 
   "more.farmManager": "ಬಾಡಿಗೆ ಮತ್ತು ಕೂಲಿ",
+  "more.rentMachines": "ಯಂತ್ರ ಬಾಡಿಗೆ",
+  "more.findWorkers": "ಕೂಲಿಯಾಳು ಹುಡುಕಿ",
   "more.shop": "ಅಂಗಡಿ",
   "more.nursery": "ನರ್ಸರಿ",
   "more.market": "ರೈತರಿಂದ ನೇರವಾಗಿ ಖರೀದಿಸಿ",
@@ -874,6 +880,8 @@ const ta: Dict = {
   "home.listen": "கேள்",
 
   "more.farmManager": "வாடகை மற்றும் கூலி",
+  "more.rentMachines": "இயந்திரம் வாடகைக்கு",
+  "more.findWorkers": "கூலியாட்களைத் தேடு",
   "more.shop": "கடை",
   "more.nursery": "நாற்றங்கால்",
   "more.market": "விவசாயியிடமிருந்து நேரடியாக வாங்கு",
@@ -1092,6 +1100,8 @@ const te: Dict = {
   "home.listen": "వినండి",
 
   "more.farmManager": "అద్దె మరియు కూలీ",
+  "more.rentMachines": "యంత్రాలు అద్దెకు",
+  "more.findWorkers": "కూలీలను వెతకండి",
   "more.shop": "దుకాణం",
   "more.nursery": "నర్సరీ",
   "more.market": "రైతు నుండి నేరుగా కొనండి",
@@ -1310,6 +1320,8 @@ const ml: Dict = {
   "home.listen": "കേൾക്കുക",
 
   "more.farmManager": "വാടകയും കൂലിയും",
+  "more.rentMachines": "യന്ത്രം വാടകയ്ക്ക്",
+  "more.findWorkers": "കൂലിക്കാരെ കണ്ടെത്തുക",
   "more.shop": "കട",
   "more.nursery": "നഴ്സറി",
   "more.market": "കർഷകനിൽ നിന്ന് നേരിട്ട് വാങ്ങുക",
@@ -1528,6 +1540,8 @@ const mr: Dict = {
   "home.listen": "ऐका",
 
   "more.farmManager": "भाडे व मजुरी",
+  "more.rentMachines": "यंत्र भाड्याने",
+  "more.findWorkers": "मजूर शोधा",
   "more.shop": "दुकान",
   "more.nursery": "रोपवाटिका",
   "more.market": "शेतकऱ्याकडून थेट खरेदी करा",

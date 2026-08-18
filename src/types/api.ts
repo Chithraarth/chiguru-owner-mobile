@@ -107,7 +107,7 @@ export interface DashboardSummary {
 
 export interface RecentAd {
   id: string;
-  board: "hire" | "equipment" | "produce";
+  board: "hire_job" | "hire_rental" | "equipment" | "produce";
   title: string;
   place: string | null;
   createdAt: string;
@@ -832,7 +832,7 @@ export interface WalletTransaction {
 
 export interface WalletMeResponse {
   balance: number;
-  rechargeAmounts: number[];
+  minRechargeAmount: number;
   aiPrices: Record<string, WalletAiPrice>;
   share: {
     target: number;

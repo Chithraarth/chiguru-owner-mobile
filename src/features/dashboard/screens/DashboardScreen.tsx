@@ -12,11 +12,16 @@ import {
   BotMessageSquare,
   LineChart,
   Handshake,
+  Tractor,
+  Users,
   ShoppingCart,
+  Store,
   RefreshCw,
   CalendarClock,
   ChevronRight,
+  MapPin,
 } from "lucide-react-native";
+import type { RecentAd } from "../../../types/api";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { LoadingView } from "../../../components/StateViews";
@@ -44,14 +49,19 @@ function primaryTools(t: (k: string) => string): ToolItem[] {
 // tiles, condensed into one 3-column grid.
 function moreTools(t: (k: string) => string): ToolItem[] {
   return [
-    { icon: Handshake, chipBg: "#E4F2FB", chipColor: "#4FA8D8", title: t("more.farmManager"), desc: "", screen: "Hire" },
+    { icon: Tractor, chipBg: "#E4F2FB", chipColor: "#4FA8D8", title: t("more.rentMachines"), desc: "", screen: "Hire", params: { initialTab: "rental" } },
+    { icon: Handshake, chipBg: "#E4F2FB", chipColor: "#4FA8D8", title: t("more.findWorkers"), desc: "", screen: "Hire", params: { initialTab: "job" } },
     { icon: ShoppingCart, chipBg: "#FBEEDD", chipColor: "#D69A4F", title: t("more.shop"), desc: "", screen: "Shop" },
+    { icon: Store, chipBg: "#E0F5E9", chipColor: "#4FAE72", title: t("more.market"), desc: "", screen: "Marketplace" },
     { icon: Stethoscope, chipBg: "#E4E7FB", chipColor: "#5B6ED6", title: t("more.agriDoctor"), desc: "", screen: "AgriDoctor" },
     { icon: ScanLine, chipBg: "#FBE4E4", chipColor: "#D66B6B", title: t("more.diseaseDetect"), desc: "", screen: "Disease" },
     { icon: BotMessageSquare, chipBg: "#EDE4FB", chipColor: "#8B5BD6", title: t("more.agriAdvisor"), desc: "", screen: "AgriAi" },
     // No source translation exists for this yet - Year Plan isn't in
     // chiguru-owner-web's own dictionary (it's a newer feature than that dict).
     { icon: LineChart, chipBg: "#E4EEFB", chipColor: "#5B8CD6", title: "Year Plan", desc: "", screen: "YearPlan" },
+    // Same as Year Plan above - "Reports" has no source translation in
+    // chiguru-owner-web's dictionary either, so this is a literal string too.
+    { icon: LineChart, chipBg: "#E4EEFB", chipColor: "#5B8CD6", title: "Reports", desc: "", screen: "Reports" },
     { icon: Leaf, chipBg: "#E3E0EC", chipColor: colors.primary, title: t("more.myFarms"), desc: "", screen: "Crops" },
     { icon: RefreshCw, chipBg: "#EAEAEA", chipColor: "#6B6B6B", title: t("more.syncLog"), desc: "", screen: "SyncLog" },
   ];
@@ -61,6 +71,25 @@ function currentMonth() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.round(diff / 60000);
+  if (mins < 1) return "now";
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  const days = Math.round(hrs / 24);
+  if (days < 7) return `${days}d`;
+  return `${Math.round(days / 7)}w`;
+}
+
+const AD_BOARD_STYLE: Record<RecentAd["board"], { icon: typeof Tractor; screen: string; params?: Record<string, unknown> }> = {
+  hire_job: { icon: Users, screen: "Hire", params: { initialTab: "job" } },
+  hire_rental: { icon: Tractor, screen: "Hire", params: { initialTab: "rental" } },
+  equipment: { icon: Tractor, screen: "Equipment" },
+  produce: { icon: ShoppingCart, screen: "Marketplace" },
+};
 
 export function DashboardScreen({ navigation }: { navigation: any }) {
   const { t } = useT();
@@ -187,12 +216,33 @@ export function DashboardScreen({ navigation }: { navigation: any }) {
           <Button title="Post an ad" variant="secondary" onPress={() => navigation.navigate("Shop")} />
         </Card>
       ) : (
-        adsQuery.data?.map((ad) => (
-          <Card key={ad.id} style={{ marginBottom: spacing.sm }}>
-            <Text style={styles.activityTitle}>{ad.title}</Text>
-            <Text style={styles.activityMeta}>{ad.place ?? ""}</Text>
-          </Card>
-        ))
+        adsQuery.data?.map((ad) => {
+          const style = AD_BOARD_STYLE[ad.board] ?? AD_BOARD_STYLE.produce;
+          const Icon = style.icon;
+          return (
+            <Pressable
+              key={ad.id}
+              style={styles.adRow}
+              onPress={() => navigation.navigate(style.screen, style.params)}
+            >
+              <View style={styles.adIconWrap}>
+                <Icon size={18} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.activityTitle} numberOfLines={1}>{ad.title}</Text>
+                {ad.place ? (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                    <MapPin size={11} color={colors.textMuted} />
+                    <Text style={styles.activityMeta} numberOfLines={1}>{ad.place} · {timeAgo(ad.createdAt)}</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.activityMeta}>{timeAgo(ad.createdAt)}</Text>
+                )}
+              </View>
+              <ChevronRight size={16} color={colors.textMuted} />
+            </Pressable>
+          );
+        })
       )}
     </ScrollView>
   );
@@ -216,6 +266,26 @@ const styles = StyleSheet.create({
   },
   activityTitle: { fontSize: 15, fontWeight: "600", color: colors.text },
   activityMeta: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+
+  adRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.sm + 4,
+    marginBottom: spacing.sm,
+  },
+  adIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.muted,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
   setupCard: {
     borderStyle: "dashed",
