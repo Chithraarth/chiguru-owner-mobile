@@ -1,50 +1,43 @@
-import { useEffect } from "react";
-import * as WebBrowser from "expo-web-browser";
-import * as Google from "expo-auth-session/providers/google";
+import { useCallback } from "react";
+import { GoogleSignin, isSuccessResponse, isErrorWithCode, statusCodes } from "@react-native-google-signin/google-signin";
 import { signInWithGoogleIdToken } from "../../../lib/firebase";
 
-WebBrowser.maybeCompleteAuthSession();
+const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 
-const realWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-const realIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
-const realAndroidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+export const isGoogleSignInConfigured = !!webClientId;
 
-export const isGoogleSignInConfigured = !!(realWebClientId || realIosClientId || realAndroidClientId);
-
-// expo-auth-session's Google provider throws synchronously at hook-mount
-// time (not just when prompting) if the client ID for the *current*
-// platform is strictly `undefined` - an empty/unset env var isn't enough
-// to make it fail gracefully. Feed it a harmless placeholder instead so the
-// hook never crashes the screen; isGoogleSignInConfigured (checked against
-// the real env vars) is what actually gates whether promptAsync is called.
-const PLACEHOLDER = "not-configured.apps.googleusercontent.com";
+if (isGoogleSignInConfigured) {
+  // Native Google Sign-In SDK (not expo-auth-session's browser-redirect
+  // flow) - the Android OAuth client Firebase auto-creates only supports
+  // this native flow, not a custom-URI browser redirect. webClientId (not
+  // the Android client id) is what's passed here; Google matches the
+  // request to the Android client via this app's package name + SHA-1
+  // registered in Cloud Console.
+  GoogleSignin.configure({ webClientId, offlineAccess: false });
+}
 
 /**
- * Google Sign-In via a native OAuth Client ID (Google Cloud Console), distinct
- * from the Firebase web config already in use elsewhere. Until one of the
- * EXPO_PUBLIC_GOOGLE_*_CLIENT_ID env vars is set, canSignIn stays false and
- * the caller should show a "not configured" message instead of prompting.
+ * Google Sign-In via the native Android SDK. Until
+ * EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID is set, canSignIn stays false and the
+ * caller should show a "not configured" message instead of prompting.
  */
 export function useGoogleSignIn(onError: (message: string) => void) {
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    webClientId: realWebClientId ?? PLACEHOLDER,
-    iosClientId: realIosClientId ?? PLACEHOLDER,
-    androidClientId: realAndroidClientId ?? PLACEHOLDER,
-  });
-
-  useEffect(() => {
-    if (response?.type === "success") {
-      const idToken = response.params.id_token;
-      if (idToken) {
-        signInWithGoogleIdToken(idToken).catch((err) =>
-          onError(err instanceof Error ? err.message : "Google sign-in failed")
-        );
+  const promptAsync = useCallback(async () => {
+    try {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const response = await GoogleSignin.signIn();
+      if (!isSuccessResponse(response)) return; // user cancelled
+      const idToken = response.data.idToken;
+      if (!idToken) {
+        onError("Google didn't return a sign-in token. Please try again.");
+        return;
       }
-    } else if (response?.type === "error") {
-      onError(response.error?.message ?? "Google sign-in was cancelled");
+      await signInWithGoogleIdToken(idToken);
+    } catch (err) {
+      if (isErrorWithCode(err) && err.code === statusCodes.SIGN_IN_CANCELLED) return;
+      onError(err instanceof Error ? err.message : "Google sign-in failed");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [response]);
+  }, [onError]);
 
-  return { canSignIn: isGoogleSignInConfigured && !!request, promptAsync };
+  return { canSignIn: isGoogleSignInConfigured, promptAsync };
 }

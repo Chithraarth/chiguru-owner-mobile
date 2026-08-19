@@ -69,7 +69,9 @@
         {
           "microphonePermission": "Chiguru uses your microphone to record voice notes for the Agri Doctor chat."
         }
-      ]
+      ],
+      "expo-asset",
+      "@react-native-google-signin/google-signin"
     ]
   }
 }

@@ -24,6 +24,11 @@ function apiUrl(path: string) {
 export async function buildHeaders(extra?: HeadersInit): Promise<Headers> {
   const headers = new Headers(extra);
   headers.set("Content-Type", "application/json");
+  // Tells the backend this is the Owner app — needed only for the rare
+  // phone number that is both an Owner and, separately, an invited Manager
+  // elsewhere; the backend uses it to pick the right farm instead of
+  // guessing (see effectiveOwnerId in the backend's firebaseAuth.ts).
+  headers.set("X-Actor-Role", "owner");
   const estateId = getActiveEstateId();
   if (estateId != null) headers.set("X-Estate-Id", String(estateId));
   const token = await getIdToken();
