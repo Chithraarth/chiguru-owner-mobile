@@ -138,8 +138,8 @@ function registerSharedScreens(Nav: ReturnType<typeof createNativeStackNavigator
       <Nav.Screen name="NurseryAdmin" component={NurseryAdminScreen} options={{ title: "Nursery Vendor Admin" }} />
       <Nav.Screen name="Mandi" component={MandiScreen} options={{ title: "Mandi Prices" }} />
       <Nav.Screen name="MyAds" component={MyAdsScreen} options={{ title: "My Ads" }} />
-      <Nav.Screen name="AgriAi" component={AgriAiScreen} options={{ title: "Agri Advisor" }} />
-      <Nav.Screen name="Disease" component={DiseaseScreen} options={{ title: "Disease Diagnosis" }} />
+      <Nav.Screen name="AgriAi" component={AgriAiScreen} options={{ title: "AI Agri Advisor" }} />
+      <Nav.Screen name="Disease" component={DiseaseScreen} options={{ title: "AI Disease Check" }} />
       <Nav.Screen name="AgriDoctor" component={AgriDoctorScreen} options={{ title: "Agri Doctor" }} />
       <Nav.Screen name="AgriDoctorProfile" component={AgriDoctorProfileScreen} options={{ title: "Doctor Profile" }} />
       <Nav.Screen name="AgriDoctorCall" component={AgriDoctorCallScreen} options={{ title: "On call", headerShown: false }} />

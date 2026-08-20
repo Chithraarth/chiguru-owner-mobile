@@ -112,7 +112,7 @@ export function AgriAiScreen({ navigation }: { navigation: any }) {
     ]);
   }
 
-  if (conversationsQuery.isLoading) return <LoadingView label="Loading Agri Advisor..." />;
+  if (conversationsQuery.isLoading) return <LoadingView label="Loading AI Agri Advisor..." />;
 
   if (conversationId == null) {
     return (

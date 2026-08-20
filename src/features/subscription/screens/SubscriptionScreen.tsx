@@ -421,7 +421,7 @@ export function SubscriptionScreen() {
                 </View>
               </View>
               <Text style={styles.planPrice}>{inr(plan.price)}</Text>
-              <Text style={styles.planPerMonth}>per {plan.billingPeriod === "monthly" ? "month" : plan.billingPeriod}</Text>
+              <Text style={styles.planPerMonth}>per {plan.billingPeriod === "yearly" ? "year" : plan.billingPeriod === "monthly" ? "month" : plan.billingPeriod}</Text>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: spacing.sm }}>
                 <Check size={13} color={colors.primary} />
                 <Text style={styles.planFeature}>{plan.managerLimit} manager{plan.managerLimit > 1 ? "s" : ""} included</Text>
