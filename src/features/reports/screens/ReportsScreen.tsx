@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, TrendingDown, TrendingUp } from "lucide-react-native";
+import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { LoadingView, EmptyState } from "../../../components/StateViews";
 import { NoEstateNotice } from "../../../components/NoEstateNotice";
@@ -150,30 +150,6 @@ export function ReportsScreen() {
                   />
                 </Card>
               ) : null}
-
-              {seasonQuery.data.crops.map((c) => (
-                <Card key={c.cropId}>
-                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                    <View>
-                      <Text style={styles.cropName}>{c.cropName}</Text>
-                      <Text style={styles.cropMeta}>{c.acres} acres · {c.totalYieldKg.toLocaleString("en-IN")} kg yield</Text>
-                    </View>
-                    <View style={{ alignItems: "flex-end" }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
-                        {c.netProfit >= 0 ? <TrendingUp size={13} color={colors.primary} /> : <TrendingDown size={13} color={colors.danger} />}
-                        <Text style={[styles.cropProfit, { color: c.netProfit >= 0 ? colors.primary : colors.danger }]}>{inr(c.netProfit)}</Text>
-                      </View>
-                      <Text style={styles.cropMeta}>{inr(c.profitPerAcre)}/acre</Text>
-                    </View>
-                  </View>
-                  <View style={styles.cropStatsGrid}>
-                    <Text style={styles.cropStatItem}>Income: <Text style={styles.cropStatValue}>{inr(c.totalIncome)}</Text></Text>
-                    <Text style={styles.cropStatItem}>Labour: <Text style={styles.cropStatValue}>{inr(c.labourCost)}</Text></Text>
-                    <Text style={styles.cropStatItem}>Fertilizer: <Text style={styles.cropStatValue}>{inr(c.fertilizerCost)}</Text></Text>
-                    <Text style={styles.cropStatItem}>Spray: <Text style={styles.cropStatValue}>{inr(c.sprayCost)}</Text></Text>
-                  </View>
-                </Card>
-              ))}
             </>
           )}
         </>
@@ -286,13 +262,6 @@ const styles = StyleSheet.create({
   blockTitle: { fontSize: 13.5, fontWeight: "700", color: colors.text, marginBottom: spacing.sm },
   bar: { width: 10, borderRadius: 3 },
   barLabel: { fontSize: 9.5, color: colors.textMuted, textAlign: "center" },
-
-  cropName: { fontSize: 14, fontWeight: "700", color: colors.text },
-  cropMeta: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
-  cropProfit: { fontSize: 13.5, fontWeight: "700" },
-  cropStatsGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: spacing.sm },
-  cropStatItem: { width: "47%", fontSize: 11.5, color: colors.textMuted },
-  cropStatValue: { color: colors.text, fontWeight: "600" },
 
   pieRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   pieDot: { width: 10, height: 10, borderRadius: 5 },
