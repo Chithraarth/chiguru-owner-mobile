@@ -1,6 +1,8 @@
-import React, { useLayoutEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   Alert,
+  Animated,
+  Easing,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -12,6 +14,7 @@ import {
 } from "react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Bot, MessageSquare, Send, Sprout, Trash2, User } from "lucide-react-native";
+import Markdown from "react-native-markdown-display";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { LoadingView } from "../../../components/StateViews";
@@ -32,6 +35,11 @@ const QUICK_QUESTIONS = [
   "What government schemes are available for farmers?",
 ];
 
+/** Renders an AI reply's markdown (bold, headings, bullet lists) instead of showing the raw `**`/`###`/`*` syntax. */
+function FormattedText({ text }: { text: string }) {
+  return <Markdown style={markdownStyles}>{text}</Markdown>;
+}
+
 function MessageBubble({ msg }: { msg: ChatMessage }) {
   const isUser = msg.role === "user";
   return (
@@ -40,7 +48,44 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
         {isUser ? <User size={15} color="#fff" /> : <Sprout size={15} color={colors.primary} />}
       </View>
       <View style={[styles.bubble, isUser ? styles.userBubble : styles.aiBubble]}>
-        <Text style={isUser ? styles.userText : styles.aiText}>{msg.content}</Text>
+        {isUser ? <Text style={styles.userText}>{msg.content}</Text> : <FormattedText text={msg.content} />}
+      </View>
+    </View>
+  );
+}
+
+/** One bouncing dot for the typing indicator — offset by `delay` ms so the three dots animate in sequence. */
+function TypingDot({ delay }: { delay: number }) {
+  const bounce = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.timing(bounce, { toValue: 1, duration: 300, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+        Animated.timing(bounce, { toValue: 0, duration: 300, easing: Easing.in(Easing.ease), useNativeDriver: true }),
+        Animated.delay(600 - delay),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [bounce, delay]);
+
+  const translateY = bounce.interpolate({ inputRange: [0, 1], outputRange: [0, -4] });
+  return <Animated.View style={[styles.typingDot, { transform: [{ translateY }] }]} />;
+}
+
+/** "AI is typing…" bubble shown in place of a message while waiting for a reply. */
+function TypingBubble() {
+  return (
+    <View style={styles.msgRow}>
+      <View style={[styles.avatar, { backgroundColor: colors.secondary }]}>
+        <Sprout size={15} color={colors.primary} />
+      </View>
+      <View style={[styles.bubble, styles.aiBubble, styles.typingBubble]}>
+        <TypingDot delay={0} />
+        <TypingDot delay={150} />
+        <TypingDot delay={300} />
       </View>
     </View>
   );
@@ -184,6 +229,7 @@ export function AgriAiScreen({ navigation }: { navigation: any }) {
           keyExtractor={(m) => String(m.id)}
           contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}
           renderItem={({ item }) => <MessageBubble msg={item} />}
+          ListFooterComponent={sending ? <TypingBubble /> : null}
         />
       )}
       <View style={styles.inputRow}>
@@ -240,6 +286,28 @@ const styles = StyleSheet.create({
   userText: { color: "#fff", fontSize: 13.5, lineHeight: 19 },
   aiText: { color: colors.text, fontSize: 13.5, lineHeight: 19 },
 
+  typingBubble: { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: spacing.sm + 6 },
+  typingDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: colors.primary, opacity: 0.5 },
+
   inputRow: { flexDirection: "row", alignItems: "center", padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.card },
   sendBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+});
+
+/** Markdown node styles for AI replies, matched to the app's aiText look (colors.text, 13.5/19). */
+const markdownStyles = StyleSheet.create({
+  body: { color: colors.text, fontSize: 13.5, lineHeight: 19 },
+  heading1: { color: colors.text, fontSize: 17, fontWeight: "700", marginTop: spacing.sm, marginBottom: spacing.xs },
+  heading2: { color: colors.text, fontSize: 15.5, fontWeight: "700", marginTop: spacing.sm, marginBottom: spacing.xs },
+  heading3: { color: colors.text, fontSize: 14, fontWeight: "700", marginTop: spacing.sm, marginBottom: spacing.xs },
+  strong: { fontWeight: "700" },
+  em: { fontStyle: "italic" },
+  paragraph: { marginTop: 0, marginBottom: spacing.xs },
+  bullet_list: { marginBottom: spacing.xs },
+  ordered_list: { marginBottom: spacing.xs },
+  list_item: { flexDirection: "row", marginBottom: 2 },
+  bullet_list_icon: { color: colors.primary },
+  ordered_list_icon: { color: colors.primary },
+  code_inline: { backgroundColor: colors.secondary, color: colors.text, borderRadius: 4, paddingHorizontal: 4 },
+  fence: { backgroundColor: colors.secondary, borderRadius: radius.sm, padding: spacing.sm },
+  hr: { backgroundColor: colors.border, height: 1, marginVertical: spacing.sm },
 });
