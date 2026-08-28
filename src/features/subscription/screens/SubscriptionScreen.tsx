@@ -1,17 +1,18 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import Constants from "expo-constants";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   initConnection,
   endConnection,
-  requestSubscription,
-  getSubscriptions,
+  requestPurchase,
+  fetchProducts,
   purchaseUpdatedListener,
   finishTransaction,
   deepLinkToSubscriptions,
+  isUserCancelledError,
   type Purchase,
-  type SubscriptionPurchase,
-  type SubscriptionAndroid,
+  type ProductSubscriptionAndroid,
 } from "react-native-iap";
 import {
   Check,
@@ -48,6 +49,12 @@ function fmtDate(iso?: string | null) {
   if (!iso) return "";
   return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
+
+// Google Play requires the app's own package name for deep-linking into its
+// subscription management UI (react-native-iap v16's deepLinkToSubscriptions).
+// Falls back to the value baked into app.json's `android.package` when the
+// runtime config isn't available (e.g. certain release build configurations).
+const ANDROID_PACKAGE_NAME = "com.thechiguru.owner";
 
 const SHARE_TARGET = 3;
 const SHARE_MESSAGE = "I'm running my farm on Chiguru — attendance, expenses, harvest and Agri Doctor, all in one app. Try it:";
@@ -97,11 +104,11 @@ export function SubscriptionScreen() {
   const offersQuery = useQuery({
     queryKey: ["google-play-offers", productIds],
     queryFn: async () => {
-      const subs = await getSubscriptions({ skus: productIds });
+      const subs = await fetchProducts({ skus: productIds, type: "subs" });
       const tokenByProductId: Record<string, string> = {};
-      for (const s of subs as SubscriptionAndroid[]) {
-        const offerToken = s.subscriptionOfferDetails?.[0]?.offerToken;
-        if (offerToken) tokenByProductId[s.productId] = offerToken;
+      for (const s of (subs ?? []) as ProductSubscriptionAndroid[]) {
+        const offerToken = s.subscriptionOffers?.[0]?.offerTokenAndroid;
+        if (offerToken) tokenByProductId[s.id] = offerToken;
       }
       return tokenByProductId;
     },
@@ -121,7 +128,7 @@ export function SubscriptionScreen() {
     initConnection().catch((err: unknown) => console.warn("IAP initConnection failed", err));
 
     const sub = purchaseUpdatedListener(async (purchase: Purchase) => {
-      const purchaseToken = (purchase as SubscriptionPurchase).purchaseToken;
+      const purchaseToken = purchase.purchaseToken;
       const productId = purchase.productId;
       if (!purchaseToken || !productId) return;
 
@@ -174,7 +181,10 @@ export function SubscriptionScreen() {
         // managed from Play Store's own UI, not from inside the app.
         const currentPlanId = subQuery.data?.subscription?.plan?.id;
         const productId = plansRef.current.find((p) => p.id === currentPlanId)?.googlePlayProductId;
-        deepLinkToSubscriptions({ sku: productId ?? undefined }).catch(() =>
+        deepLinkToSubscriptions({
+          skuAndroid: productId ?? undefined,
+          packageNameAndroid: Constants.expoConfig?.android?.package ?? ANDROID_PACKAGE_NAME,
+        }).catch(() =>
           Alert.alert("Couldn't open Play Store", "Open the Play Store app and go to Subscriptions to manage this."),
         );
         return;
@@ -217,15 +227,20 @@ export function SubscriptionScreen() {
     }
     setPurchasingPlanId(plan.id);
     try {
-      await requestSubscription({
-        subscriptionOffers: [{ sku: plan.googlePlayProductId, offerToken }],
+      await requestPurchase({
+        request: {
+          google: {
+            skus: [plan.googlePlayProductId],
+            subscriptionOffers: [{ sku: plan.googlePlayProductId, offerToken }],
+          },
+        },
+        type: "subs",
       });
       // Result arrives via purchaseUpdatedListener above, not here.
     } catch (err) {
       setPurchasingPlanId(null);
       // User closing Play Billing's own sheet also lands here — not a real error.
-      const message = err instanceof Error ? err.message : "";
-      if (!/cancel/i.test(message)) {
+      if (!isUserCancelledError(err)) {
         Alert.alert("Couldn't start purchase", "Please try again.");
       }
     }
