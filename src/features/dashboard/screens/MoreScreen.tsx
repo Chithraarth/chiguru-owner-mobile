@@ -30,7 +30,7 @@ function sections(t: (k: string) => string) {
       title: "Market",
       items: [
         { label: `🛍️ ${t("more.shop")}`, screen: "Shop" },
-        { label: "📈 Mandi prices", screen: "Mandi" },
+        { label: "📈 Market prices", screen: "Mandi" },
         { label: "📢 My ads", screen: "MyAds" },
       ],
     },

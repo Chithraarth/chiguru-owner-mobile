@@ -16,7 +16,7 @@ export function AppHeader({ navigation }: { navigation: any }) {
       <View style={styles.header}>
         <Pressable onPress={() => navigation.navigate("Mandi")} hitSlop={10} style={[styles.side, { alignItems: "flex-start" }]}>
           <Store size={18} color={colors.text} />
-          <Text style={styles.marketLabel}>Mandi</Text>
+          <Text style={styles.marketLabel}>Market</Text>
         </Pressable>
 
         <Text style={styles.logo}>THE CHIGURU</Text>
