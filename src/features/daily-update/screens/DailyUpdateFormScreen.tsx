@@ -4,13 +4,17 @@ import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
+import { ChipSelect } from "../../../components/ChipSelect";
 import { colors, spacing } from "../../../components/theme";
 import { useEstateUpdates } from "../hooks/useEstateUpdates";
+import { useWorkGroups } from "../../work-groups/hooks/useWorkGroups";
 import { compressToDataUrl } from "../../../lib/imageCompression";
 import { countWorkersInUpdatePhoto } from "../../../api/endpoints/estateUpdates";
 
 export function DailyUpdateFormScreen({ navigation }: { navigation: any }) {
   const { createUpdate } = useEstateUpdates();
+  const { data: workGroups } = useWorkGroups();
+  const [workGroupId, setWorkGroupId] = useState<number | null>(null);
   const [description, setDescription] = useState("");
   const [blockName, setBlockName] = useState("");
   const [attendanceCount, setAttendanceCount] = useState("");
@@ -60,12 +64,17 @@ export function DailyUpdateFormScreen({ navigation }: { navigation: any }) {
 
   function submit() {
     setError(null);
+    if (workGroups && workGroups.length > 0 && !workGroupId) {
+      setError("Select which work group this update is for");
+      return;
+    }
     if (!description.trim()) {
       setError("Please describe the work done");
       return;
     }
     createUpdate.mutate(
       {
+        workGroupId,
         description: description.trim(),
         blockName: blockName.trim() || null,
         photoUrl: photoDataUrl,
@@ -89,6 +98,15 @@ export function DailyUpdateFormScreen({ navigation }: { navigation: any }) {
       {aiHint ? <Text style={styles.aiHint}>{aiHint}</Text> : null}
 
       <View style={{ height: spacing.md }} />
+
+      {workGroups && workGroups.length > 0 ? (
+        <ChipSelect
+          label="Work group *"
+          options={workGroups.map((g) => g.name)}
+          value={workGroups.find((g) => g.id === workGroupId)?.name ?? ""}
+          onChange={(name) => setWorkGroupId(workGroups.find((g) => g.name === name)?.id ?? null)}
+        />
+      ) : null}
 
       <TextField
         label="What work was done? *"
