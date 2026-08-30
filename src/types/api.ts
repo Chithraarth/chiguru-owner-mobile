@@ -229,8 +229,51 @@ export interface AdvancePayment {
   workGroupId: number;
   paymentDate: string;
   periodLabel: string | null;
+  daysCount?: number;
+  workerCount?: number;
+  advancePerWorkerPerDay?: string;
   totalAdvancePaid: string;
   notes: string | null;
+}
+
+export interface CreateAdvancePaymentRequest {
+  periodLabel: string;
+  daysCount: number;
+  workerCount: number;
+  advancePerWorkerPerDay: number;
+  paymentDate: string;
+  notes?: string;
+}
+
+// A gang's day: check-in time+photo, up to 2 work-update photos in between,
+// and check-out time+photo when they leave. Mirrors backend's
+// groupWorkSessionsTable / web's WorkSession (attendance.tsx:37-42).
+export interface WorkSession {
+  id: number;
+  workGroupId: number;
+  date: string;
+  checkInAt: string;
+  checkInPhoto?: string | null;
+  headcountIn?: number | null;
+  updatePhotos: { takenAt: string; photo: string }[];
+  checkOutAt?: string | null;
+  checkOutPhoto?: string | null;
+  headcountOut?: number | null;
+}
+
+export interface CreateWorkSessionRequest {
+  date: string;
+  checkInPhoto?: string;
+  headcountIn?: number;
+}
+
+export interface AddWorkSessionUpdatePhotoRequest {
+  photo: string;
+}
+
+export interface CheckoutWorkSessionRequest {
+  checkOutPhoto?: string;
+  headcountOut?: number | null;
 }
 
 export interface EstateUpdate {

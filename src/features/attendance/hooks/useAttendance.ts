@@ -6,15 +6,30 @@ import {
   markAttendance,
 } from "../../../api/endpoints/attendance";
 import {
+  addWorkSessionUpdatePhoto,
+  checkoutWorkSession,
+  createAdvancePayment,
+  createOrUpdateWorkSession,
+  deleteAdvancePayment,
   getHarvestBonusSummary,
   getOvertimeSummary,
+  getWorkSessions,
   settleHarvestBonus,
   settleOvertime,
   updateWorkGroup,
 } from "../../../api/endpoints/workGroups";
+import { createLoan, createLoanPayment, getGroupLoans } from "../../../api/endpoints/loans";
 import { newClientId } from "../../../lib/idempotency";
 import { useEstateStore } from "../../estate/store/estateStore";
-import type { MarkAttendanceRequest } from "../../../types/api";
+import type {
+  AddWorkSessionUpdatePhotoRequest,
+  CheckoutWorkSessionRequest,
+  CreateAdvancePaymentRequest,
+  CreateLoanPaymentRequest,
+  CreateLoanRequest,
+  CreateWorkSessionRequest,
+  MarkAttendanceRequest,
+} from "../../../types/api";
 
 function todayIso(): string {
   const d = new Date();
@@ -92,6 +107,74 @@ export function useAttendance(workGroupId: number) {
     },
   });
 
+  // ── Work sessions (today's check-in/work-photos/check-out) ────────────────
+  const workSessionQuery = useQuery({
+    queryKey: ["work-sessions", workGroupId, date],
+    queryFn: () => getWorkSessions(workGroupId, date),
+    enabled: !!workGroupId,
+  });
+
+  const startOrUpdateSession = useMutation({
+    mutationFn: (data: CreateWorkSessionRequest) => createOrUpdateWorkSession(workGroupId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["work-sessions", workGroupId, date] });
+    },
+  });
+
+  const addSessionPhoto = useMutation({
+    mutationFn: (vars: { sessionId: number; data: AddWorkSessionUpdatePhotoRequest }) =>
+      addWorkSessionUpdatePhoto(vars.sessionId, vars.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["work-sessions", workGroupId, date] });
+    },
+  });
+
+  const checkoutSession = useMutation({
+    mutationFn: (vars: { sessionId: number; data: CheckoutWorkSessionRequest }) =>
+      checkoutWorkSession(vars.sessionId, vars.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["work-sessions", workGroupId, date] });
+    },
+  });
+
+  // ── Advance payments ───────────────────────────────────────────────────────
+  const recordAdvancePayment = useMutation({
+    mutationFn: (data: CreateAdvancePaymentRequest) => createAdvancePayment(workGroupId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["advance-payments", workGroupId] });
+      queryClient.invalidateQueries({ queryKey: ["work-groups", activeEstateId] });
+    },
+  });
+
+  const removeAdvancePayment = useMutation({
+    mutationFn: (payId: number) => deleteAdvancePayment(workGroupId, payId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["advance-payments", workGroupId] });
+    },
+  });
+
+  // ── Loans ──────────────────────────────────────────────────────────────────
+  const groupLoansQuery = useQuery({
+    queryKey: ["group-loans", workGroupId],
+    queryFn: () => getGroupLoans(workGroupId),
+    enabled: !!workGroupId,
+  });
+
+  const createLoanMutation = useMutation({
+    mutationFn: (data: CreateLoanRequest) => createLoan(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["group-loans", workGroupId] });
+    },
+  });
+
+  const recordLoanRepayment = useMutation({
+    mutationFn: (vars: { loanId: number; data: CreateLoanPaymentRequest }) =>
+      createLoanPayment(vars.loanId, vars.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["group-loans", workGroupId] });
+    },
+  });
+
   return {
     date,
     workers: workersQuery.data ?? [],
@@ -108,5 +191,16 @@ export function useAttendance(workGroupId: number) {
     settleOvertime: settleOvertimeMutation,
     settleHarvestBonus: settleHarvestBonusMutation,
     updateWorkGroup: updateWorkGroupMutation,
+    // Work session (today's), matching web's `sessions[0] ?? null`.
+    workSession: workSessionQuery.data?.[0] ?? null,
+    startOrUpdateSession,
+    addSessionPhoto,
+    checkoutSession,
+    recordAdvancePayment,
+    removeAdvancePayment,
+    groupLoans: groupLoansQuery.data ?? [],
+    groupLoansLoading: groupLoansQuery.isLoading,
+    createLoan: createLoanMutation,
+    recordLoanRepayment,
   };
 }

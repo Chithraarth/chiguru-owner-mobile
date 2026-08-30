@@ -12,7 +12,9 @@ export function getGroupLoans(workGroupId: number) {
 }
 
 export function createLoan(data: CreateLoanRequest) {
-  return apiMutate<Loan>("POST", "/loans", data);
+  // May carry a base64 proof-of-loan photo (proofPhotoUrl) - use the longer
+  // media timeout so a slow upload doesn't get mistaken for offline.
+  return apiMutate<Loan>("POST", "/loans", data, { mediaTimeout: true });
 }
 
 export function deleteLoan(id: number) {
