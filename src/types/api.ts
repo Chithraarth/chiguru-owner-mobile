@@ -495,6 +495,8 @@ export interface GroupLoan {
   status: string;
   remainingAmount: number;
   notes: string | null;
+  proofPhotoUrl?: string | null;
+  createdAt?: string;
 }
 
 // ---- Worker payments (direct cash/UPI/bank/wallet payouts) ----

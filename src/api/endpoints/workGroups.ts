@@ -94,3 +94,31 @@ export function createAdvancePayment(workGroupId: number, data: CreateAdvancePay
 export function deleteAdvancePayment(workGroupId: number, payId: number) {
   return apiMutate<null>("DELETE", `/work-groups/${workGroupId}/advance-payments/${payId}`);
 }
+
+// ── Season-end account ──────────────────────────────────────────────────────
+
+export interface SeasonEndTotals {
+  totalEarned: number;
+  totalAdvancePaid: number;
+  totalWorkerPayments: number;
+  totalRemaining: number;
+}
+
+export interface SeasonEndResult {
+  aiSummary: string;
+  // null when the group was already closed - the server returns the
+  // persisted summary without recomputing totals (replay guard against a
+  // retried/double-tapped request re-running the AI call).
+  totals: SeasonEndTotals | null;
+  workerCount: number | null;
+  alreadyClosed?: boolean;
+}
+
+// AI-generated final settlement for the whole group. Marks the group
+// seasonClosed and persists seasonSummary server-side (mirrors web's
+// handleSeasonEnd, attendance.tsx:451-470).
+export function postSeasonEnd(workGroupId: number) {
+  return apiMutate<SeasonEndResult>("POST", `/work-groups/${workGroupId}/season-end`, undefined, {
+    mediaTimeout: true,
+  });
+}

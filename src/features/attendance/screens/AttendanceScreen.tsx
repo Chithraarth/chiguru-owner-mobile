@@ -4,6 +4,7 @@ import {
   Alert,
   FlatList,
   Image,
+  Modal,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -20,7 +21,9 @@ import {
   ChevronUp,
   Clock3,
   CreditCard,
+  FileText,
   Sparkles,
+  UserMinus,
   Users,
   Wallet,
   Wheat,
@@ -36,9 +39,10 @@ import { useAttendance } from "../hooks/useAttendance";
 import { useWorkGroups } from "../../work-groups/hooks/useWorkGroups";
 import { describeDevice } from "../../../lib/device";
 import { useSyncStore } from "../../../store/syncStore";
-import { countWorkersFromPhoto } from "../../../api/endpoints/workGroups";
+import { countWorkersFromPhoto, type SeasonEndResult } from "../../../api/endpoints/workGroups";
+import { createWorker } from "../../../api/endpoints/workers";
 import { compressToDataUrl } from "../../../lib/imageCompression";
-import type { Worker } from "../../../types/api";
+import type { GroupLoan, Worker } from "../../../types/api";
 
 const SETTLEMENT_MODES: { value: string; label: string }[] = [
   { value: "weekly", label: "Weekly" },
@@ -109,6 +113,8 @@ export function AttendanceScreen({ route }: { route: any }) {
     groupLoansLoading,
     createLoan,
     recordLoanRepayment,
+    generateSeasonAccount,
+    removeWorker,
   } = useAttendance(workGroupId);
   const { data: workGroups } = useWorkGroups();
   const workGroup = workGroups?.find((g) => g.id === workGroupId);
@@ -154,13 +160,22 @@ export function AttendanceScreen({ route }: { route: any }) {
   // ── Loan form state ──────────────────────────────────────────────────────────
   const [showLoanForm, setShowLoanForm] = useState(false);
   const [loanWorkerId, setLoanWorkerId] = useState<number | null>(null);
+  const [loanWorkerName, setLoanWorkerName] = useState("");
   const [loanAmount, setLoanAmount] = useState("");
   const [loanNotes, setLoanNotes] = useState("");
   const [loanProofPhoto, setLoanProofPhoto] = useState<string | null>(null);
   const [loanPhotoBusy, setLoanPhotoBusy] = useState(false);
+  const [loanNameFocused, setLoanNameFocused] = useState(false);
+  const [creatingLoanWorker, setCreatingLoanWorker] = useState(false);
   const [payLoanId, setPayLoanId] = useState<number | null>(null);
   const [repayAmount, setRepayAmount] = useState("");
   const [repayMethod, setRepayMethod] = useState("cash");
+
+  // ── Loan proof-photo viewer state ───────────────────────────────────────────
+  const [viewProofLoan, setViewProofLoan] = useState<GroupLoan | null>(null);
+
+  // ── Season-end account state ────────────────────────────────────────────────
+  const [seasonResult, setSeasonResult] = useState<SeasonEndResult | null>(null);
 
   const markedIds = useMemo(
     () => new Set(attendance.filter((a) => a.workGroupId === workGroupId).map((a) => a.workerId)),
@@ -208,7 +223,12 @@ export function AttendanceScreen({ route }: { route: any }) {
         });
       }
     }
+    // Re-check against the current active-worker list, not just the stale
+    // `selected` ids - a worker removed after being selected (but before
+    // Save was tapped) must not still get a wage entry written for them.
+    const eligibleIds = new Set(eligibleWorkers.map((w) => w.id));
     for (const workerId of selected) {
+      if (!eligibleIds.has(workerId)) continue;
       const hoursWorked = paymentType === "Per hour" ? 8 : undefined;
       const baseWage = isHarvestGroup ? Number(harvestKg[workerId] ?? 0) * rate : paymentType === "Per hour" ? rate * 8 : rate;
       const otH = Number(otHours[workerId] ?? 0);
@@ -378,6 +398,38 @@ export function AttendanceScreen({ route }: { route: any }) {
     ]);
   }
 
+  // Matches web's confirm-remove-worker copy exactly (attendance.tsx:1583-1588).
+  function confirmRemoveWorker(worker: Worker) {
+    Alert.alert(
+      "Remove this worker?",
+      `${worker.name}\n\nRemove when a worker has left the job or their final account is settled. They will no longer appear in any group's worker list. Past attendance, wages and loan records are kept, and you can bring the worker back from the Recycle Bin (in the menu).`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove worker",
+          style: "destructive",
+          onPress: () => {
+            removeWorker.mutate(worker.id, {
+              onError: () => Alert.alert("Could not remove worker", "Please try again."),
+            });
+          },
+        },
+      ]
+    );
+  }
+
+  // Mirrors web's handleSeasonEnd (attendance.tsx:451-470).
+  async function handleSeasonEnd() {
+    generateSeasonAccount.mutate(undefined, {
+      onSuccess: (result: SeasonEndResult | null) => {
+        if (result) setSeasonResult(result);
+      },
+      onError: () => {
+        Alert.alert("Failed to generate season account", "Please try again.");
+      },
+    });
+  }
+
   async function onLoanProofPress() {
     const uri = await captureCameraPhoto();
     if (!uri) return;
@@ -392,12 +444,39 @@ export function AttendanceScreen({ route }: { route: any }) {
     }
   }
 
-  function saveLoan() {
+  // Mirrors web's saveLoan() unresolved-name branch (attendance.tsx:280-310):
+  // prefer the picked/matched worker; otherwise create a new one by that name
+  // before recording the loan.
+  async function saveLoan() {
+    // Guards a fast double-tap: the button's own disabled/loading state
+    // only reflects createLoan.isPending / creatingLoanWorker AFTER this
+    // function has already started setting them, so a second tap that
+    // lands before React commits that state could otherwise create two
+    // new workers for the same unmatched name.
+    if (creatingLoanWorker || createLoan.isPending) return;
     const amt = parseFloat(loanAmount);
-    if (loanWorkerId == null || isNaN(amt) || amt <= 0) return;
+    const name = loanWorkerName.trim();
+    if (!name || isNaN(amt) || amt <= 0) return;
+    let workerId =
+      loanWorkerId ??
+      eligibleWorkers.find((w) => w.name.trim().toLowerCase() === name.toLowerCase())?.id ??
+      null;
+    if (workerId == null) {
+      setCreatingLoanWorker(true);
+      try {
+        const w = await createWorker(name);
+        if (!w) throw new Error("no response");
+        workerId = w.id;
+      } catch {
+        Alert.alert("Could not add worker", "Please try again.");
+        setCreatingLoanWorker(false);
+        return;
+      }
+      setCreatingLoanWorker(false);
+    }
     createLoan.mutate(
       {
-        workerId: loanWorkerId,
+        workerId,
         workGroupId,
         amount: amt,
         issuedDate: date,
@@ -409,6 +488,7 @@ export function AttendanceScreen({ route }: { route: any }) {
         onSuccess: () => {
           setShowLoanForm(false);
           setLoanWorkerId(null);
+          setLoanWorkerName("");
           setLoanAmount("");
           setLoanNotes("");
           setLoanProofPhoto(null);
@@ -751,16 +831,25 @@ export function AttendanceScreen({ route }: { route: any }) {
             const expanded = expandedId === item.id;
             return (
               <Card style={[styles.workerRow, isSelected && styles.workerRowSelected, marked && !isSelected && styles.workerRowMarked]}>
-                <Pressable onPress={() => toggle(item.id)} style={styles.workerRowMain}>
-                  <Text style={styles.workerName}>{item.name}</Text>
-                  {marked ? (
-                    <Text style={styles.markedLabel}>
-                      {isSelected ? "Editing entry…" : "Marked present ✓ · tap to edit"}
-                    </Text>
-                  ) : (
-                    <View style={[styles.checkbox, isSelected && styles.checkboxSelected]} />
-                  )}
-                </Pressable>
+                <View style={styles.workerRowMain}>
+                  <Pressable onPress={() => toggle(item.id)} style={styles.workerRowMainPressable}>
+                    <Text style={styles.workerName}>{item.name}</Text>
+                    {marked ? (
+                      <Text style={styles.markedLabel}>
+                        {isSelected ? "Editing entry…" : "Marked present ✓ · tap to edit"}
+                      </Text>
+                    ) : (
+                      <View style={[styles.checkbox, isSelected && styles.checkboxSelected]} />
+                    )}
+                  </Pressable>
+                  <Pressable
+                    onPress={() => confirmRemoveWorker(item)}
+                    hitSlop={10}
+                    style={styles.removeWorkerBtn}
+                  >
+                    <UserMinus size={16} color={colors.textMuted} />
+                  </Pressable>
+                </View>
                 {isSelected ? (
                   <>
                     <Pressable style={styles.extraToggle} onPress={() => setExpandedId(expanded ? null : item.id)}>
@@ -934,6 +1023,67 @@ export function AttendanceScreen({ route }: { route: any }) {
                   />
                 </Card>
               ) : null}
+
+              {/* Season End Account trigger — gated exactly like web
+                  (attendance.tsx:1052-1076): not closed yet + at least one
+                  advance payment recorded. */}
+              {!workGroup?.seasonClosed && advancePayments.length > 0 ? (
+                <Card style={styles.seasonTriggerCard}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
+                    <View style={styles.seasonIconWrap}>
+                      <Sparkles size={16} color="#fff" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.seasonTitle}>Season End Account</Text>
+                      <Text style={styles.seasonSubtitle}>AI generates final settlement for all workers</Text>
+                    </View>
+                  </View>
+                  <Button
+                    title={generateSeasonAccount.isPending ? "Generating account…" : "Generate Season Account"}
+                    onPress={handleSeasonEnd}
+                    loading={generateSeasonAccount.isPending}
+                  />
+                </Card>
+              ) : null}
+
+              {/* AI season summary: live mutation result, or the persisted
+                  seasonSummary so it still shows after leaving/returning. */}
+              {seasonResult || workGroup?.seasonSummary ? (
+                <Card style={{ gap: spacing.sm }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
+                    <Sparkles size={16} color={colors.primary} />
+                    <Text style={[styles.formTitle, { color: colors.primary, flex: 1 }]}>Final Season Account</Text>
+                    {workGroup?.seasonClosed ? (
+                      <View style={styles.seasonClosedPill}>
+                        <Text style={styles.seasonClosedPillText}>Closed</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                  {seasonResult?.totals ? (
+                    <View style={{ flexDirection: "row", gap: spacing.xs }}>
+                      <View style={styles.seasonTile}>
+                        <Text style={styles.advBoxLabel}>Total earned</Text>
+                        <Text style={styles.seasonTileValue}>{inr(seasonResult.totals.totalEarned)}</Text>
+                      </View>
+                      <View style={[styles.seasonTile, { backgroundColor: "#FFF3E6" }]}>
+                        <Text style={styles.advBoxLabel}>Group advance</Text>
+                        <Text style={[styles.seasonTileValue, { color: "#C77A2E" }]}>{inr(seasonResult.totals.totalAdvancePaid)}</Text>
+                      </View>
+                      <View style={[styles.seasonTile, { backgroundColor: "#E8F7EF" }]}>
+                        <Text style={styles.advBoxLabel}>Paid directly</Text>
+                        <Text style={[styles.seasonTileValue, { color: "#1F9E5C" }]}>{inr(seasonResult.totals.totalWorkerPayments)}</Text>
+                      </View>
+                      <View style={[styles.seasonTile, { backgroundColor: "#F3EEFB" }]}>
+                        <Text style={styles.advBoxLabel}>Remaining</Text>
+                        <Text style={[styles.seasonTileValue, { color: colors.primary }]}>{inr(seasonResult.totals.totalRemaining)}</Text>
+                      </View>
+                    </View>
+                  ) : null}
+                  <Text style={styles.seasonSummaryText}>
+                    {seasonResult?.aiSummary ?? workGroup?.seasonSummary}
+                  </Text>
+                </Card>
+              ) : null}
             </View>
           }
           ListEmptyComponent={
@@ -1010,7 +1160,12 @@ export function AttendanceScreen({ route }: { route: any }) {
 
               <Button
                 title={showLoanForm ? "Cancel" : "+ Record loan"}
-                onPress={() => setShowLoanForm((v) => !v)}
+                onPress={() => {
+                  setShowLoanForm((v) => !v);
+                  setLoanWorkerId(null);
+                  setLoanWorkerName("");
+                  setLoanNameFocused(false);
+                }}
                 variant="secondary"
               />
 
@@ -1018,18 +1173,58 @@ export function AttendanceScreen({ route }: { route: any }) {
                 <Card style={{ gap: spacing.sm }}>
                   <Text style={styles.formTitle}>Record Loan</Text>
                   <Text style={styles.ruleSubtitle}>Worker *</Text>
-                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }}>
-                    {eligibleWorkers.map((w: Worker) => (
-                      <Pressable
-                        key={w.id}
-                        onPress={() => setLoanWorkerId(w.id)}
-                        style={[styles.workerChip, loanWorkerId === w.id && styles.workerChipSelected]}
-                      >
-                        <Text style={[styles.workerChipText, loanWorkerId === w.id && styles.workerChipTextSelected]}>
-                          {w.name}
-                        </Text>
-                      </Pressable>
-                    ))}
+                  {/* Worker-name-input: type to filter existing workers, tap a
+                      suggestion to link, or leave an unmatched name — it's
+                      created as a new worker on save. Ports web's
+                      worker-name-input.tsx exact/fuzzy-match logic. */}
+                  <View style={{ position: "relative", zIndex: 20 }}>
+                    <TextField
+                      placeholder="Type worker name"
+                      value={loanWorkerName}
+                      onChangeText={(name) => {
+                        setLoanWorkerName(name);
+                        const q = name.trim().toLowerCase();
+                        const m = eligibleWorkers.find((w) => w.name.trim().toLowerCase() === q);
+                        setLoanWorkerId(m ? m.id : null);
+                      }}
+                      onFocus={() => setLoanNameFocused(true)}
+                      onBlur={() => setTimeout(() => setLoanNameFocused(false), 150)}
+                      containerStyle={{ marginBottom: 0 }}
+                    />
+                    {(() => {
+                      const q = loanWorkerName.trim().toLowerCase();
+                      const exact = eligibleWorkers.find((w) => w.name.trim().toLowerCase() === q);
+                      const matches = (q
+                        ? eligibleWorkers.filter((w) => w.name.toLowerCase().includes(q))
+                        : eligibleWorkers
+                      ).slice(0, 6);
+                      const showList = loanNameFocused && (matches.length > 0 || (q.length > 0 && !exact));
+                      if (!showList) return null;
+                      return (
+                        <Card style={styles.nameSuggestBox}>
+                          {matches.map((w: Worker) => (
+                            <Pressable
+                              key={w.id}
+                              onPress={() => {
+                                setLoanWorkerName(w.name);
+                                setLoanWorkerId(w.id);
+                                setLoanNameFocused(false);
+                              }}
+                              style={styles.nameSuggestRow}
+                            >
+                              <Text style={styles.nameSuggestText}>{w.name}</Text>
+                            </Pressable>
+                          ))}
+                          {q.length > 0 && !exact ? (
+                            <View style={styles.nameSuggestNewRow}>
+                              <Text style={styles.nameSuggestNewText}>
+                                "{loanWorkerName.trim()}" will be saved as a new worker
+                              </Text>
+                            </View>
+                          ) : null}
+                        </Card>
+                      );
+                    })()}
                   </View>
                   <TextField
                     label="Loan amount (₹) *"
@@ -1072,10 +1267,10 @@ export function AttendanceScreen({ route }: { route: any }) {
                     </Pressable>
                   )}
                   <Button
-                    title={createLoan.isPending ? "Saving…" : "Save Loan"}
+                    title={creatingLoanWorker ? "Adding worker…" : createLoan.isPending ? "Saving…" : "Save Loan"}
                     onPress={saveLoan}
-                    loading={createLoan.isPending}
-                    disabled={loanWorkerId == null || !loanAmount}
+                    loading={createLoan.isPending || creatingLoanWorker}
+                    disabled={!loanWorkerName.trim() || !loanAmount}
                   />
                 </Card>
               ) : null}
@@ -1110,6 +1305,13 @@ export function AttendanceScreen({ route }: { route: any }) {
                       </Text>
                     ) : null}
                     {item.notes ? <Text style={styles.advNotes}>{item.notes}</Text> : null}
+                    {item.proofPhotoUrl ? (
+                      <Pressable style={styles.proofBadge} onPress={() => setViewProofLoan(item)}>
+                        <Image source={{ uri: item.proofPhotoUrl }} style={styles.proofBadgeThumb} />
+                        <Camera size={12} color="#3E6FB0" />
+                        <Text style={styles.proofBadgeText}>Proof of loan</Text>
+                      </Pressable>
+                    ) : null}
                   </View>
                   <View style={{ alignItems: "flex-end", gap: 4 }}>
                     <Text style={[styles.summaryValue, { fontSize: 15, color: colors.danger }]}>{inr(outstanding)}</Text>
@@ -1169,6 +1371,43 @@ export function AttendanceScreen({ route }: { route: any }) {
           />
         </View>
       ) : null}
+
+      {/* Full-screen loan proof-photo viewer — RN equivalent of web's
+          LoanProofViewer (loan-proof.tsx:30-64). */}
+      <Modal
+        visible={viewProofLoan != null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setViewProofLoan(null)}
+      >
+        {viewProofLoan ? (
+          <Pressable style={styles.proofModalBackdrop} onPress={() => setViewProofLoan(null)}>
+            <View style={styles.proofModalHeader}>
+              <View>
+                <Text style={styles.proofModalTitle}>Proof of loan</Text>
+                <Text style={styles.proofModalSubtitle}>
+                  {viewProofLoan.workerName ?? "Worker"} · {inr(Number(viewProofLoan.amount))}
+                </Text>
+              </View>
+              <Pressable onPress={() => setViewProofLoan(null)} hitSlop={10}>
+                <X size={22} color="#fff" />
+              </Pressable>
+            </View>
+            <View style={styles.proofModalImageWrap}>
+              <Pressable onPress={(e) => e.stopPropagation()}>
+                <Image
+                  source={{ uri: viewProofLoan.proofPhotoUrl ?? undefined }}
+                  style={styles.proofModalImage}
+                  resizeMode="contain"
+                />
+              </Pressable>
+            </View>
+            <View style={styles.proofModalFooter}>
+              <Text style={styles.proofModalFooterText}>Loan given on {viewProofLoan.issuedDate}</Text>
+            </View>
+          </Pressable>
+        ) : null}
+      </Modal>
     </View>
   );
 }
@@ -1201,7 +1440,9 @@ const styles = StyleSheet.create({
   tabTextActive: { color: colors.primary },
 
   workerRow: {},
-  workerRowMain: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  workerRowMain: { flexDirection: "row", alignItems: "center" },
+  workerRowMainPressable: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  removeWorkerBtn: { paddingLeft: spacing.sm, paddingVertical: spacing.xs },
   workerRowSelected: { borderColor: colors.primary, borderWidth: 2 },
   workerRowMarked: { opacity: 0.6 },
   workerName: { fontSize: 15, color: colors.text, fontWeight: "500" },
@@ -1305,19 +1546,87 @@ const styles = StyleSheet.create({
   advPreviewSubtext: { fontSize: 11, color: "#C77A2E", marginTop: 2 },
   formTitle: { fontSize: 14.5, fontWeight: "700", color: colors.text },
 
+  // Season-end account
+  seasonTriggerCard: {
+    gap: spacing.sm,
+    backgroundColor: "#F3EEFB",
+    borderColor: "#DDD0F0",
+    borderWidth: 2,
+    borderStyle: "dashed",
+  },
+  seasonIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: radius.sm,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  seasonTitle: { fontSize: 13.5, fontWeight: "700", color: colors.primary },
+  seasonSubtitle: { fontSize: 11, color: colors.primary, marginTop: 1 },
+  seasonTile: { flex: 1, backgroundColor: "#F6F5F9", borderRadius: radius.sm, padding: spacing.sm, alignItems: "center" },
+  seasonTileValue: { fontSize: 12, fontWeight: "700", color: colors.text, marginTop: 2 },
+  seasonClosedPill: { backgroundColor: "#F3EEFB", borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2 },
+  seasonClosedPillText: { fontSize: 10.5, fontWeight: "600", color: colors.primary },
+  seasonSummaryText: { fontSize: 12.5, color: colors.text, lineHeight: 18 },
+
   // Loans tab
   loanDaysText: { fontSize: 11.5, color: colors.danger, textAlign: "center", marginTop: spacing.sm },
-  workerChip: {
-    paddingVertical: spacing.xs + 2,
-    paddingHorizontal: spacing.sm + 4,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: "#fff",
+  // Worker-name-input suggestion dropdown (item 4)
+  nameSuggestBox: {
+    position: "absolute",
+    top: "100%",
+    left: 0,
+    right: 0,
+    marginTop: 2,
+    padding: 0,
+    maxHeight: 176,
+    overflow: "hidden",
+    zIndex: 30,
+    elevation: 6,
   },
-  workerChipSelected: { backgroundColor: colors.danger, borderColor: colors.danger },
-  workerChipText: { fontSize: 12.5, color: colors.text },
-  workerChipTextSelected: { color: "#fff", fontWeight: "600" },
+  nameSuggestRow: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  nameSuggestText: { fontSize: 13.5, color: colors.text },
+  nameSuggestNewRow: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    backgroundColor: "#F3EEFB",
+  },
+  nameSuggestNewText: { fontSize: 11.5, color: colors.primary },
+  // Loan proof-photo badge + full-screen viewer (item 3)
+  proofBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    marginTop: spacing.xs + 2,
+    backgroundColor: "#E4EEFB",
+    borderWidth: 1,
+    borderColor: "#C9DEF5",
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    alignSelf: "flex-start",
+  },
+  proofBadgeThumb: { width: 24, height: 24, borderRadius: 4 },
+  proofBadgeText: { fontSize: 11, fontWeight: "600", color: "#3E6FB0" },
+  proofModalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.9)" },
+  proofModalHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    padding: spacing.md,
+  },
+  proofModalTitle: { color: "#fff", fontSize: 14, fontWeight: "700" },
+  proofModalSubtitle: { color: "#D1D5DB", fontSize: 12, marginTop: 2 },
+  proofModalImageWrap: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: spacing.sm },
+  proofModalImage: { width: "100%", height: "100%" },
+  proofModalFooter: { padding: spacing.md, alignItems: "center" },
+  proofModalFooterText: { color: "#E5E7EB", fontSize: 13, fontWeight: "500" },
   loanProofBtn: {
     flexDirection: "row",
     alignItems: "center",

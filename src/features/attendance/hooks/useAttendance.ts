@@ -14,11 +14,13 @@ import {
   getHarvestBonusSummary,
   getOvertimeSummary,
   getWorkSessions,
+  postSeasonEnd,
   settleHarvestBonus,
   settleOvertime,
   updateWorkGroup,
 } from "../../../api/endpoints/workGroups";
 import { createLoan, createLoanPayment, getGroupLoans } from "../../../api/endpoints/loans";
+import { deleteWorker } from "../../../api/endpoints/workers";
 import { newClientId } from "../../../lib/idempotency";
 import { useEstateStore } from "../../estate/store/estateStore";
 import type {
@@ -175,6 +177,24 @@ export function useAttendance(workGroupId: number) {
     },
   });
 
+  // ── Season-end account ─────────────────────────────────────────────────────
+  const seasonEndMutation = useMutation({
+    mutationFn: () => postSeasonEnd(workGroupId),
+    onSuccess: () => {
+      // Refresh the work-groups list so workGroup.seasonClosed/seasonSummary
+      // reflect the just-generated account (used as the persisted fallback).
+      queryClient.invalidateQueries({ queryKey: ["work-groups", activeEstateId] });
+    },
+  });
+
+  // ── Remove worker (soft-delete, recoverable from the Bin) ──────────────────
+  const removeWorkerMutation = useMutation({
+    mutationFn: (workerId: number) => deleteWorker(workerId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workers", activeEstateId] });
+    },
+  });
+
   return {
     date,
     workers: workersQuery.data ?? [],
@@ -202,5 +222,7 @@ export function useAttendance(workGroupId: number) {
     groupLoansLoading: groupLoansQuery.isLoading,
     createLoan: createLoanMutation,
     recordLoanRepayment,
+    generateSeasonAccount: seasonEndMutation,
+    removeWorker: removeWorkerMutation,
   };
 }
