@@ -22,6 +22,7 @@ import {
   Clock3,
   CreditCard,
   FileText,
+  ScanFace,
   Sparkles,
   UserMinus,
   Users,
@@ -40,7 +41,7 @@ import { useWorkGroups } from "../../work-groups/hooks/useWorkGroups";
 import { describeDevice } from "../../../lib/device";
 import { useSyncStore } from "../../../store/syncStore";
 import { countWorkersFromPhoto, type SeasonEndResult } from "../../../api/endpoints/workGroups";
-import { createWorker } from "../../../api/endpoints/workers";
+import { createWorker, matchFace } from "../../../api/endpoints/workers";
 import { compressToDataUrl } from "../../../lib/imageCompression";
 import type { GroupLoan, Worker } from "../../../types/api";
 
@@ -115,6 +116,7 @@ export function AttendanceScreen({ route }: { route: any }) {
     recordLoanRepayment,
     generateSeasonAccount,
     removeWorker,
+    setWorkerPhoto,
   } = useAttendance(workGroupId);
   const { data: workGroups } = useWorkGroups();
   const workGroup = workGroups?.find((g) => g.id === workGroupId);
@@ -148,6 +150,10 @@ export function AttendanceScreen({ route }: { route: any }) {
   const [aiResult, setAiResult] = useState<{ count: number; imagePreview: string } | null>(null);
   const [updatingPhoto, setUpdatingPhoto] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
+
+  // ── Single Person Face Attendance state ─────────────────────────────────────
+  const [faceMatching, setFaceMatching] = useState(false);
+  const [savingWorkerPhotoId, setSavingWorkerPhotoId] = useState<number | null>(null);
 
   // ── Advance payment form state ──────────────────────────────────────────────
   const [showPaymentForm, setShowPaymentForm] = useState(false);
@@ -291,6 +297,71 @@ export function AttendanceScreen({ route }: { route: any }) {
       Alert.alert("AI scan failed", "Could not count workers from that photo. Try again.");
     } finally {
       setAiScanning(false);
+    }
+  }
+
+  // ── Single Person Face Attendance: camera → send photo to
+  // /workers/face-match → mark the matched worker present. Deliberately
+  // simple compared to web's on-device face-api.js scanning (ruled out this
+  // session for licensing/model-compatibility reasons) — one photo, one
+  // backend call, one result, no live camera/ML here.
+  async function handleFaceAttendance() {
+    const uri = await captureCameraPhoto();
+    if (!uri) return;
+    setFaceMatching(true);
+    try {
+      const photo = await compressToDataUrl(uri, "ai");
+      const result = await matchFace(photo);
+      if (result.matchedWorkerId == null) {
+        if (result.message) {
+          Alert.alert("No reference photos yet", result.message);
+        } else {
+          Alert.alert(
+            "No confident match found",
+            "Add a reference photo for this worker using the camera icon next to their name below, or use Group Attendance / manual marking instead."
+          );
+        }
+        return;
+      }
+      const worker = eligibleWorkers.find((w) => w.id === result.matchedWorkerId);
+      const workerName = result.matchedWorkerName ?? worker?.name ?? "Worker";
+      if (presentIds.has(result.matchedWorkerId)) {
+        Alert.alert(`${workerName} — already marked today`);
+        return;
+      }
+      // Same base-wage computation as web's markFacePresent — this is a
+      // single click-to-mark flow, not harvest-picking. Falls back to the
+      // worker's own wageRate if the group itself has no rate set.
+      const baseWage = (paymentType === "Per hour" ? rate * 8 : rate) || Number(worker?.wageRate ?? 0);
+      await markAttendance.mutateAsync({
+        workGroupId,
+        workerId: result.matchedWorkerId,
+        date,
+        hoursWorked: paymentType === "Per hour" ? 8 : undefined,
+        wageAmount: baseWage,
+        deviceLabel: "Face",
+      });
+      Alert.alert(`${workerName} marked present ✓`);
+    } catch {
+      Alert.alert("Face match failed", "Could not reach the AI service. Try again, or use Group Attendance / manual marking.");
+    } finally {
+      setFaceMatching(false);
+    }
+  }
+
+  // Registers/updates a worker's saved reference photo used for face matching.
+  async function handleSaveWorkerPhoto(worker: Worker) {
+    const uri = await captureCameraPhoto();
+    if (!uri) return;
+    setSavingWorkerPhotoId(worker.id);
+    try {
+      const photo = await compressToDataUrl(uri, "record");
+      await setWorkerPhoto.mutateAsync({ workerId: worker.id, photoDataUrl: photo });
+      Alert.alert("Reference photo saved", `${worker.name}'s photo will be used for face attendance.`);
+    } catch {
+      Alert.alert("Could not save the photo", "Please try again.");
+    } finally {
+      setSavingWorkerPhotoId(null);
     }
   }
 
@@ -554,34 +625,58 @@ export function AttendanceScreen({ route }: { route: any }) {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           ListHeaderComponent={
             <View style={{ gap: spacing.sm, marginBottom: spacing.sm }}>
-              {/* Group Attendance: AI headcount */}
-              <Pressable
-                style={[styles.aiCard, (aiScanning || !!workSession) && { opacity: 0.85 }]}
-                onPress={handleGroupAttendanceScan}
-                disabled={aiScanning || !!workSession}
-              >
-                <View style={styles.aiIconWrap}>
-                  {aiScanning ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : workSession ? (
-                    <CheckCircle2 size={20} color="#fff" />
-                  ) : (
-                    <Camera size={20} color="#fff" />
-                  )}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.aiCardTitle}>Group Attendance</Text>
-                  <Text style={styles.aiCardSubtitle}>
-                    {aiScanning
-                      ? "AI is counting heads…"
-                      : workSession
-                        ? workSession.checkOutAt
-                          ? "Work done for this day"
-                          : `Work started at ${fmtTime(workSession.checkInAt)}`
-                        : "Arrival photo — AI counts heads & time is noted"}
-                  </Text>
-                </View>
-              </Pressable>
+              {/* Two ways to mark attendance, side by side — mirrors web's
+                  grid-cols-2 layout (attendance.tsx:679-712). */}
+              <View style={{ flexDirection: "row", gap: spacing.sm }}>
+                {/* Single Person Face Attendance: one photo → AI face match →
+                    mark that one worker present. Mobile-only simplification of
+                    web's live face-api.js scanning (deliberately not ported —
+                    see handleFaceAttendance). */}
+                <Pressable
+                  style={[styles.faceCard, faceMatching && { opacity: 0.85 }]}
+                  onPress={handleFaceAttendance}
+                  disabled={faceMatching}
+                >
+                  <View style={styles.faceIconWrap}>
+                    {faceMatching ? <ActivityIndicator color="#fff" /> : <ScanFace size={20} color="#fff" />}
+                  </View>
+                  <View>
+                    <Text style={styles.faceCardTitle}>Single Person Face Attendance</Text>
+                    <Text style={styles.faceCardSubtitle}>
+                      {faceMatching ? "Matching face…" : "Regular workers — each face marks itself, one by one"}
+                    </Text>
+                  </View>
+                </Pressable>
+
+                {/* Group Attendance: AI headcount */}
+                <Pressable
+                  style={[styles.aiCard, (aiScanning || !!workSession) && { opacity: 0.85 }]}
+                  onPress={handleGroupAttendanceScan}
+                  disabled={aiScanning || !!workSession}
+                >
+                  <View style={styles.aiIconWrap}>
+                    {aiScanning ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : workSession ? (
+                      <CheckCircle2 size={20} color="#fff" />
+                    ) : (
+                      <Camera size={20} color="#fff" />
+                    )}
+                  </View>
+                  <View>
+                    <Text style={styles.aiCardTitle}>Group Attendance</Text>
+                    <Text style={styles.aiCardSubtitle}>
+                      {aiScanning
+                        ? "AI is counting heads…"
+                        : workSession
+                          ? workSession.checkOutAt
+                            ? "Work done for this day"
+                            : `Work started at ${fmtTime(workSession.checkInAt)}`
+                          : "Arrival photo — AI counts heads & time is noted"}
+                    </Text>
+                  </View>
+                </Pressable>
+              </View>
 
               {aiResult ? (
                 <Card style={styles.aiResultCard}>
@@ -840,6 +935,18 @@ export function AttendanceScreen({ route }: { route: any }) {
                       </Text>
                     ) : (
                       <View style={[styles.checkbox, isSelected && styles.checkboxSelected]} />
+                    )}
+                  </Pressable>
+                  <Pressable
+                    onPress={() => handleSaveWorkerPhoto(item)}
+                    hitSlop={10}
+                    style={styles.removeWorkerBtn}
+                    disabled={savingWorkerPhotoId === item.id}
+                  >
+                    {savingWorkerPhotoId === item.id ? (
+                      <ActivityIndicator size="small" color={colors.textMuted} />
+                    ) : (
+                      <Camera size={16} color={item.photoUrl ? colors.primary : colors.textMuted} />
                     )}
                   </Pressable>
                   <Pressable
@@ -1481,25 +1588,46 @@ const styles = StyleSheet.create({
   settleLine: { fontSize: 13, color: colors.text },
   settleLineMuted: { fontSize: 12, color: colors.textMuted },
 
-  // AI Group Attendance card
-  aiCard: {
-    flexDirection: "row",
-    alignItems: "center",
+  // Single Person Face Attendance card — web's purple/violet gradient
+  // (from-primary to-violet-500) approximated as a flat violet, matching how
+  // aiCard already uses a flat colors.accent instead of a real gradient (no
+  // expo-linear-gradient in this app).
+  faceCard: {
+    flex: 1,
     gap: spacing.sm,
-    backgroundColor: colors.accent,
+    backgroundColor: "#7C4DBF",
     borderRadius: radius.md,
-    padding: spacing.md,
+    padding: spacing.md - 2,
   },
-  aiIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  faceIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: "rgba(255,255,255,0.2)",
     alignItems: "center",
     justifyContent: "center",
   },
-  aiCardTitle: { fontSize: 14, fontWeight: "700", color: "#fff" },
-  aiCardSubtitle: { fontSize: 11.5, color: "rgba(255,255,255,0.85)", marginTop: 2 },
+  faceCardTitle: { fontSize: 13, fontWeight: "700", color: "#fff", lineHeight: 16 },
+  faceCardSubtitle: { fontSize: 10.5, color: "rgba(255,255,255,0.8)", marginTop: 4, lineHeight: 14 },
+
+  // AI Group Attendance card
+  aiCard: {
+    flex: 1,
+    gap: spacing.sm,
+    backgroundColor: colors.accent,
+    borderRadius: radius.md,
+    padding: spacing.md - 2,
+  },
+  aiIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  aiCardTitle: { fontSize: 13, fontWeight: "700", color: "#fff", lineHeight: 16 },
+  aiCardSubtitle: { fontSize: 10.5, color: "rgba(255,255,255,0.85)", marginTop: 4, lineHeight: 14 },
   aiResultCard: { backgroundColor: "#F3EEFB", borderColor: "#DDD0F0" },
   aiResultThumb: { width: 56, height: 56, borderRadius: radius.sm },
   aiResultCount: { fontSize: 22, fontWeight: "800", color: colors.primary },

@@ -175,6 +175,10 @@ export interface Worker {
   wageUnit: string | null;
   isActive: boolean;
   faceDescriptor: string | null;
+  // Saved reference photo (base64 data URL) used by the mobile-only Single
+  // Person Face Attendance flow (POST /workers/face-match) - a completely
+  // separate mechanism from the on-device faceDescriptor embedding above.
+  photoUrl: string | null;
 }
 
 export interface Attendance {

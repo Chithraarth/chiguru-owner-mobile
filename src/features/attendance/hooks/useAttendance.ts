@@ -20,7 +20,7 @@ import {
   updateWorkGroup,
 } from "../../../api/endpoints/workGroups";
 import { createLoan, createLoanPayment, getGroupLoans } from "../../../api/endpoints/loans";
-import { deleteWorker } from "../../../api/endpoints/workers";
+import { deleteWorker, setWorkerPhoto } from "../../../api/endpoints/workers";
 import { newClientId } from "../../../lib/idempotency";
 import { useEstateStore } from "../../estate/store/estateStore";
 import type {
@@ -195,6 +195,14 @@ export function useAttendance(workGroupId: number) {
     },
   });
 
+  // ── Save a worker's reference photo (Single Person Face Attendance setup) ──
+  const setWorkerPhotoMutation = useMutation({
+    mutationFn: (vars: { workerId: number; photoDataUrl: string }) => setWorkerPhoto(vars.workerId, vars.photoDataUrl),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workers", activeEstateId] });
+    },
+  });
+
   return {
     date,
     workers: workersQuery.data ?? [],
@@ -224,5 +232,6 @@ export function useAttendance(workGroupId: number) {
     recordLoanRepayment,
     generateSeasonAccount: seasonEndMutation,
     removeWorker: removeWorkerMutation,
+    setWorkerPhoto: setWorkerPhotoMutation,
   };
 }
