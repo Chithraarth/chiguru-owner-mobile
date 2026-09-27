@@ -8,6 +8,9 @@ import { DeviceLimitScreen } from "../features/device-gate/screens/DeviceLimitSc
 import { useEstateStore } from "../features/estate/store/estateStore";
 import { useMyEstates } from "../features/estate/hooks/useMyEstates";
 import { ChooseEstateScreen } from "../features/estate/screens/ChooseEstateScreen";
+import { PendingInvitesScreen } from "../features/estate/screens/PendingInvitesScreen";
+import { getMyInvites } from "../api/endpoints/managers";
+import { useQuery } from "@tanstack/react-query";
 import { useWelcomeStore } from "../features/welcome/store/welcomeStore";
 import { WelcomeScreen } from "../features/welcome/screens/WelcomeScreen";
 import { useSessionStore } from "../store/sessionStore";
@@ -58,6 +61,11 @@ export function RootNavigator() {
   // access to (e.g. an invite was revoked, or a farm was deleted).
   const myEstatesQuery = useMyEstates();
 
+  // Checked once per sign-in, before anything else can render - an invite
+  // gives no access at all until explicitly accepted (see
+  // PendingInvitesScreen and the backend's routes/invites.ts).
+  const myInvitesQuery = useQuery({ queryKey: ["my-invites"], queryFn: getMyInvites, enabled: !!user });
+
   useEffect(() => {
     hydrateEstate();
   }, [hydrateEstate]);
@@ -107,8 +115,23 @@ export function RootNavigator() {
     return <DeviceLimitScreen devices={devices} maxDevices={maxDevices} onFreedSlot={recheck} />;
   }
 
-  if (myEstatesQuery.isLoading) {
+  if (myEstatesQuery.isLoading || myInvitesQuery.isLoading) {
     return <LoadingView label="Loading your farms..." />;
+  }
+
+  // Any invite this person hasn't yet accepted/declined must be resolved
+  // before anything else - it never contributes to myEstates until then, so
+  // showing this first (rather than after Choose Estate) means a first-time
+  // invitee is never asked to "choose" between farms they haven't agreed to
+  // help with yet.
+  if ((myInvitesQuery.data?.length ?? 0) > 0) {
+    return (
+      <PendingInvitesScreen
+        onDone={() => {
+          myEstatesQuery.refetch();
+        }}
+      />
+    );
   }
 
   // First-time-only walkthrough (chiguru-owner-web's src/pages/welcome.tsx

@@ -1017,9 +1017,18 @@ export interface Manager {
   name: string;
   phone: string | null;
   email: string | null;
-  status: "pending" | "active" | "removed";
+  status: "pending" | "active" | "declined" | "removed";
   createdAt: string;
   activatedAt: string | null;
+}
+
+/** A pending invite addressed to the signed-in person, from GET /me/invites. */
+export interface PendingInvite {
+  id: number;
+  name: string;
+  ownerName: string | null;
+  farmName: string | null;
+  createdAt: string;
 }
 
 // ---- Agri AI ----
