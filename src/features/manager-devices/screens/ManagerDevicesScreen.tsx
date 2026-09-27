@@ -1,30 +1,38 @@
 import React, { useState } from "react";
-import { Alert, FlatList, StyleSheet, Text, View } from "react-native";
+import { Alert, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
-import { colors, spacing } from "../../../components/theme";
+import { colors, radius, spacing } from "../../../components/theme";
 import { getManagers, inviteManager, removeManager } from "../../../api/endpoints/managers";
 import { useT } from "../../../lib/i18n";
+
+// Screen title is "Invitees" in the UI - the file/route keep the historical
+// "manager" name to avoid a wider rename across navigation for this change.
+type ContactMode = "phone" | "email";
 
 export function ManagerDevicesScreen() {
   const { t } = useT();
   const queryClient = useQueryClient();
   const query = useQuery({ queryKey: ["managers"], queryFn: getManagers });
+  const [mode, setMode] = useState<ContactMode>("phone");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const inviteMutation = useMutation({
-    mutationFn: () => inviteManager(name.trim(), phone.trim()),
+    mutationFn: () =>
+      inviteManager(name.trim(), mode === "phone" ? { phone: phone.trim() } : { email: email.trim() }),
     onSuccess: () => {
       setName("");
       setPhone("");
+      setEmail("");
       queryClient.invalidateQueries({ queryKey: ["managers"] });
     },
-    onError: (err) => setError(err instanceof Error ? err.message : "Could not invite manager"),
+    onError: (err) => setError(err instanceof Error ? err.message : "Could not send invite"),
   });
 
   const removeMutation = useMutation({
@@ -32,8 +40,8 @@ export function ManagerDevicesScreen() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["managers"] }),
   });
 
-  function confirmRemove(id: number, managerName: string) {
-    Alert.alert("Remove manager?", `${managerName} will lose access immediately.`, [
+  function confirmRemove(id: number, inviteeName: string) {
+    Alert.alert("Remove invitee?", `${inviteeName} will lose access immediately.`, [
       { text: t("scan.cancel"), style: "cancel" },
       { text: "Remove", style: "destructive", onPress: () => removeMutation.mutate(id) },
     ]);
@@ -41,21 +49,44 @@ export function ManagerDevicesScreen() {
 
   function invite() {
     setError(null);
-    if (!name.trim() || !phone.trim()) {
-      setError("Enter a name and phone number");
+    if (!name.trim()) {
+      setError("Enter a name");
+      return;
+    }
+    if (mode === "phone" && !phone.trim()) {
+      setError("Enter a phone number");
+      return;
+    }
+    if (mode === "email" && !email.trim()) {
+      setError("Enter an email address");
       return;
     }
     inviteMutation.mutate();
   }
 
-  if (query.isLoading) return <LoadingView label="Loading managers..." />;
+  if (query.isLoading) return <LoadingView label="Loading invitees..." />;
 
   return (
     <View style={styles.container}>
       <Card style={{ margin: spacing.md }}>
-        <Text style={styles.sectionTitle}>Invite a manager</Text>
+        <Text style={styles.sectionTitle}>Invite someone</Text>
         <TextField label={t("profile.name")} value={name} onChangeText={setName} />
-        <TextField label="Phone (+91...)" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
+
+        <View style={styles.modeRow}>
+          <Pressable style={[styles.modeTab, mode === "phone" && styles.modeTabActive]} onPress={() => setMode("phone")}>
+            <Text style={[styles.modeTabText, mode === "phone" && styles.modeTabTextActive]}>Phone</Text>
+          </Pressable>
+          <Pressable style={[styles.modeTab, mode === "email" && styles.modeTabActive]} onPress={() => setMode("email")}>
+            <Text style={[styles.modeTabText, mode === "email" && styles.modeTabTextActive]}>Email</Text>
+          </Pressable>
+        </View>
+
+        {mode === "phone" ? (
+          <TextField label="Phone (+91...)" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
+        ) : (
+          <TextField label="Email address" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
+        )}
+
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <Button title="Send invite" onPress={invite} loading={inviteMutation.isPending} />
       </Card>
@@ -64,13 +95,13 @@ export function ManagerDevicesScreen() {
         data={query.data ?? []}
         keyExtractor={(m) => String(m.id)}
         contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
-        ListEmptyComponent={<EmptyState title="No managers yet" />}
+        ListEmptyComponent={<EmptyState title="No invitees yet" />}
         renderItem={({ item }) => (
           <Card style={styles.row}>
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>{item.name}</Text>
               <Text style={styles.meta}>
-                {item.phone} · {item.status}
+                {item.phone ?? item.email} · {item.status}
               </Text>
             </View>
             {item.status !== "removed" ? (
@@ -86,6 +117,17 @@ export function ManagerDevicesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   sectionTitle: { fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: spacing.sm },
+  modeRow: { flexDirection: "row", gap: spacing.xs, marginBottom: spacing.sm },
+  modeTab: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm + 2,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  modeTabActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  modeTabText: { fontSize: 12.5, fontWeight: "600", color: colors.text },
+  modeTabTextActive: { color: "#fff" },
   row: { flexDirection: "row", alignItems: "center" },
   name: { fontSize: 15, fontWeight: "600", color: colors.text },
   meta: { fontSize: 12, color: colors.textMuted, marginTop: 2 },

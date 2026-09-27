@@ -46,6 +46,12 @@ export interface Estate {
   farmName: string;
 }
 
+/** An estate as returned by /me/estates — tagged with how this person relates to it. */
+export interface MyEstate extends Estate {
+  ownerId: number;
+  relationship: "own" | "invited";
+}
+
 export interface FarmProfile {
   id: number;
   farmName: string;
@@ -1005,11 +1011,12 @@ export interface HelpMessage {
   createdAt: string;
 }
 
-// ---- Managers ----
+// ---- Invitees (still "managers" in the API) ----
 export interface Manager {
   id: number;
   name: string;
-  phone: string;
+  phone: string | null;
+  email: string | null;
   status: "pending" | "active" | "removed";
   createdAt: string;
   activatedAt: string | null;

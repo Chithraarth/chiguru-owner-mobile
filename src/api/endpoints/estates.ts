@@ -3,11 +3,17 @@ import type {
   BackupCodeResponse,
   Estate,
   FarmProfile,
+  MyEstate,
   RestoreResponse,
 } from "../../types/api";
 
 export function getEstates() {
   return apiFetch<Estate[]>("/estates");
+}
+
+/** Every estate this signed-in person may act on — their own, plus every one they're invited to. */
+export function getMyEstates() {
+  return apiFetch<MyEstate[]>("/me/estates");
 }
 
 export function createEstate(data: {

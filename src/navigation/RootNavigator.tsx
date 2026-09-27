@@ -6,7 +6,8 @@ import { useAuthListener } from "../features/auth/hooks/useAuth";
 import { useDeviceRegistration } from "../features/device-gate/hooks/useDeviceRegistration";
 import { DeviceLimitScreen } from "../features/device-gate/screens/DeviceLimitScreen";
 import { useEstateStore } from "../features/estate/store/estateStore";
-import { useEstates } from "../features/estate/hooks/useEstates";
+import { useMyEstates } from "../features/estate/hooks/useMyEstates";
+import { ChooseEstateScreen } from "../features/estate/screens/ChooseEstateScreen";
 import { useWelcomeStore } from "../features/welcome/store/welcomeStore";
 import { WelcomeScreen } from "../features/welcome/screens/WelcomeScreen";
 import { useSessionStore } from "../store/sessionStore";
@@ -24,6 +25,8 @@ export function RootNavigator() {
   const authLoading = useSessionStore((s) => s.authLoading);
   const hydrateEstate = useEstateStore((s) => s.hydrate);
   const estateHydrated = useEstateStore((s) => s.hydrated);
+  const activeEstateId = useEstateStore((s) => s.activeEstateId);
+  const setActiveEstate = useEstateStore((s) => s.setActiveEstate);
   const hydrateWelcome = useWelcomeStore((s) => s.hydrate);
   const welcomeHydrated = useWelcomeStore((s) => s.hydrated);
   const welcomeSeen = useWelcomeStore((s) => s.seen);
@@ -48,15 +51,31 @@ export function RootNavigator() {
     return () => sub.remove();
   }, []);
 
-  // Always mounted once signed in - this is what actually fetches /estates
-  // and self-heals the active estate id (e.g. after the stored one was
-  // deleted). Without this running somewhere at the root, activeEstateId
-  // never gets populated and every screen gated on it spins forever.
-  const estatesQuery = useEstates();
+  // Always mounted once signed in - fetches every estate this person may
+  // act on (their own + anything they're invited to), so we know up front
+  // whether a Choose Estate step is even needed, and can self-heal
+  // activeEstateId if it no longer points at something they still have
+  // access to (e.g. an invite was revoked, or a farm was deleted).
+  const myEstatesQuery = useMyEstates();
 
   useEffect(() => {
     hydrateEstate();
   }, [hydrateEstate]);
+
+  // Auto-pick the (only) estate when there's exactly one relationship, or
+  // self-heal a stale activeEstateId (deleted farm, revoked invite) back to
+  // the first available one - only ChooseEstateScreen decides between
+  // several, everything else should never block on a choice nobody actually
+  // has to make.
+  useEffect(() => {
+    const myEstates = myEstatesQuery.data;
+    if (!myEstates || myEstates.length === 0) return;
+    const stillValid = myEstates.some((e) => e.id === activeEstateId);
+    if (stillValid) return;
+    if (myEstates.length === 1) {
+      setActiveEstate(myEstates[0].id);
+    }
+  }, [myEstatesQuery.data, activeEstateId, setActiveEstate]);
 
   useEffect(() => {
     hydrateWelcome();
@@ -88,7 +107,7 @@ export function RootNavigator() {
     return <DeviceLimitScreen devices={devices} maxDevices={maxDevices} onFreedSlot={recheck} />;
   }
 
-  if (estatesQuery.isLoading) {
+  if (myEstatesQuery.isLoading) {
     return <LoadingView label="Loading your farms..." />;
   }
 
@@ -101,11 +120,23 @@ export function RootNavigator() {
     return <WelcomeScreen onDone={markWelcomeSeen} />;
   }
 
+  // Someone with more than one estate relationship (their own farm(s) and/or
+  // one or more they've been invited to) must pick which one to work on
+  // before anything else can load - X-Estate-Id is what the API uses to
+  // resolve which Owner every subsequent request acts for. Re-shown whenever
+  // activeEstateId doesn't point at something in the current list (revoked
+  // invite, deleted farm, or simply never chosen yet).
+  const myEstates = myEstatesQuery.data ?? [];
+  const needsEstateChoice = myEstates.length > 1 && !myEstates.some((e) => e.id === activeEstateId);
+  if (needsEstateChoice) {
+    return <ChooseEstateScreen onChosen={() => myEstatesQuery.refetch()} />;
+  }
+
   // Setting up a farm is NOT mandatory (matches chiguru-owner-web - a new
   // owner lands straight on the dashboard, which shows its own "set up your
-  // farm" prompt). We only needed to make sure estatesQuery has actually
+  // farm" prompt). We only needed to make sure myEstatesQuery has actually
   // settled before rendering, so screens gated on activeEstateId don't spin
-  // forever waiting on a fetch nobody triggered - see useEstates() above.
+  // forever waiting on a fetch nobody triggered.
   return (
     <NavigationContainer ref={navRef}>
       <MainTabs />

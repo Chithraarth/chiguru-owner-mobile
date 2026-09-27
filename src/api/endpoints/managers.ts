@@ -5,8 +5,9 @@ export function getManagers() {
   return apiFetch<Manager[]>("/managers");
 }
 
-export function inviteManager(name: string, phone: string) {
-  return apiMutate<Manager>("POST", "/managers", { name, phone });
+/** Invite by phone OR email — pass whichever one the owner entered. */
+export function inviteManager(name: string, contact: { phone?: string; email?: string }) {
+  return apiMutate<Manager>("POST", "/managers", { name, ...contact });
 }
 
 export function removeManager(id: number) {
