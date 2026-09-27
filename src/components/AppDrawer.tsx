@@ -40,7 +40,7 @@ const MENU_ITEMS: MenuItem[] = [
   { label: "My profile", icon: User, screen: "Profile" },
   { label: "Data backup", icon: CloudUpload, screen: "BackupRestore" },
   { label: "Subscription", icon: Crown, screen: "Subscription" },
-  { label: "Manager Device", icon: Smartphone, screen: "ManagerDevices" },
+  { label: "Invitees", icon: Smartphone, screen: "ManagerDevices" },
   { label: "My Ads", icon: Megaphone, screen: "MyAds" },
   { label: "Helpline", icon: CircleHelp, screen: "Help" },
   { label: "Recycle Bin", icon: Trash2, screen: "Bin" },

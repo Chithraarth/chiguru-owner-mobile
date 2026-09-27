@@ -251,7 +251,7 @@ export function SubscriptionScreen() {
     try {
       const created = await createManagerSeatAddonOrder();
       if (!created) {
-        Alert.alert("You're offline", "Connect to the internet to buy an extra manager seat.");
+        Alert.alert("You're offline", "Connect to the internet to buy an extra invitee seat.");
         setBuyingSeatAddon(false);
         return;
       }
@@ -278,7 +278,7 @@ export function SubscriptionScreen() {
         return;
       }
       invalidateAll();
-      Alert.alert("Manager seat added", "You can now add one more manager — this seat never expires.");
+      Alert.alert("Invitee seat added", "You can now add one more invitee — this seat never expires.");
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : "Please contact support if this keeps happening.";
       Alert.alert("Couldn't verify your payment", msg);
@@ -338,7 +338,7 @@ export function SubscriptionScreen() {
             <View style={styles.seatRow}>
               <Users size={14} color="#fff" />
               <Text style={styles.seatText}>
-                {subQuery.data.entitlement.managersUsed}/{subQuery.data.entitlement.managerLimit} managers used
+                {subQuery.data.entitlement.managersUsed}/{subQuery.data.entitlement.managerLimit} invitees used
                 {" · "}
                 {subQuery.data.entitlement.remainingManagers} remaining
                 {subQuery.data.entitlement.extraManagerSeats ? ` (includes ${subQuery.data.entitlement.extraManagerSeats} purchased)` : ""}
@@ -347,7 +347,7 @@ export function SubscriptionScreen() {
           ) : null}
           <View style={{ marginTop: spacing.sm }}>
             <Button
-              title={`Add extra manager seat — ${inr(subQuery.data?.entitlement.managerSeatAddonPrice ?? 199)} one-time`}
+              title={`Add extra invitee seat — ${inr(subQuery.data?.entitlement.managerSeatAddonPrice ?? 99)} one-time`}
               variant="secondary"
               onPress={onBuySeatAddon}
               loading={buyingSeatAddon && !seatAddonCheckoutVisible}
@@ -361,7 +361,7 @@ export function SubscriptionScreen() {
             <Lock size={18} color="#fff" />
             <Text style={styles.statusTitle}>Subscribe to unlock</Text>
           </View>
-          <Text style={styles.statusDesc}>Pick a plan below to run your whole farm and add managers.</Text>
+          <Text style={styles.statusDesc}>Subscribe below to run your whole farm and add invitees.</Text>
         </View>
       )}
 
@@ -373,7 +373,7 @@ export function SubscriptionScreen() {
 
       {verifyingSeatAddon ? (
         <Card style={{ backgroundColor: "#FFF8E6", borderColor: "#F0DFA6" }}>
-          <Text style={{ color: "#8A6D1D", fontSize: 12.5 }}>Payment received. Verifying your manager seat...</Text>
+          <Text style={{ color: "#8A6D1D", fontSize: 12.5 }}>Payment received. Verifying your invitee seat...</Text>
         </Card>
       ) : null}
 
@@ -493,7 +493,7 @@ export function SubscriptionScreen() {
       <RazorpayCheckoutModal
         visible={seatAddonCheckoutVisible}
         order={seatAddonOrder}
-        description="Extra manager seat (one-time)"
+        description="Extra invitee seat (one-time)"
         onSuccess={onSeatAddonCheckoutSuccess}
         onDismiss={onSeatAddonCheckoutDismiss}
         onError={onSeatAddonCheckoutError}

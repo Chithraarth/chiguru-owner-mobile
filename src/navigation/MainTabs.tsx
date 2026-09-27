@@ -149,7 +149,7 @@ function registerSharedScreens(Nav: ReturnType<typeof createNativeStackNavigator
       <Nav.Screen name="Consultation" component={ConsultationScreen} options={{ title: "Consultation" }} />
       <Nav.Screen name="Subscription" component={SubscriptionScreen} options={{ title: "Subscription" }} />
       <Nav.Screen name="Wallet" component={WalletScreen} options={{ title: "Wallet" }} />
-      <Nav.Screen name="ManagerDevices" component={ManagerDevicesScreen} options={{ title: "Manager Devices" }} />
+      <Nav.Screen name="ManagerDevices" component={ManagerDevicesScreen} options={{ title: "Invitees" }} />
       <Nav.Screen name="Bin" component={BinScreen} options={{ title: "Recycle Bin" }} />
       <Nav.Screen name="SyncLog" component={SyncLogScreen} options={{ title: "Sync Log" }} />
       <Nav.Screen name="Settings" component={SettingsScreen} options={{ title: "Settings" }} />

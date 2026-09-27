@@ -82,7 +82,7 @@ const en: Dict = {
   "more.diseaseDetect": "AI Disease Check",
   "more.agriAdvisor": "AI Agri Advisor",
   "more.subscription": "Subscription",
-  "more.managerDevices": "Manager Device",
+  "more.managerDevices": "Invitees",
   "more.crops": "Crops",
   "more.myFarms": "My Farms",
   "more.loans": "Loans",

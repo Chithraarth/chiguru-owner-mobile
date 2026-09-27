@@ -161,7 +161,7 @@ export function SettingsScreen({ navigation }: { navigation: any }) {
         <LinkRow icon={<HelpCircle size={16} color={colors.primary} />} label="Help" onPress={() => navigation.navigate("Help")} />
         <LinkRow icon={<Archive size={16} color={colors.primary} />} label={t("bin.title")} onPress={() => navigation.navigate("Bin")} />
         <LinkRow icon={<RefreshCw size={16} color={colors.primary} />} label="Sync Log" onPress={() => navigation.navigate("SyncLog")} />
-        <LinkRow icon={<Smartphone size={16} color={colors.primary} />} label="Manager Devices" onPress={() => navigation.navigate("ManagerDevices")} />
+        <LinkRow icon={<Smartphone size={16} color={colors.primary} />} label="Invitees" onPress={() => navigation.navigate("ManagerDevices")} />
         <LinkRow icon={<CreditCard size={16} color={colors.primary} />} label={t("more.subscription")} onPress={() => navigation.navigate("Subscription")} />
       </View>
     </ScrollView>
