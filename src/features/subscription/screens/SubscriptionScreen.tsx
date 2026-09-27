@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import Constants from "expo-constants";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -18,8 +18,6 @@ import {
   Check,
   Crown,
   Lock,
-  PartyPopper,
-  Share2,
   Sprout,
   Users,
 } from "lucide-react-native";
@@ -33,7 +31,6 @@ import {
   getPayments,
   getPlans,
   getSubscription,
-  shareToEarn,
   verifyAndroidPurchase,
   verifyManagerSeatAddon,
 } from "../../../api/endpoints/subscription";
@@ -55,23 +52,6 @@ function fmtDate(iso?: string | null) {
 // Falls back to the value baked into app.json's `android.package` when the
 // runtime config isn't available (e.g. certain release build configurations).
 const ANDROID_PACKAGE_NAME = "com.thechiguru.owner";
-
-const SHARE_TARGET = 3;
-const SHARE_MESSAGE = "I'm running my farm on Chiguru — attendance, expenses, harvest and Agri Doctor, all in one app. Try it:";
-const SHARE_LINK = "https://thechiguru.com";
-
-interface ShareOption {
-  id: string;
-  label: string;
-  url: ((text: string, link: string) => string) | null;
-}
-const SHARE_OPTIONS: ShareOption[] = [
-  { id: "whatsapp", label: "WhatsApp", url: (t, l) => `https://wa.me/?text=${encodeURIComponent(`${t} ${l}`)}` },
-  { id: "facebook", label: "Facebook", url: (_t, l) => `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(l)}` },
-  { id: "x", label: "X (Twitter)", url: (t, l) => `https://twitter.com/intent/tweet?text=${encodeURIComponent(t)}&url=${encodeURIComponent(l)}` },
-  { id: "telegram", label: "Telegram", url: (t, l) => `https://t.me/share/url?url=${encodeURIComponent(l)}&text=${encodeURIComponent(t)}` },
-  { id: "other", label: "Instagram / more", url: null },
-];
 
 function PlanIcon() {
   return <Sprout size={20} color={colors.primary} />;
@@ -194,26 +174,10 @@ export function SubscriptionScreen() {
     },
   });
 
-  const shareMutation = useMutation({
-    mutationFn: (platform: string) => shareToEarn(platform),
-    onSuccess: (res) => {
-      invalidateAll();
-      if (res?.rewardGranted) {
-        Alert.alert("1 month free!", "Your reward has been applied — thanks for spreading the word about Chiguru.");
-      }
-    },
-    onError: () => Alert.alert("Couldn't record your share", "Please try again."),
-  });
-
   if (plansQuery.isLoading || subQuery.isLoading) return <LoadingView label="Loading plans..." />;
 
   const current = subQuery.data?.subscription ?? null;
   const isActive = current?.status === "ACTIVE" || current?.status === "GRACE_PERIOD";
-  const sharePlatforms = subQuery.data?.sharePlatforms ?? "";
-  const shared = new Set(sharePlatforms.split(",").filter(Boolean));
-  const shareClaimed = !!subQuery.data?.shareRewardClaimedAt;
-  const shareCount = Math.min(shared.size, SHARE_TARGET);
-  const freeMonthPending = !!subQuery.data?.freeMonthPending;
 
   async function onChoosePlan(plan: SubscriptionPlan) {
     if (!plan.googlePlayProductId) {
@@ -302,19 +266,6 @@ export function SubscriptionScreen() {
     Alert.alert("Payment failed", message);
   }
 
-  async function onShare(opt: ShareOption) {
-    if (opt.url) {
-      await Linking.openURL(opt.url(SHARE_MESSAGE, SHARE_LINK));
-    } else {
-      try {
-        await Share.share({ message: `${SHARE_MESSAGE} ${SHARE_LINK}` });
-      } catch {
-        return;
-      }
-    }
-    shareMutation.mutate(opt.id);
-  }
-
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
       {isActive ? (
@@ -377,46 +328,6 @@ export function SubscriptionScreen() {
         </Card>
       ) : null}
 
-      {/* Share on 3 apps → 1 month free */}
-      <Card style={styles.shareCard}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
-          {shareClaimed ? <PartyPopper size={18} color="#2F9E67" /> : <Share2 size={18} color="#2F9E67" />}
-          <Text style={styles.shareTitle}>{shareClaimed ? "Free month claimed!" : "Share on 3 apps → 1 month FREE"}</Text>
-        </View>
-        {shareClaimed ? (
-          <Text style={styles.shareDesc}>
-            Thanks for sharing Chiguru{isActive ? "." : freeMonthPending ? " — your free month applies the moment you pick a plan below." : "."}
-          </Text>
-        ) : (
-          <>
-            <Text style={styles.shareDesc}>
-              Post about Chiguru on any 3 different apps — WhatsApp, Facebook, Instagram, X, TikTok or others — and get 1 month free.
-            </Text>
-            <View style={styles.shareDots}>
-              {Array.from({ length: SHARE_TARGET }).map((_, i) => (
-                <View key={i} style={[styles.shareDot, i < shareCount && styles.shareDotFilled]} />
-              ))}
-              <Text style={styles.shareProgress}>{shareCount}/{SHARE_TARGET} shared</Text>
-            </View>
-            <View style={styles.shareChips}>
-              {SHARE_OPTIONS.map((opt) => {
-                const done = shared.has(opt.id);
-                return (
-                  <Pressable
-                    key={opt.id}
-                    onPress={() => onShare(opt)}
-                    disabled={shareMutation.isPending}
-                    style={[styles.shareChip, done && styles.shareChipDone]}
-                  >
-                    <Text style={[styles.shareChipText, done && styles.shareChipTextDone]}>{done ? "✓ " : ""}{opt.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </>
-        )}
-      </Card>
-
       <View style={styles.honestCard}>
         <Text style={styles.honestTitle}>Simple, honest prices</Text>
         <Text style={styles.honestDesc}>Every plan runs your whole farm — everything included. Just pick the size that fits.</Text>
@@ -439,7 +350,7 @@ export function SubscriptionScreen() {
               <Text style={styles.planPerMonth}>per {plan.billingPeriod === "yearly" ? "year" : plan.billingPeriod === "monthly" ? "month" : plan.billingPeriod}</Text>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: spacing.sm }}>
                 <Check size={13} color={colors.primary} />
-                <Text style={styles.planFeature}>{plan.managerLimit} manager{plan.managerLimit > 1 ? "s" : ""} included</Text>
+                <Text style={styles.planFeature}>{plan.managerLimit} invitee{plan.managerLimit > 1 ? "s" : ""} included</Text>
               </View>
               <View style={{ marginTop: spacing.md }}>
                 <Button
@@ -511,19 +422,6 @@ const styles = StyleSheet.create({
   statusMeta: { color: "rgba(255,255,255,0.6)", fontSize: 11, marginTop: spacing.sm },
   seatRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs, marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.2)" },
   seatText: { color: "#fff", fontSize: 12.5, flex: 1 },
-
-  shareCard: { borderColor: "#BEE6CD", backgroundColor: "#F0FBF4" },
-  shareTitle: { fontSize: 14.5, fontWeight: "700", color: colors.text },
-  shareDesc: { fontSize: 12, color: colors.textMuted, marginTop: spacing.xs, lineHeight: 16 },
-  shareDots: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: spacing.sm },
-  shareDot: { height: 8, width: 30, borderRadius: 4, backgroundColor: "#CFEFDA" },
-  shareDotFilled: { backgroundColor: "#2F9E67" },
-  shareProgress: { marginLeft: 4, fontSize: 11.5, fontWeight: "700", color: "#2F9E67" },
-  shareChips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs, marginTop: spacing.sm },
-  shareChip: { paddingVertical: spacing.sm, paddingHorizontal: spacing.sm + 2, borderRadius: radius.pill, borderWidth: 1, borderColor: "#D8D5E0", backgroundColor: "#fff" },
-  shareChipDone: { backgroundColor: "#2F9E67", borderColor: "#2F9E67" },
-  shareChipText: { fontSize: 12.5, fontWeight: "600", color: colors.text },
-  shareChipTextDone: { color: "#fff" },
 
   honestCard: { backgroundColor: "#EFEDF7", borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: "#DDD8EC", alignItems: "center" },
   honestTitle: { fontSize: 14.5, fontWeight: "700", color: colors.primary, textAlign: "center" },

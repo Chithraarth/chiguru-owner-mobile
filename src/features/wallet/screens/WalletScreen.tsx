@@ -1,13 +1,13 @@
 import React, { useState } from "react";
-import { Alert, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Wallet as WalletIcon, PartyPopper, Share2, Sparkles, Zap } from "lucide-react-native";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Wallet as WalletIcon, Sparkles, Zap } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { LoadingView } from "../../../components/StateViews";
 import { colors, radius, spacing } from "../../../components/theme";
-import { createRechargeOrder, getWallet, shareWalletReward, verifyRecharge } from "../../../api/endpoints/wallet";
+import { createRechargeOrder, getWallet, verifyRecharge } from "../../../api/endpoints/wallet";
 import { RazorpayCheckoutModal } from "../components/RazorpayCheckoutModal";
 import { ApiError } from "../../../api/errors";
 import type { WalletRechargeOrderResponse } from "../../../types/api";
@@ -19,23 +19,6 @@ function inr(n: number) {
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
-
-const SHARE_MESSAGE = "I'm running my farm on Chiguru — attendance, expenses, harvest and Agri Doctor, all in one app. Try it:";
-const SHARE_LINK = "https://thechiguru.com";
-
-interface ShareOption {
-  id: string;
-  label: string;
-  url: ((text: string, link: string) => string) | null;
-}
-// Matches the allowed platform list in chiguru-backend's routes/wallet.ts exactly.
-const SHARE_OPTIONS: ShareOption[] = [
-  { id: "whatsapp", label: "WhatsApp", url: (t, l) => `https://wa.me/?text=${encodeURIComponent(`${t} ${l}`)}` },
-  { id: "facebook", label: "Facebook", url: (_t, l) => `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(l)}` },
-  { id: "instagram", label: "Instagram", url: null },
-  { id: "x", label: "X (Twitter)", url: (t, l) => `https://twitter.com/intent/tweet?text=${encodeURIComponent(t)}&url=${encodeURIComponent(l)}` },
-  { id: "telegram", label: "Telegram", url: (t, l) => `https://t.me/share/url?url=${encodeURIComponent(l)}&text=${encodeURIComponent(t)}` },
-];
 
 const TXN_LABELS: Record<string, string> = {
   recharge: "Wallet recharge",
@@ -54,17 +37,6 @@ export function WalletScreen() {
   const walletQuery = useQuery({ queryKey: ["wallet"], queryFn: getWallet });
 
   const invalidateAll = () => queryClient.invalidateQueries({ queryKey: ["wallet"] });
-
-  const shareMutation = useMutation({
-    mutationFn: (platform: string) => shareWalletReward(platform),
-    onSuccess: (res) => {
-      invalidateAll();
-      if (res?.creditGiven) {
-        Alert.alert("₹300 wallet credit!", "Thanks for spreading the word about Chiguru.");
-      }
-    },
-    onError: () => Alert.alert("Couldn't record your share", "Please try again."),
-  });
 
   async function onRecharge(amount: number) {
     setRechargingAmount(amount);
@@ -125,31 +97,14 @@ export function WalletScreen() {
     Alert.alert("Payment failed", message);
   }
 
-  async function onShare(opt: ShareOption) {
-    if (opt.url) {
-      await Linking.openURL(opt.url(SHARE_MESSAGE, SHARE_LINK));
-    } else {
-      try {
-        await Share.share({ message: `${SHARE_MESSAGE} ${SHARE_LINK}` });
-      } catch {
-        return;
-      }
-    }
-    shareMutation.mutate(opt.id);
-  }
-
   if (walletQuery.isLoading) return <LoadingView label="Loading wallet..." />;
 
   const data = walletQuery.data;
   const balance = data?.balance ?? 0;
-  const minRechargeAmount = data?.minRechargeAmount ?? 199;
+  const minRechargeAmount = data?.minRechargeAmount ?? 200;
   const rechargeValue = Math.floor(Number(rechargeInput));
   const rechargeValid = Number.isFinite(rechargeValue) && rechargeValue >= minRechargeAmount;
   const aiPrices = Object.entries(data?.aiPrices ?? {});
-  const shareTarget = data?.share.target ?? 3;
-  const shared = new Set(data?.share.platforms ?? []);
-  const shareClaimed = !!data?.share.rewarded;
-  const shareCount = Math.min(shared.size, shareTarget);
   const transactions = data?.transactions ?? [];
 
   return (
@@ -190,44 +145,6 @@ export function WalletScreen() {
         </View>
         <Text style={styles.minRechargeNote}>Minimum {inr(minRechargeAmount)}</Text>
       </View>
-
-      {/* Share on 3 apps → ₹300 wallet credit */}
-      <Card style={styles.shareCard}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
-          {shareClaimed ? <PartyPopper size={18} color="#2F9E67" /> : <Share2 size={18} color="#2F9E67" />}
-          <Text style={styles.shareTitle}>{shareClaimed ? "₹300 wallet credit claimed!" : `Share on ${shareTarget} apps → ₹300 wallet credit`}</Text>
-        </View>
-        {shareClaimed ? (
-          <Text style={styles.shareDesc}>Thanks for sharing Chiguru — ₹300 has been added to your wallet.</Text>
-        ) : (
-          <>
-            <Text style={styles.shareDesc}>
-              Post about Chiguru on any {shareTarget} different apps and get ₹300 credited to your wallet.
-            </Text>
-            <View style={styles.shareDots}>
-              {Array.from({ length: shareTarget }).map((_, i) => (
-                <View key={i} style={[styles.shareDot, i < shareCount && styles.shareDotFilled]} />
-              ))}
-              <Text style={styles.shareProgress}>{shareCount}/{shareTarget} shared</Text>
-            </View>
-            <View style={styles.shareChips}>
-              {SHARE_OPTIONS.map((opt) => {
-                const done = shared.has(opt.id);
-                return (
-                  <Pressable
-                    key={opt.id}
-                    onPress={() => onShare(opt)}
-                    disabled={shareMutation.isPending}
-                    style={[styles.shareChip, done && styles.shareChipDone]}
-                  >
-                    <Text style={[styles.shareChipText, done && styles.shareChipTextDone]}>{done ? "✓ " : ""}{opt.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </>
-        )}
-      </Card>
 
       <View>
         <Text style={styles.sectionTitle}>AI feature prices</Text>
@@ -298,19 +215,6 @@ const styles = StyleSheet.create({
 
   sectionTitle: { fontSize: 14.5, fontWeight: "700", color: colors.text },
   minRechargeNote: { fontSize: 11, color: colors.textMuted, marginTop: spacing.xs },
-
-  shareCard: { borderColor: "#BEE6CD", backgroundColor: "#F0FBF4" },
-  shareTitle: { fontSize: 14.5, fontWeight: "700", color: colors.text, flexShrink: 1 },
-  shareDesc: { fontSize: 12, color: colors.textMuted, marginTop: spacing.xs, lineHeight: 16 },
-  shareDots: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: spacing.sm },
-  shareDot: { height: 8, width: 30, borderRadius: 4, backgroundColor: "#CFEFDA" },
-  shareDotFilled: { backgroundColor: "#2F9E67" },
-  shareProgress: { marginLeft: 4, fontSize: 11.5, fontWeight: "700", color: "#2F9E67" },
-  shareChips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs, marginTop: spacing.sm },
-  shareChip: { paddingVertical: spacing.sm, paddingHorizontal: spacing.sm + 2, borderRadius: radius.pill, borderWidth: 1, borderColor: "#D8D5E0", backgroundColor: "#fff" },
-  shareChipDone: { backgroundColor: "#2F9E67", borderColor: "#2F9E67" },
-  shareChipText: { fontSize: 12.5, fontWeight: "600", color: colors.text },
-  shareChipTextDone: { color: "#fff" },
 
   priceRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: spacing.xs },
   priceRowBorder: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.sm },
