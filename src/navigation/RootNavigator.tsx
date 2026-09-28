@@ -88,7 +88,9 @@ export function RootNavigator() {
     const stillValid = myEstates.some((e) => e.id === activeEstateId);
     if (stillValid) return;
     if (ownFarmSetup) return;
-    if (myEstates.length === 1) {
+    // Only a plain Owner with a single farm and no invites goes straight in;
+    // anyone with an invited farm always picks on Choose Estate.
+    if (myEstates.length === 1 && myEstates[0].relationship === "own") {
       setActiveEstate(myEstates[0].id);
     } else if (myEstates.length === 0 && activeEstateId != null) {
       // Nothing left to act on (farm deleted, invite revoked) - don't keep
@@ -151,8 +153,12 @@ export function RootNavigator() {
   const myEstates = myEstatesQuery.data ?? [];
   // Skipped while setting up your own farm from invitee mode - no farm is
   // active on purpose until the new one is created.
+  // Anyone with more than one farm, or any invited farm, picks which one to
+  // work on first - only a plain Owner with a single farm goes straight in.
   const needsEstateChoice =
-    !ownFarmSetup && myEstates.length > 1 && !myEstates.some((e) => e.id === activeEstateId);
+    !ownFarmSetup &&
+    (myEstates.length > 1 || myEstates.some((e) => e.relationship === "invited")) &&
+    !myEstates.some((e) => e.id === activeEstateId);
   if (needsEstateChoice) {
     return <ChooseEstateScreen onChosen={() => myEstatesQuery.refetch()} />;
   }

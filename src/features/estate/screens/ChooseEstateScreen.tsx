@@ -9,15 +9,16 @@ import { useEstateStore } from "../store/estateStore";
 import type { MyEstate } from "../../../types/api";
 
 // ── Choose Estate ─────────────────────────────────────────────────────────
-// Shown once, right after sign-in, whenever this person has more than one
-// estate relationship to pick from — their own farm(s), and/or one or more
-// farms they've been invited to help manage. Picking one sets activeEstateId,
+// Shown right after sign-in whenever this person has more than one farm, or
+// any farm they've been invited to help manage — their own farm(s) open the
+// full Owner app, an invited one opens the invitee screens. Picking one sets activeEstateId,
 // which the API client already sends as X-Estate-Id on every request; the
 // backend resolves who that makes this person (owner or invitee) from that
 // header alone, so nothing else needs to happen here.
 export function ChooseEstateScreen({ onChosen }: { onChosen: () => void }) {
   const query = useMyEstates();
   const setActiveEstate = useEstateStore((s) => s.setActiveEstate);
+  const startOwnFarmSetup = useEstateStore((s) => s.startOwnFarmSetup);
 
   async function choose(estate: MyEstate) {
     await setActiveEstate(estate.id);
@@ -33,7 +34,7 @@ export function ChooseEstateScreen({ onChosen }: { onChosen: () => void }) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
       <Text style={styles.title}>Choose a farm</Text>
-      <Text style={styles.subtitle}>You have access to more than one farm. Pick which one to work on.</Text>
+      <Text style={styles.subtitle}>Pick which farm to work on. You can switch any time.</Text>
 
       {own.length > 0 ? (
         <View>
@@ -55,6 +56,12 @@ export function ChooseEstateScreen({ onChosen }: { onChosen: () => void }) {
             ))}
           </View>
         </View>
+      ) : null}
+
+      {own.length === 0 ? (
+        <Pressable style={styles.setupRow} onPress={startOwnFarmSetup}>
+          <Text style={styles.setupText}>＋ Set up my own farm</Text>
+        </Pressable>
       ) : null}
     </ScrollView>
   );
@@ -96,4 +103,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   rowText: { fontSize: 15.5, fontWeight: "600", color: colors.text, flex: 1 },
+  setupRow: {
+    padding: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    borderColor: colors.primary + "55",
+    backgroundColor: colors.primary + "0D",
+    alignItems: "center",
+  },
+  setupText: { fontSize: 15, fontWeight: "700", color: colors.primary },
 });
