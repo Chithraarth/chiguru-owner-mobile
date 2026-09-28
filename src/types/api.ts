@@ -1017,6 +1017,8 @@ export interface Manager {
   name: string;
   phone: string | null;
   email: string | null;
+  /** The one estate this invite grants; null only for invites made before per-estate scoping. */
+  estateId: number | null;
   status: "pending" | "active" | "declined" | "removed";
   createdAt: string;
   activatedAt: string | null;
@@ -1027,6 +1029,8 @@ export interface PendingInvite {
   id: number;
   name: string;
   ownerName: string | null;
+  ownerEmail: string | null;
+  ownerPhone: string | null;
   farmName: string | null;
   createdAt: string;
 }

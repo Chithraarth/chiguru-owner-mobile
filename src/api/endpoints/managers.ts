@@ -1,13 +1,16 @@
 import { apiFetch, apiMutate } from "../client";
+
+// Invite, accept and decline are sent directly, never queued offline: none of
+// them is idempotent, and the person needs to know right away if it failed.
 import type { Manager, PendingInvite } from "../../types/api";
 
 export function getManagers() {
   return apiFetch<Manager[]>("/managers");
 }
 
-/** Invite by phone OR email — pass whichever one the owner entered. */
-export function inviteManager(name: string, contact: { phone?: string; email?: string }) {
-  return apiMutate<Manager>("POST", "/managers", { name, ...contact });
+/** Invite by phone OR email to one of your estates — pass whichever contact the owner entered. */
+export function inviteManager(name: string, contact: { phone?: string; email?: string }, estateId: number) {
+  return apiFetch<Manager>("/managers", { method: "POST", body: JSON.stringify({ name, estateId, ...contact }) });
 }
 
 export function removeManager(id: number) {
@@ -20,9 +23,9 @@ export function getMyInvites() {
 }
 
 export function acceptInvite(id: number) {
-  return apiMutate<Manager>("POST", `/me/invites/${id}/accept`);
+  return apiFetch<Manager>(`/me/invites/${id}/accept`, { method: "POST" });
 }
 
 export function declineInvite(id: number) {
-  return apiMutate<null>("POST", `/me/invites/${id}/decline`);
+  return apiFetch<null>(`/me/invites/${id}/decline`, { method: "POST" });
 }

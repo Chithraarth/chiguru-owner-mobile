@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Users } from "lucide-react-native";
@@ -32,12 +32,13 @@ export function PendingInvitesScreen({ onDone }: { onDone: () => void }) {
 
   const invites = query.data ?? [];
 
-  if (query.isLoading) return <LoadingView label="Checking invites..." />;
+  const allHandled = !query.isLoading && invites.length === 0;
+  useEffect(() => {
+    if (allHandled) onDone();
+  }, [allHandled, onDone]);
 
-  if (invites.length === 0) {
-    onDone();
-    return <LoadingView label="Loading..." />;
-  }
+  if (query.isLoading) return <LoadingView label="Checking invites..." />;
+  if (allHandled) return <LoadingView label="Loading..." />;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
@@ -49,7 +50,16 @@ export function PendingInvitesScreen({ onDone }: { onDone: () => void }) {
           <InviteCard
             key={invite.id}
             invite={invite}
-            busy={acceptMutation.isPending || declineMutation.isPending}
+            busy={
+              (acceptMutation.isPending && acceptMutation.variables === invite.id) ||
+              (declineMutation.isPending && declineMutation.variables === invite.id)
+            }
+            error={
+              (acceptMutation.isError && acceptMutation.variables === invite.id) ||
+              (declineMutation.isError && declineMutation.variables === invite.id)
+                ? "Couldn't reach the server. Check your connection and try again."
+                : null
+            }
             onAccept={() => acceptMutation.mutate(invite.id)}
             onDecline={() => declineMutation.mutate(invite.id)}
           />
@@ -62,11 +72,13 @@ export function PendingInvitesScreen({ onDone }: { onDone: () => void }) {
 function InviteCard({
   invite,
   busy,
+  error,
   onAccept,
   onDecline,
 }: {
   invite: PendingInvite;
   busy: boolean;
+  error: string | null;
   onAccept: () => void;
   onDecline: () => void;
 }) {
@@ -77,12 +89,18 @@ function InviteCard({
           <Users size={18} color={colors.primary} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.rowTitle}>{invite.ownerName ?? "Someone"} invited you</Text>
+          <Text style={styles.rowTitle}>
+            {invite.ownerName ?? invite.ownerEmail ?? invite.ownerPhone ?? "Someone"} invited you
+          </Text>
           <Text style={styles.rowSubtitle}>
             {invite.farmName ? `To help manage "${invite.farmName}"` : "To help manage their farm"}
           </Text>
+          {invite.ownerName && (invite.ownerEmail || invite.ownerPhone) ? (
+            <Text style={styles.rowSubtitle}>{invite.ownerEmail ?? invite.ownerPhone}</Text>
+          ) : null}
         </View>
       </View>
+      {error ? <Text style={styles.error}>{error}</Text> : null}
       <View style={{ flexDirection: "row", gap: spacing.sm }}>
         <View style={{ flex: 1 }}>
           <Button title="Decline" variant="secondary" onPress={onDecline} disabled={busy} />
@@ -110,4 +128,5 @@ const styles = StyleSheet.create({
   },
   rowTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
   rowSubtitle: { fontSize: 12.5, color: colors.textMuted, marginTop: 2 },
+  error: { fontSize: 12.5, color: colors.danger },
 });

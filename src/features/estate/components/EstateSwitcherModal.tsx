@@ -3,6 +3,7 @@ import { Alert, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } 
 import { Pencil, Trash2, X, Check } from "lucide-react-native";
 import { colors, radius, spacing } from "../../../components/theme";
 import { useEstates } from "../hooks/useEstates";
+import { useMyEstates } from "../hooks/useMyEstates";
 import type { Estate } from "../../../types/api";
 
 export function EstateSwitcherModal({
@@ -13,6 +14,10 @@ export function EstateSwitcherModal({
   onClose: () => void;
 }) {
   const { data: estates, activeEstateId, switchEstate, renameEstate, deleteEstate } = useEstates();
+  // Farms other Owners invited this person to - opening one switches the app
+  // into invitee mode (see RootNavigator), so they're listed without the
+  // rename/delete actions that only apply to your own farms.
+  const invited = (useMyEstates().data ?? []).filter((e) => e.relationship === "invited");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
 
@@ -46,6 +51,25 @@ export function EstateSwitcherModal({
         <Text style={styles.title}>Switch farm</Text>
         <FlatList
           data={estates ?? []}
+          ListFooterComponent={
+            invited.length > 0 ? (
+              <View>
+                <Text style={styles.sectionLabel}>Invited to</Text>
+                {invited.map((e) => (
+                  <Pressable
+                    key={e.id}
+                    style={styles.row}
+                    onPress={async () => {
+                      await switchEstate(e.id);
+                      onClose();
+                    }}
+                  >
+                    <Text style={styles.rowText}>{e.farmName}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null
+          }
           keyExtractor={(e) => String(e.id)}
           renderItem={({ item }) =>
             editingId === item.id ? (
@@ -110,6 +134,14 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   rowText: { fontSize: 16, color: colors.text },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: colors.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    marginTop: spacing.lg,
+  },
   check: { color: colors.primary, fontSize: 18, fontWeight: "700" },
   editRow: {
     flexDirection: "row",

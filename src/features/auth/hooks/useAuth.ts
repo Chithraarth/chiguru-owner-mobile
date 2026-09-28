@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { queryClient } from "../../../lib/queryClient";
 import { watchAuthState } from "../../../lib/firebase";
 import { useSessionStore } from "../../../store/sessionStore";
+import { useEstateStore } from "../../estate/store/estateStore";
 
 let lastUid: string | null | undefined;
 
@@ -17,6 +18,8 @@ export function useAuthListener() {
         // Account changed (including sign-out) - never leak cached data
         // across accounts on a shared device.
         queryClient.clear();
+        // The chosen farm belongs to the previous account too.
+        useEstateStore.getState().setActiveEstate(null);
       }
       lastUid = uid;
       setUser(user);
