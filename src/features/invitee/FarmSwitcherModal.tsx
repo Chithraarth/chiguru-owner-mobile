@@ -22,13 +22,13 @@ export function FarmSwitcherModal({ visible, onClose }: { visible: boolean; onCl
   // until this person has a farm of their own).
   async function setUpOwnFarm() {
     await startOwnFarmSetup();
-    queryClient.invalidateQueries({ predicate: (q) => q.queryKey[0] !== "my-estates" });
+    queryClient.resetQueries({ predicate: (q) => q.queryKey[0] !== "my-estates" });
     onClose();
   }
 
   async function choose(estate: MyEstate) {
     await setActiveEstate(estate.id);
-    queryClient.invalidateQueries({ predicate: (q) => q.queryKey[0] !== "my-estates" });
+    queryClient.resetQueries({ predicate: (q) => q.queryKey[0] !== "my-estates" });
     onClose();
   }
 
