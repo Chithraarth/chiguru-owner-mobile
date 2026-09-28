@@ -39,6 +39,9 @@ export function HomeScreen({ navigation }: { navigation: any }) {
         <Text style={styles.farmName} onPress={() => setSwitcherOpen(true)}>
           {activeEstate?.farmName ?? "Select farm"} ▾
         </Text>
+        <Text style={styles.switchFarm} onPress={() => setSwitcherOpen(true)}>
+          Switch farm
+        </Text>
         <Text style={styles.signOut} onPress={confirmSignOut}>
           Sign out
         </Text>
@@ -135,6 +138,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.md },
   farmName: { fontSize: 15, fontWeight: "700", color: colors.primary },
+  switchFarm: { fontSize: 13, fontWeight: "600", color: colors.primary, marginLeft: "auto", marginRight: spacing.md },
   signOut: { fontSize: 13, color: colors.danger },
   greeting: { fontSize: 22, fontWeight: "700", color: colors.text },
   date: { fontSize: 13, color: colors.textMuted, marginTop: 2 },

@@ -14,8 +14,17 @@ export function FarmSwitcherModal({ visible, onClose }: { visible: boolean; onCl
   const estates = useMyEstates().data ?? [];
   const activeEstateId = useEstateStore((s) => s.activeEstateId);
   const setActiveEstate = useEstateStore((s) => s.setActiveEstate);
+  const startOwnFarmSetup = useEstateStore((s) => s.startOwnFarmSetup);
   const own = estates.filter((e) => e.relationship === "own");
   const invited = estates.filter((e) => e.relationship === "invited");
+
+  // Leaves the invited farm for the Owner app's own-farm setup (only offered
+  // until this person has a farm of their own).
+  async function setUpOwnFarm() {
+    await startOwnFarmSetup();
+    queryClient.invalidateQueries({ predicate: (q) => q.queryKey[0] !== "my-estates" });
+    onClose();
+  }
 
   async function choose(estate: MyEstate) {
     await setActiveEstate(estate.id);
@@ -46,6 +55,11 @@ export function FarmSwitcherModal({ visible, onClose }: { visible: boolean; onCl
         <ScrollView>
           {section("My farms", own)}
           {section("Invited to", invited)}
+          {own.length === 0 ? (
+            <Pressable style={styles.setupRow} onPress={setUpOwnFarm}>
+              <Text style={styles.setupText}>＋ Set up my own farm</Text>
+            </Pressable>
+          ) : null}
         </ScrollView>
       </View>
     </Modal>
@@ -80,4 +94,12 @@ const styles = StyleSheet.create({
   },
   rowText: { fontSize: 16, color: colors.text },
   check: { color: colors.primary, fontSize: 18, fontWeight: "700" },
+  setupRow: {
+    marginTop: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.primary + "12",
+  },
+  setupText: { fontSize: 15, fontWeight: "600", color: colors.primary },
 });
