@@ -28,8 +28,10 @@ export function useEstates() {
 
   async function switchEstate(id: number) {
     await setActiveEstate(id);
-    // Switching farms refetches everything except the estate list itself.
-    queryClient.invalidateQueries({ predicate: (q) => q.queryKey[0] !== "estates" });
+    // Switching farms resets (not just refetches) everything but the
+    // /me/estates list - a refetch that fails (e.g. 404, no farm) would
+    // otherwise keep showing the previous farm's data.
+    queryClient.resetQueries({ predicate: (q) => q.queryKey[0] !== "my-estates" });
   }
 
   const renameMutation = useMutation({
