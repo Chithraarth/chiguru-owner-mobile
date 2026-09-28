@@ -40,6 +40,7 @@ export function RootNavigator() {
   // needed, and whether the active one is their own or an invited farm.
   const myEstatesQuery = useMyEstates();
   const rememberedRelationship = useEstateStore((s) => s.activeRelationship);
+  const ownFarmSetup = useEstateStore((s) => s.ownFarmSetup);
   const rememberRelationship = useEstateStore((s) => s.rememberRelationship);
   const liveRelationship = myEstatesQuery.data?.find((e) => e.id === activeEstateId)?.relationship;
   // Live answer when /me/estates loaded; the remembered one when it couldn't
@@ -86,6 +87,7 @@ export function RootNavigator() {
     if (!myEstates) return;
     const stillValid = myEstates.some((e) => e.id === activeEstateId);
     if (stillValid) return;
+    if (ownFarmSetup) return;
     if (myEstates.length === 1) {
       setActiveEstate(myEstates[0].id);
     } else if (myEstates.length === 0 && activeEstateId != null) {
@@ -93,7 +95,7 @@ export function RootNavigator() {
       // sending a stale X-Estate-Id.
       setActiveEstate(null);
     }
-  }, [myEstatesQuery.data, activeEstateId, setActiveEstate]);
+  }, [myEstatesQuery.data, activeEstateId, ownFarmSetup, setActiveEstate]);
 
   useEffect(() => {
     if (!user) return;
@@ -147,7 +149,10 @@ export function RootNavigator() {
   // activeEstateId doesn't point at something in the current list (revoked
   // invite, deleted farm, or simply never chosen yet).
   const myEstates = myEstatesQuery.data ?? [];
-  const needsEstateChoice = myEstates.length > 1 && !myEstates.some((e) => e.id === activeEstateId);
+  // Skipped while setting up your own farm from invitee mode - no farm is
+  // active on purpose until the new one is created.
+  const needsEstateChoice =
+    !ownFarmSetup && myEstates.length > 1 && !myEstates.some((e) => e.id === activeEstateId);
   if (needsEstateChoice) {
     return <ChooseEstateScreen onChosen={() => myEstatesQuery.refetch()} />;
   }
