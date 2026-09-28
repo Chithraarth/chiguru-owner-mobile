@@ -18,6 +18,7 @@ import { usePushStore } from "../lib/push";
 import { LoadingView } from "../components/StateViews";
 import { AuthStack } from "./AuthStack";
 import { MainTabs } from "./MainTabs";
+import { InviteeStack } from "../features/invitee/InviteeStack";
 
 export function RootNavigator() {
   useAuthListener();
@@ -34,9 +35,27 @@ export function RootNavigator() {
   const hydratePush = usePushStore((s) => s.hydrate);
   const navRef = useRef<NavigationContainerRef<any>>(null);
 
+  // Every estate this person may act on (their own + anything they're
+  // invited to), so we know up front whether a Choose Estate step is even
+  // needed, and whether the active one is their own or an invited farm.
+  const myEstatesQuery = useMyEstates();
+  const rememberedRelationship = useEstateStore((s) => s.activeRelationship);
+  const rememberRelationship = useEstateStore((s) => s.rememberRelationship);
+  const liveRelationship = myEstatesQuery.data?.find((e) => e.id === activeEstateId)?.relationship;
+  // Live answer when /me/estates loaded; the remembered one when it couldn't
+  // (offline start), so an invitee in the field still gets invitee screens.
+  const activeRelationship = myEstatesQuery.data ? liveRelationship : rememberedRelationship;
+  const isInvitedEstate = activeRelationship === "invited";
+
   useEffect(() => {
-    if (user) hydratePush();
-  }, [user, hydratePush]);
+    if (liveRelationship) rememberRelationship(liveRelationship);
+  }, [liveRelationship, rememberRelationship]);
+
+  // Plan reminders belong to the farm's Owner - never register this device
+  // for them while working on someone else's farm.
+  useEffect(() => {
+    if (user && !isInvitedEstate) hydratePush();
+  }, [user, isInvitedEstate, hydratePush]);
 
   // Tapping the Year Plan reminder notification jumps straight to the plan.
   useEffect(() => {
@@ -47,13 +66,6 @@ export function RootNavigator() {
     });
     return () => sub.remove();
   }, []);
-
-  // Always mounted once signed in - fetches every estate this person may
-  // act on (their own + anything they're invited to), so we know up front
-  // whether a Choose Estate step is even needed, and can self-heal
-  // activeEstateId if it no longer points at something they still have
-  // access to (e.g. an invite was revoked, or a farm was deleted).
-  const myEstatesQuery = useMyEstates();
 
   // Checked once per sign-in, before anything else can render - an invite
   // gives no access at all until explicitly accepted (see
@@ -71,11 +83,15 @@ export function RootNavigator() {
   // has to make.
   useEffect(() => {
     const myEstates = myEstatesQuery.data;
-    if (!myEstates || myEstates.length === 0) return;
+    if (!myEstates) return;
     const stillValid = myEstates.some((e) => e.id === activeEstateId);
     if (stillValid) return;
     if (myEstates.length === 1) {
       setActiveEstate(myEstates[0].id);
+    } else if (myEstates.length === 0 && activeEstateId != null) {
+      // Nothing left to act on (farm deleted, invite revoked) - don't keep
+      // sending a stale X-Estate-Id.
+      setActiveEstate(null);
     }
   }, [myEstatesQuery.data, activeEstateId, setActiveEstate]);
 
@@ -141,8 +157,18 @@ export function RootNavigator() {
   // farm" prompt). We only needed to make sure myEstatesQuery has actually
   // settled before rendering, so screens gated on activeEstateId don't spin
   // forever waiting on a fetch nobody triggered.
+  // An invited farm gets exactly the old Manager app's screens; your own
+  // farm gets the full Owner app. Keyed so switching resets navigation.
+  if (isInvitedEstate) {
+    return (
+      <NavigationContainer key="invitee">
+        <InviteeStack />
+      </NavigationContainer>
+    );
+  }
+
   return (
-    <NavigationContainer ref={navRef}>
+    <NavigationContainer key="owner" ref={navRef}>
       <MainTabs />
     </NavigationContainer>
   );

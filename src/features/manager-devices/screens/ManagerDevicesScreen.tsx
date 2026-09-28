@@ -4,9 +4,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
+import { ChipSelect } from "../../../components/ChipSelect";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
 import { colors, radius, spacing } from "../../../components/theme";
 import { getManagers, inviteManager, removeManager } from "../../../api/endpoints/managers";
+import { useMyEstates } from "../../estate/hooks/useMyEstates";
+import { useEstateStore } from "../../estate/store/estateStore";
 import { useT } from "../../../lib/i18n";
 
 // Screen title is "Invitees" in the UI - the file/route keep the historical
@@ -23,9 +26,23 @@ export function ManagerDevicesScreen() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  // Each invite is for exactly one of your own farms (never one you were
+  // invited to). Defaults to the farm you're on.
+  const ownEstates = (useMyEstates().data ?? []).filter((e) => e.relationship === "own");
+  const activeEstateId = useEstateStore((s) => s.activeEstateId);
+  const [pickedEstateId, setPickedEstateId] = useState<number | null>(null);
+  const estateId =
+    pickedEstateId ?? (ownEstates.some((e) => e.id === activeEstateId) ? activeEstateId : ownEstates[0]?.id ?? null);
+  const estateLabel = (id: number) => {
+    const e = ownEstates.find((x) => x.id === id);
+    if (!e) return "";
+    return ownEstates.filter((x) => x.farmName === e.farmName).length > 1 ? `${e.farmName} (#${e.id})` : e.farmName;
+  };
+  const estateName = (id: number | null) => (id != null ? ownEstates.find((e) => e.id === id)?.farmName ?? null : null);
+
   const inviteMutation = useMutation({
     mutationFn: () =>
-      inviteManager(name.trim(), mode === "phone" ? { phone: phone.trim() } : { email: email.trim() }),
+      inviteManager(name.trim(), mode === "phone" ? { phone: phone.trim() } : { email: email.trim() }, estateId!),
     onSuccess: () => {
       setName("");
       setPhone("");
@@ -61,6 +78,10 @@ export function ManagerDevicesScreen() {
       setError("Enter an email address");
       return;
     }
+    if (estateId == null) {
+      setError("Set up a farm first, then invite someone to help manage it");
+      return;
+    }
     inviteMutation.mutate();
   }
 
@@ -71,6 +92,15 @@ export function ManagerDevicesScreen() {
       <Card style={{ margin: spacing.md }}>
         <Text style={styles.sectionTitle}>Invite someone</Text>
         <TextField label={t("profile.name")} value={name} onChangeText={setName} />
+
+        {ownEstates.length > 1 ? (
+          <ChipSelect
+            label="Which farm is this for?"
+            options={ownEstates.map((e) => estateLabel(e.id))}
+            value={estateId != null ? estateLabel(estateId) : ""}
+            onChange={(label) => setPickedEstateId(ownEstates.find((e) => estateLabel(e.id) === label)?.id ?? null)}
+          />
+        ) : null}
 
         <View style={styles.modeRow}>
           <Pressable style={[styles.modeTab, mode === "phone" && styles.modeTabActive]} onPress={() => setMode("phone")}>
@@ -103,6 +133,7 @@ export function ManagerDevicesScreen() {
               <Text style={styles.meta}>
                 {item.phone ?? item.email} · {item.status}
               </Text>
+              {estateName(item.estateId) ? <Text style={styles.meta}>{estateName(item.estateId)}</Text> : null}
             </View>
             {item.status !== "removed" ? (
               <Button title="Remove" variant="danger" onPress={() => confirmRemove(item.id, item.name)} />
