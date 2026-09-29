@@ -273,7 +273,9 @@ export function SubscriptionScreen() {
         <View style={styles.statusCard}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
             <Crown size={18} color={colors.accentInk} />
-            <Text style={styles.statusTitle}>{current!.plan?.name} plan active</Text>
+            <Text style={styles.statusTitle}>
+              {/plan$/i.test(current!.plan?.name ?? "") ? current!.plan?.name : `${current!.plan?.name ?? "Your"} plan`} active
+            </Text>
           </View>
           <Text style={styles.statusDesc}>Your farm is fully active — everything is unlocked.</Text>
           {current!.expiryDate ? (
