@@ -2,12 +2,13 @@ import React, { useState } from "react";
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Text, TextInput } from "../../../components/Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Leaf, Plus, TrendingUp, Trash2, X, Users } from "lucide-react-native";
+import { Leaf, Plus, TrendingUp, Trash2, X, Users, ChevronRight, ChevronLeft, Sprout } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { ChipSelect } from "../../../components/ChipSelect";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
+import { IconChip, ListCard, ListRow, Pill, SectionLabel, StatTiles, shortRupees } from "../../../components/harvest";
 import { colors, radius, spacing } from "../../../components/theme";
 import { useHarvests } from "../hooks/useHarvests";
 import { useWorkGroups } from "../../work-groups/hooks/useWorkGroups";
@@ -122,62 +123,51 @@ export function HarvestsScreen() {
       <ScrollView contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
         {openFolder === null ? (
           <>
-            <View style={{ flexDirection: "row", gap: spacing.sm }}>
-              <Pressable style={[styles.statCard, { backgroundColor: "#FEF3C7", borderColor: "#FDE68A" }]} onPress={() => openForm("sold")}>
-                <Text style={[styles.statLabel, { color: "#92600E" }]}>Total income</Text>
-                <Text style={[styles.statValue, { color: "#92600E" }]}>{inr(totalIncome)}</Text>
-                <View style={[styles.statAddBtn, { backgroundColor: "#FDE68A" }]}>
-                  <Plus size={12} color="#92600E" />
-                  <Text style={[styles.statAddText, { color: "#92600E" }]}>Sold Harvest</Text>
-                </View>
-              </Pressable>
-              <Pressable style={[styles.statCard, { backgroundColor: colors.bg, borderColor: colors.border }]} onPress={() => openForm("general")}>
-                <Text style={[styles.statLabel, { color: colors.primary }]}>Total yield</Text>
-                <Text style={[styles.statValue, { color: colors.primary }]}>{totalKg.toLocaleString("en-IN")} kg</Text>
-                <View style={[styles.statAddBtn, { backgroundColor: "#FBF2D9" }]}>
-                  <Plus size={12} color={colors.primary} />
-                  <Text style={[styles.statAddText, { color: colors.primary }]}>General Harvest</Text>
-                </View>
-              </Pressable>
+            <StatTiles
+              items={[
+                { label: "Income", value: shortRupees(totalIncome), sub: "all harvests" },
+                { label: "Yield", value: `${Math.round(totalKg).toLocaleString("en-IN")} kg`, sub: "total" },
+              ]}
+            />
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <Button title="Sold harvest" icon={Plus} style={{ flex: 1 }} onPress={() => openForm("sold")} />
+              <Button title="General" variant="light" icon={Plus} style={{ flex: 1 }} onPress={() => openForm("general")} />
             </View>
 
-            <Text style={styles.sectionLabel}>YOUR WORK GROUPS</Text>
-            <View style={{ gap: spacing.sm }}>
-              {folders.map((f) => (
-                <Pressable key={f.id ?? "general"} onPress={() => setOpenFolder({ id: f.id, name: f.name })}>
-                  <Card style={styles.folderRow}>
-                    <View style={styles.folderIcon}>
-                      {f.id == null ? <Leaf size={22} color={colors.text} /> : <Users size={22} color={colors.text} />}
+            <SectionLabel>Your work groups</SectionLabel>
+            <ListCard>
+              {folders.map((f, i) => (
+                <ListRow
+                  key={f.id ?? "general"}
+                  title={f.name}
+                  subtitle={f.subtitle}
+                  left={<IconChip icon={f.id == null ? Sprout : Users} index={i} size={46} />}
+                  right={
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      {f.count > 0 ? <Pill text={String(f.count)} /> : null}
+                      <ChevronRight size={18} color={colors.textMuted} />
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.folderName}>{f.name}</Text>
-                      <Text style={styles.folderSubtitle}>{f.subtitle}</Text>
-                    </View>
-                    {f.count > 0 ? (
-                      <View style={styles.countBadge}><Text style={styles.countBadgeText}>{f.count}</Text></View>
-                    ) : null}
-                  </Card>
-                </Pressable>
+                  }
+                  divider={i < folders.length - 1}
+                  onPress={() => setOpenFolder({ id: f.id, name: f.name })}
+                />
               ))}
-            </View>
+            </ListCard>
           </>
         ) : (
           <>
-            <Pressable onPress={() => setOpenFolder(null)}>
-              <Text style={styles.backLink}>← All Groups</Text>
+            <Pressable onPress={() => setOpenFolder(null)} style={styles.backChip}>
+              <ChevronLeft size={18} color={colors.text} />
+              <Text style={styles.backLink}>All groups</Text>
             </Pressable>
 
             {folderHarvests.length > 0 ? (
-              <View style={{ flexDirection: "row", gap: spacing.sm }}>
-                <View style={[styles.statCard, { backgroundColor: "#FEF3C7", borderColor: "#FDE68A" }]}>
-                  <Text style={[styles.statLabel, { color: "#92600E" }]}>Income</Text>
-                  <Text style={[styles.statValue, { color: "#92600E" }]}>{inr(folderIncome)}</Text>
-                </View>
-                <View style={[styles.statCard, { backgroundColor: colors.bg, borderColor: colors.border }]}>
-                  <Text style={[styles.statLabel, { color: colors.primary }]}>Yield</Text>
-                  <Text style={[styles.statValue, { color: colors.primary }]}>{folderKg.toLocaleString("en-IN")} kg</Text>
-                </View>
-              </View>
+              <StatTiles
+                items={[
+                  { label: "Income", value: shortRupees(folderIncome), sub: openFolder.name },
+                  { label: "Yield", value: `${Math.round(folderKg).toLocaleString("en-IN")} kg`, sub: "harvested" },
+                ]}
+              />
             ) : null}
 
             {folderHarvests.length === 0 ? (
@@ -280,6 +270,7 @@ export function HarvestsScreen() {
 }
 
 const styles = StyleSheet.create({
+  backChip: { flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start", minHeight: 40, paddingHorizontal: 12, borderRadius: 999, backgroundColor: colors.card },
   container: { flex: 1, backgroundColor: colors.bg },
   statCard: { flex: 1, borderWidth: 1, borderRadius: radius.md, padding: spacing.sm + 4 },
   statLabel: { fontSize: 13.5, fontWeight: "600" },

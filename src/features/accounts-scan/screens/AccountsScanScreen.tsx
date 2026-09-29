@@ -350,12 +350,12 @@ const styles = StyleSheet.create({
   analyzingTitle: { fontSize: 16.5, fontWeight: "700", color: colors.text, marginTop: spacing.sm },
   analyzingSubtitle: { fontSize: 14, color: colors.textMuted },
 
-  summaryCard: { backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md },
-  summaryTitle: { color: "#fff", fontSize: 17, fontWeight: "700" },
+  summaryCard: { backgroundColor: colors.primary, borderRadius: 28, padding: 18 },
+  summaryTitle: { color: "#fff", fontSize: 20, fontWeight: "800" },
   yearBadge: { backgroundColor: "rgba(255,255,255,0.2)", borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: 2 },
   yearBadgeText: { color: "#fff", fontSize: 14, fontWeight: "700" },
   summaryStat: { color: "rgba(255,255,255,0.85)", fontSize: 14.5 },
-  summaryDesc: { color: "rgba(255,255,255,0.8)", fontSize: 13, marginTop: spacing.xs, lineHeight: 15 },
+  summaryDesc: { color: "rgba(255,255,255,0.85)", fontSize: 14, marginTop: spacing.xs, lineHeight: 19 },
 
   warningBanner: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: "#FFF3E6", borderWidth: 1, borderColor: "#FBD9AE", borderRadius: radius.sm, padding: spacing.sm + 2 },
   warningBannerText: { flex: 1, fontSize: 14.5, fontWeight: "600", color: "#95530F" },
