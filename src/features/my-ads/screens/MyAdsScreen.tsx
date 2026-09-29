@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { Alert, Image, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { Text } from "../../../components/Text";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { MapPin, Megaphone, Pencil, Tag, Trash2 } from "lucide-react-native";
+import { MapPin, Megaphone, Pencil, Tag, Trash2, Truck, HardHat, ShoppingBasket, Tractor, Sprout } from "lucide-react-native";
+import { BigTiles } from "../../../components/harvest";
 import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { useT } from "../../../lib/i18n";
 import { getMyProduceListings, deleteProduceListing } from "../../../api/endpoints/marketplace";
@@ -12,11 +13,11 @@ import type { EquipmentListing, HireListing, ProduceListing } from "../../../typ
 
 function getPostOptions(t: (key: string) => string) {
   return [
-    { emoji: "🚛", label: t("myAds.postMachine"), screen: "HireForm", params: { listingType: "rental" }, bg: "#FBF2D9" },
-    { emoji: "👷", label: t("myAds.postWorker"), screen: "HireForm", params: { listingType: "job" }, bg: "#FFEBD6" },
-    { emoji: "🧺", label: t("myAds.sellProduce"), screen: "MarketplaceForm", params: undefined, bg: "#FFF0C2" },
-    { emoji: "🚜", label: t("myAds.sellEquipment"), screen: "EquipmentForm", params: undefined, bg: colors.secondary },
-    { emoji: "🌱", label: t("myAds.sellPlants"), screen: "Nursery", params: undefined, bg: "#FBF2D9" },
+    { icon: Truck, label: t("myAds.postMachine"), screen: "HireForm", params: { listingType: "rental" } },
+    { icon: HardHat, label: t("myAds.postWorker"), screen: "HireForm", params: { listingType: "job" } },
+    { icon: ShoppingBasket, label: t("myAds.sellProduce"), screen: "MarketplaceForm", params: undefined },
+    { icon: Tractor, label: t("myAds.sellEquipment"), screen: "EquipmentForm", params: undefined },
+    { icon: Sprout, label: t("myAds.sellPlants"), screen: "Nursery", params: undefined },
   ];
 }
 
@@ -140,18 +141,10 @@ export function MyAdsScreen({ navigation }: { navigation: any }) {
       </View>
 
       <Text style={styles.chooseLabel}>{t("myAds.chooseType")}</Text>
-      <View style={{ flexDirection: "row", gap: spacing.xs }}>
-        {postOptions.map((o) => (
-          <Pressable
-            key={o.label}
-            style={[styles.postOption, { backgroundColor: o.bg }]}
-            onPress={() => navigation.navigate(o.screen, o.params)}
-          >
-            <Text style={{ fontSize: 20 }}>{o.emoji}</Text>
-            <Text style={styles.postOptionText} numberOfLines={3}>{o.label}</Text>
-          </Pressable>
-        ))}
-      </View>
+      <BigTiles
+        columns={3}
+        items={postOptions.map((o) => ({ icon: o.icon, title: o.label, onPress: () => navigation.navigate(o.screen, o.params) }))}
+      />
 
       {isLoading ? null : total === 0 ? (
         <View style={{ alignItems: "center", paddingVertical: spacing.xl }}>
@@ -232,11 +225,11 @@ const styles = StyleSheet.create({
   heroTitle: { color: colors.accentInk, fontSize: 18, fontWeight: "800" },
   heroSubtitle: { color: colors.accentInkSoft, fontSize: 14, marginTop: 2 },
 
-  chooseLabel: { fontSize: 14.5, fontWeight: "700", color: colors.text, textAlign: "center" },
+  chooseLabel: { fontSize: 20, fontWeight: "800", color: colors.text },
   postOption: { flex: 1, borderRadius: radius.md, alignItems: "center", paddingVertical: spacing.sm + 4, paddingHorizontal: 3, gap: 4 },
   postOptionText: { fontSize: 11.5, fontWeight: "600", color: colors.text, textAlign: "center", lineHeight: 12 },
 
-  sectionTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text },
+  sectionTitle: { fontSize: 20, fontWeight: "800", color: colors.text },
   adCard: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, ...shadow, borderRadius: 22, padding: spacing.sm + 4 },
   adPhoto: { width: 52, height: 52, borderRadius: radius.sm },
   adPhotoPlaceholder: { width: 52, height: 52, borderRadius: radius.sm, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" },

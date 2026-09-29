@@ -15,10 +15,10 @@ import {
   Tractor,
   Users,
   Wrench,
-  Plus, Check } from "lucide-react-native";
+  Plus, Check, Trash2 } from "lucide-react-native";
 import { Button } from "../../../components/Button";
 import { Card } from "../../../components/Card";
-import { HeaderAddButton } from "../../../components/harvest";
+import { HeaderAddButton, Pill } from "../../../components/harvest";
 import { TextField } from "../../../components/TextField";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
 import { colors, radius, spacing, shadow } from "../../../components/theme";
@@ -82,7 +82,7 @@ function Chip({ active, onPress, children, activeColor }: { active: boolean; onP
 function ListingCard({ listing, dist, tab, onDelete }: { listing: HireListing; dist: number | null; tab: Tab; onDelete: (id: number) => void }) {
   const cat = catMap(tab)[LEGACY_JOB_KEYS[listing.category] ?? listing.category] ?? catMap(tab).other;
   const isRental = tab === "rental";
-  const accent = isRental ? colors.primary : "#C77A2E";
+  const accent = colors.primary;
   const loc = [listing.village, listing.taluk, listing.district].filter(Boolean).join(", ");
 
   function confirmDelete() {
@@ -95,7 +95,7 @@ function ListingCard({ listing, dist, tab, onDelete }: { listing: HireListing; d
   return (
     <Card style={{ padding: 0, overflow: "hidden" }}>
       <View style={styles.cardTop}>
-        <View style={[styles.cardIcon, { backgroundColor: isRental ? "#FFF0C2" : "#FFF3E6" }]}>
+        <View style={[styles.cardIcon, { backgroundColor: isRental ? "#D8D2C4" : "#FFD166" }]}>
           <Text style={{ fontSize: 30 }}>{cat.emoji}</Text>
         </View>
         <View style={{ flex: 1, padding: spacing.sm + 4 }}>
@@ -120,6 +120,7 @@ function ListingCard({ listing, dist, tab, onDelete }: { listing: HireListing; d
             ) : null}
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 }}>
+            <Pill text={isRental ? "Machine" : "Job"} tone={isRental ? "good" : "accent"} />
             <MapPin size={11} color={colors.textMuted} />
             <Text style={styles.cardMeta} numberOfLines={1}>{listing.posterName} · {loc}</Text>
           </View>
@@ -142,21 +143,22 @@ function ListingCard({ listing, dist, tab, onDelete }: { listing: HireListing; d
       {listing.description ? <Text style={styles.description}>{listing.description}</Text> : null}
       <View style={styles.cardActions}>
         <Pressable style={[styles.callBtn, { backgroundColor: accent }]} onPress={() => Linking.openURL(`tel:${listing.phone}`)}>
-          <Phone size={14} color="#fff" />
-          <Text style={styles.callBtnText}>Call {listing.posterName.split(" ")[0]}</Text>
+          <Phone size={18} color="#fff" />
+          <Text style={styles.callBtnText}>Call</Text>
         </Pressable>
         <Pressable
-          style={[styles.waBtn, { borderColor: accent }]}
+          style={styles.waBtn}
           onPress={() => {
             const wa = (listing.whatsapp ?? listing.phone).replace(/\D/g, "");
             Linking.openURL(`https://wa.me/${wa.length === 10 ? "91" + wa : wa}`);
           }}
         >
-          <MessageCircle size={16} color={accent} />
+          <MessageCircle size={18} color={colors.text} />
+          <Text style={styles.waText}>WhatsApp</Text>
         </Pressable>
         {listing.mine ? (
-          <Pressable style={styles.deleteBtn} onPress={confirmDelete}>
-            <Text style={styles.deleteBtnText}>Delete</Text>
+          <Pressable style={styles.deleteBtn} onPress={confirmDelete} accessibilityLabel="Delete ad">
+            <Trash2 size={18} color={colors.danger} />
           </Pressable>
         ) : null}
       </View>
@@ -384,8 +386,8 @@ const styles = StyleSheet.create({
   chipTextActive: { color: colors.text, fontWeight: "800" },
 
   cardTop: { flexDirection: "row" },
-  cardIcon: { width: 76, height: 76, alignItems: "center", justifyContent: "center" },
-  cardTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text, flexShrink: 1 },
+  cardIcon: { width: 76, height: 76, margin: 12, marginRight: 0, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  cardTitle: { fontSize: 17.5, fontWeight: "800", color: colors.text, flexShrink: 1 },
   cardMeta: { fontSize: 13, color: colors.textMuted, flexShrink: 1 },
   cardRate: { fontSize: 14.5, fontWeight: "700" },
   mineBadge: { backgroundColor: "#E4EEFB", borderRadius: radius.pill, paddingHorizontal: 6, paddingVertical: 1 },
@@ -395,10 +397,11 @@ const styles = StyleSheet.create({
   description: { fontSize: 14, color: colors.textMuted, paddingHorizontal: spacing.sm + 4, paddingTop: spacing.xs },
 
   cardActions: { flexDirection: "row", gap: spacing.sm, padding: spacing.sm + 4, paddingTop: spacing.sm },
-  callBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: radius.sm, paddingVertical: spacing.sm },
-  callBtnText: { color: "#fff", fontWeight: "700", fontSize: 14.5 },
-  waBtn: { width: 40, alignItems: "center", justifyContent: "center", borderWidth: 1, borderRadius: radius.sm },
-  deleteBtn: { paddingHorizontal: spacing.sm + 2, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#F5C6C6", borderRadius: radius.sm },
+  callBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 999, minHeight: 50 },
+  callBtnText: { color: "#fff", fontWeight: "700", fontSize: 16.5 },
+  waBtn: { flexDirection: "row", gap: 6, paddingHorizontal: 16, alignItems: "center", justifyContent: "center", backgroundColor: colors.tint, borderRadius: 999, minHeight: 50 },
+  waText: { fontSize: 16, fontWeight: "700", color: colors.text },
+  deleteBtn: { width: 50, minHeight: 50, alignItems: "center", justifyContent: "center", backgroundColor: colors.dangerBg, borderRadius: 25 },
   deleteBtnText: { color: colors.danger, fontSize: 14, fontWeight: "700" },
 
   footer: { padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.bg },

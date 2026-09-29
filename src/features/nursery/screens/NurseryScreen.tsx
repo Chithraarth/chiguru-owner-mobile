@@ -6,6 +6,7 @@ import { ArrowLeft, MapPin, Phone, Search, Sprout, Star, Store, X } from "lucide
 import { Button } from "../../../components/Button";
 import { Card } from "../../../components/Card";
 import { LoadingView } from "../../../components/StateViews";
+import { IconChip, Pill } from "../../../components/harvest";
 import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { getNurseryListings, getNurseryVendorDetail, getNurseryVendors, submitNurseryRating } from "../../../api/endpoints/nursery";
 import type { NurseryListing, NurseryVendor } from "../../../types/api";
@@ -305,38 +306,40 @@ export function NurseryScreen() {
                 <Text style={styles.vendorEmptySub}>Be the first to register your nursery!</Text>
               </Card>
             ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: spacing.sm }}>
-                <View style={{ flexDirection: "row", gap: spacing.sm }}>
-                  {vendors.map((v, idx) => {
-                    const isTopRated = idx === 0 && (v.ratingCount ?? 0) > 0 && (v.avgRating ?? 0) >= 4;
-                    return (
-                      <Pressable key={v.id} style={styles.vendorCard} onPress={() => setSelectedVendor(v)}>
-                        {isTopRated ? (
-                          <View style={styles.topBadge}>
-                            <Star size={8} color="#B45309" fill="#B45309" />
-                            <Text style={styles.topBadgeText}>TOP</Text>
-                          </View>
-                        ) : null}
-                        <View style={styles.vendorCardIcon}>
-                          {v.photoUrl ? <Image source={{ uri: v.photoUrl }} style={styles.vendorCardImg} /> : <Store size={18} color={colors.primary} />}
-                        </View>
-                        <Text style={styles.vendorCardName} numberOfLines={1}>{v.name}</Text>
-                        {(v.ratingCount ?? 0) > 0 ? (
-                          <View style={{ flexDirection: "row", alignItems: "center", gap: 3, marginTop: 2 }}>
-                            <StarRow value={v.avgRating ?? 0} size={10} />
-                            <Text style={styles.vendorCardRatingCount}>({v.ratingCount})</Text>
-                          </View>
+              <View style={{ gap: 12, marginTop: spacing.sm }}>
+                {vendors.map((v, idx) => (
+                  <Pressable key={v.id} onPress={() => setSelectedVendor(v)} style={({ pressed }) => pressed && { transform: [{ scale: 0.98 }] }}>
+                    <Card style={{ gap: 10 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                        {v.photoUrl ? (
+                          <Image source={{ uri: v.photoUrl }} style={styles.vendorPhoto} />
                         ) : (
-                          <Text style={styles.vendorCardNoRating}>No ratings yet</Text>
+                          <IconChip icon={Sprout} index={idx} size={48} />
                         )}
-                        {v.speciality ? <Text style={styles.vendorCardSpeciality} numberOfLines={1}>{v.speciality}</Text> : null}
-                        <Text style={styles.vendorCardLocation} numberOfLines={1}>{v.location}</Text>
-                        <Text style={styles.vendorCardCount}>{v.listingCount ?? 0} plants</Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </ScrollView>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={styles.vendorName} numberOfLines={1}>{v.name}</Text>
+                          <Text style={styles.vendorMeta} numberOfLines={1}>
+                            {v.location} · {v.listingCount ?? 0} plants
+                          </Text>
+                        </View>
+                        {(v.ratingCount ?? 0) > 0 ? <Pill text={`${(v.avgRating ?? 0).toFixed(1)} ★`} tone="warn" /> : <Pill text="New" />}
+                      </View>
+                      {v.speciality ? (
+                        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                          {v.speciality
+                            .split(/[,·]/)
+                            .map((x) => x.trim())
+                            .filter(Boolean)
+                            .slice(0, 4)
+                            .map((x) => (
+                              <Pill key={x} text={x} />
+                            ))}
+                        </View>
+                      ) : null}
+                    </Card>
+                  </Pressable>
+                ))}
+              </View>
             )}
           </View>
         ) : null}
@@ -380,6 +383,9 @@ export function NurseryScreen() {
 }
 
 const styles = StyleSheet.create({
+  vendorPhoto: { width: 48, height: 48, borderRadius: 24 },
+  vendorName: { fontSize: 18, fontWeight: "800", color: colors.text },
+  vendorMeta: { fontSize: 14, color: colors.textMuted },
   container: { flex: 1, backgroundColor: colors.bg },
 
   searchWrap: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, ...shadow, borderRadius: 22, paddingHorizontal: spacing.sm + 4, height: 44 },
@@ -390,7 +396,7 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 14, color: colors.textMuted, fontWeight: "500" },
   chipTextActive: { color: colors.text, fontWeight: "800" },
 
-  sectionTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
+  sectionTitle: { fontSize: 20, fontWeight: "800", color: colors.text },
   sectionLabel: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.4 },
 
   vendorEmptyTitle: { fontSize: 14.5, fontWeight: "700", color: colors.primary, marginTop: spacing.xs },

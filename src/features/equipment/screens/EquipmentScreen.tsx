@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { MessageCircle, Phone, Tag, Tractor, Plus } from "lucide-react-native";
 import { Button } from "../../../components/Button";
 import { Card } from "../../../components/Card";
-import { HeaderAddButton } from "../../../components/harvest";
+import { HeaderAddButton, Pill } from "../../../components/harvest";
 import { LoadingView } from "../../../components/StateViews";
 import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { getEquipmentListings } from "../../../api/endpoints/equipment";
@@ -95,38 +95,29 @@ export function EquipmentScreen({ navigation }: { navigation: any }) {
               const isNew = l.condition === "new";
               const wa = (l.whatsapp ?? l.phone).replace(/\D/g, "");
               return (
-                <Card key={l.id} style={{ padding: 0, overflow: "hidden" }}>
-                  <View style={{ flexDirection: "row" }}>
-                    <View style={styles.thumbWrap}>
-                      {l.photoUrl ? <Image source={{ uri: l.photoUrl }} style={styles.thumb} /> : <Text style={{ fontSize: 30 }}>{cat.emoji}</Text>}
+                <Card key={l.id} style={{ padding: 12, gap: 10 }}>
+                  <View style={styles.photo}>
+                    {l.photoUrl ? <Image source={{ uri: l.photoUrl }} style={styles.thumb} /> : <Text style={{ fontSize: 44 }}>{cat.emoji}</Text>}
+                  </View>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", gap: spacing.sm, paddingHorizontal: 4 }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.title} numberOfLines={1}>{l.title}</Text>
+                      <Text style={styles.sellerText} numberOfLines={1}>{cat.label} · {l.location} · {l.sellerName}</Text>
                     </View>
-                    <View style={{ flex: 1, padding: spacing.sm + 4 }}>
-                      <View style={{ flexDirection: "row", justifyContent: "space-between", gap: spacing.sm }}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.title} numberOfLines={1}>{l.title}</Text>
-                          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 1 }}>
-                            <Tag size={10} color={colors.textMuted} />
-                            <Text style={styles.catLabel}>{cat.label}</Text>
-                          </View>
-                        </View>
-                        <View style={{ alignItems: "flex-end" }}>
-                          <Text style={styles.price}>₹{l.price}</Text>
-                          <View style={[styles.condBadge, isNew && { backgroundColor: colors.bg }]}>
-                            <Text style={[styles.condBadgeText, isNew && { color: colors.primary }]}>{isNew ? "New" : "Used"}</Text>
-                          </View>
-                        </View>
-                      </View>
-                      <Text style={styles.sellerText} numberOfLines={1}>{l.sellerName} · {l.location}</Text>
-                    </View>
+                    <Text style={styles.price}>₹{l.price}</Text>
+                  </View>
+                  <View style={{ flexDirection: "row", paddingHorizontal: 4 }}>
+                    <Pill text={isNew ? "New" : "Used"} tone={isNew ? "good" : "neutral"} />
                   </View>
                   {l.description ? <Text style={styles.description}>{l.description}</Text> : null}
                   <View style={styles.actionsRow}>
                     <Pressable style={styles.callBtn} onPress={() => Linking.openURL(`tel:${l.phone}`)}>
-                      <Phone size={14} color="#fff" />
+                      <Phone size={18} color="#fff" />
                       <Text style={styles.callBtnText}>Call seller</Text>
                     </Pressable>
                     <Pressable style={styles.waBtn} onPress={() => Linking.openURL(`https://wa.me/${wa.length === 10 ? "91" + wa : wa}`)}>
-                      <MessageCircle size={16} color={colors.primary} />
+                      <MessageCircle size={18} color={colors.text} />
+                      <Text style={styles.waText}>WhatsApp</Text>
                     </Pressable>
                   </View>
                 </Card>
@@ -154,20 +145,21 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 15, fontWeight: "600", color: colors.text, marginTop: spacing.sm },
   emptySubtitle: { fontSize: 13.5, color: colors.textMuted, marginTop: 2 },
 
-  thumbWrap: { width: 76, height: 76, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center" },
+  photo: { height: 150, borderRadius: 22, backgroundColor: "#D8D2C4", alignItems: "center", justifyContent: "center", overflow: "hidden" },
   thumb: { width: "100%", height: "100%" },
-  title: { fontSize: 15.5, fontWeight: "700", color: colors.text, flexShrink: 1 },
+  title: { fontSize: 18, fontWeight: "800", color: colors.text, flexShrink: 1 },
   catLabel: { fontSize: 12.5, color: colors.textMuted },
-  price: { fontSize: 15.5, fontWeight: "700", color: colors.primary },
+  price: { fontSize: 18, fontWeight: "800", color: colors.primary },
   condBadge: { backgroundColor: colors.muted, borderRadius: radius.pill, paddingHorizontal: 6, paddingVertical: 1, marginTop: 2 },
   condBadgeText: { fontSize: 11.5, fontWeight: "600", color: colors.textMuted },
   sellerText: { fontSize: 13, color: colors.textMuted, marginTop: 4 },
-  description: { fontSize: 13.5, color: colors.textMuted, paddingHorizontal: spacing.sm + 4, paddingTop: 2 },
+  description: { fontSize: 14.5, color: colors.textMuted, paddingHorizontal: 4 },
 
-  actionsRow: { flexDirection: "row", gap: spacing.sm, padding: spacing.sm + 4, paddingTop: spacing.sm },
-  callBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: colors.primary, borderRadius: radius.sm, paddingVertical: spacing.sm },
-  callBtnText: { color: "#fff", fontWeight: "700", fontSize: 14.5 },
-  waBtn: { width: 40, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm },
+  actionsRow: { flexDirection: "row", gap: 10 },
+  callBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: colors.primary, borderRadius: 999, minHeight: 50 },
+  callBtnText: { color: "#fff", fontWeight: "700", fontSize: 16.5 },
+  waBtn: { flexDirection: "row", gap: 6, paddingHorizontal: 16, alignItems: "center", justifyContent: "center", backgroundColor: colors.tint, borderRadius: 999, minHeight: 50 },
+  waText: { fontSize: 16, fontWeight: "700", color: colors.text },
 
   footer: { padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.bg },
 });
