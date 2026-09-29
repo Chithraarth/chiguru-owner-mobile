@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";

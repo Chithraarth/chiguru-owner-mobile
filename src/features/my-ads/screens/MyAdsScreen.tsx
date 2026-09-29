@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Alert, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MapPin, Megaphone, Pencil, Tag, Trash2 } from "lucide-react-native";
 import { colors, radius, spacing } from "../../../components/theme";
@@ -13,9 +14,9 @@ function getPostOptions(t: (key: string) => string) {
   return [
     { emoji: "🚛", label: t("myAds.postMachine"), screen: "HireForm", params: { listingType: "rental" }, bg: "#EAE8EF" },
     { emoji: "👷", label: t("myAds.postWorker"), screen: "HireForm", params: { listingType: "job" }, bg: "#FFEBD6" },
-    { emoji: "🧺", label: t("myAds.sellProduce"), screen: "MarketplaceForm", params: undefined, bg: "#EDEBF7" },
+    { emoji: "🧺", label: t("myAds.sellProduce"), screen: "MarketplaceForm", params: undefined, bg: "#FFF0C2" },
     { emoji: "🚜", label: t("myAds.sellEquipment"), screen: "EquipmentForm", params: undefined, bg: colors.secondary },
-    { emoji: "🌱", label: t("myAds.sellPlants"), screen: "Nursery", params: undefined, bg: "#E3E0EC" },
+    { emoji: "🌱", label: t("myAds.sellPlants"), screen: "Nursery", params: undefined, bg: "#FBF2D9" },
   ];
 }
 
@@ -242,5 +243,5 @@ const styles = StyleSheet.create({
   adTitle: { fontSize: 13.5, fontWeight: "700", color: colors.text },
   adSubtitle: { fontSize: 12, color: colors.primary, fontWeight: "600", marginTop: 1 },
   adLocation: { fontSize: 11, color: colors.textMuted },
-  iconBtn: { width: 32, height: 32, borderRadius: radius.pill, backgroundColor: "#E9E6FB", alignItems: "center", justifyContent: "center" },
+  iconBtn: { width: 32, height: 32, borderRadius: radius.pill, backgroundColor: "#FFF0C2", alignItems: "center", justifyContent: "center" },
 });

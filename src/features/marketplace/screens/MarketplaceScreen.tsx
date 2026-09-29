@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MessageCircle, Phone, ShoppingBasket, Tag } from "lucide-react-native";
 import { Button } from "../../../components/Button";

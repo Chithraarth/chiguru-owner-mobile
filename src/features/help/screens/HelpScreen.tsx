@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Clock, HelpCircle, LifeBuoy, Lightbulb, MessageCircleQuestion, Sparkles } from "lucide-react-native";
 import { Card } from "../../../components/Card";
@@ -63,7 +64,7 @@ export function HelpScreen() {
             active={type === "suggestion"}
             icon={Lightbulb}
             label="Give a suggestion"
-            color={colors.accent}
+            color={colors.primary}
             onPress={() => setType("suggestion")}
           />
         </View>
@@ -109,7 +110,7 @@ export function HelpScreen() {
           messages.map((m) => (
             <Card key={m.id}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                {m.type === "suggestion" ? <Lightbulb size={15} color={colors.accent} /> : <HelpCircle size={15} color={colors.primary} />}
+                {m.type === "suggestion" ? <Lightbulb size={15} color={colors.primary} /> : <HelpCircle size={15} color={colors.primary} />}
                 <Text style={styles.msgType}>{m.type === "suggestion" ? "Suggestion" : "Question"}</Text>
                 <Text style={styles.msgDate}>{fmtDate(m.createdAt)}</Text>
               </View>

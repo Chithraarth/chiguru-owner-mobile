@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, RefreshControl, StyleSheet, View } from "react-native";
+import { Text } from "../../../../components/Text";
 import { Card } from "../../../../components/Card";
 import { Button } from "../../../../components/Button";
 import { EmptyState, LoadingView } from "../../../../components/StateViews";

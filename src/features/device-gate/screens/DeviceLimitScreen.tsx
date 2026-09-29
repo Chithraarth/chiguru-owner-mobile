@@ -1,5 +1,6 @@
 import React from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { FlatList, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { Button } from "../../../components/Button";
 import { Card } from "../../../components/Card";
 import { colors, spacing } from "../../../components/theme";

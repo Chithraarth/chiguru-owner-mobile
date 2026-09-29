@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
+import { Text } from "./Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Menu, Store, CheckCircle2 } from "lucide-react-native";
 import { colors, spacing } from "./theme";

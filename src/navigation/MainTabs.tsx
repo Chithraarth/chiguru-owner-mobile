@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Pressable, Text } from "react-native";
+import { Pressable } from "react-native";
+import { Text } from "../components/Text";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Home, UserCheck, Camera, BookOpen, RefreshCw } from "lucide-react-native";
+import { Home, UserCheck, Camera, BookOpen, RefreshCw, Repeat } from "lucide-react-native";
 import { DashboardScreen } from "../features/dashboard/screens/DashboardScreen";
 import { MoreScreen } from "../features/dashboard/screens/MoreScreen";
 import { WorkGroupListScreen } from "../features/work-groups/screens/WorkGroupListScreen";
@@ -63,8 +64,9 @@ import { ProfileScreen } from "../features/profile/screens/ProfileScreen";
 import { BackupRestoreScreen } from "../features/profile/screens/BackupRestoreScreen";
 import { EstateSwitcherModal } from "../features/estate/components/EstateSwitcherModal";
 import { AppHeader } from "../components/AppHeader";
+import { harvestHeaderOptions } from "../components/HarvestHeader";
 import { FloatingTabBar } from "../components/FloatingTabBar";
-import { colors } from "../components/theme";
+import { colors, radius } from "../components/theme";
 
 const Tab = createBottomTabNavigator();
 const DashboardStackNav = createNativeStackNavigator();
@@ -77,8 +79,22 @@ function EstateSwitcherButton() {
   const [visible, setVisible] = useState(false);
   return (
     <>
-      <Pressable onPress={() => setVisible(true)} hitSlop={10} style={{ marginRight: 12 }}>
-        <Text style={{ color: colors.primary, fontSize: 14 }}>Switch farm ▾</Text>
+      <Pressable
+        onPress={() => setVisible(true)}
+        hitSlop={8}
+        accessibilityRole="button"
+        style={{
+          height: 40,
+          paddingHorizontal: 12,
+          borderRadius: radius.pill,
+          backgroundColor: colors.card,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 6,
+        }}
+      >
+        <Repeat size={15} color={colors.text} strokeWidth={2.2} />
+        <Text style={{ color: colors.text, fontSize: 14, fontWeight: "800" }}>Switch</Text>
       </Pressable>
       <EstateSwitcherModal visible={visible} onClose={() => setVisible(false)} />
     </>
@@ -167,7 +183,7 @@ function registerSharedScreens(Nav: ReturnType<typeof createNativeStackNavigator
 
 function DashboardStack() {
   return (
-    <DashboardStackNav.Navigator>
+    <DashboardStackNav.Navigator screenOptions={harvestHeaderOptions}>
       <DashboardStackNav.Screen
         name="Dashboard"
         component={DashboardScreen}
@@ -181,7 +197,7 @@ function DashboardStack() {
 
 function WorkStack() {
   return (
-    <WorkStackNav.Navigator>
+    <WorkStackNav.Navigator screenOptions={harvestHeaderOptions}>
       <WorkStackNav.Screen
         name="WorkGroupList"
         component={WorkGroupListScreen}
@@ -199,7 +215,7 @@ function WorkStack() {
 
 function UpdatesStack() {
   return (
-    <UpdatesStackNav.Navigator>
+    <UpdatesStackNav.Navigator screenOptions={harvestHeaderOptions}>
       <UpdatesStackNav.Screen
         name="DailyUpdateList"
         component={DailyUpdateListScreen}
@@ -212,7 +228,7 @@ function UpdatesStack() {
 
 function AccountsStack() {
   return (
-    <AccountsStackNav.Navigator initialRouteName="FarmAccounts" screenOptions={headerOptions}>
+    <AccountsStackNav.Navigator initialRouteName="FarmAccounts" screenOptions={{ ...harvestHeaderOptions, ...headerOptions }}>
       {registerSharedScreens(AccountsStackNav)}
     </AccountsStackNav.Navigator>
   );
@@ -220,7 +236,7 @@ function AccountsStack() {
 
 function SyncStack() {
   return (
-    <SyncStackNav.Navigator>
+    <SyncStackNav.Navigator screenOptions={harvestHeaderOptions}>
       <SyncStackNav.Screen name="SyncLog" component={SyncLogScreen} options={{ title: "Sync Activity" }} />
     </SyncStackNav.Navigator>
   );

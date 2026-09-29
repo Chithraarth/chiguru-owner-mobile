@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Linking, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text, TextInput } from "../../../components/Text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Bookmark, Globe, MapPin, Phone, RefreshCw, Search, Sparkles, Store, Trophy, X } from "lucide-react-native";
@@ -52,10 +53,10 @@ function convert(price: string, unit: string, targetKg: number): string | null {
 }
 
 const SELLER_TYPE_COLORS: Record<string, { bg: string; fg: string }> = {
-  Mandi: { bg: "#F3E8FD", fg: "#7B3FBF" },
+  Mandi: { bg: "#FFF0C2", fg: "#2F6B1F" },
   "Curing works": { bg: "#FEF3C7", fg: "#92600E" },
   "Local buyer": { bg: "#E4EEFB", fg: "#3E6FB0" },
-  Exporter: { bg: "#EDE4FB", fg: colors.accent },
+  Exporter: { bg: "#FFF0C2", fg: colors.primary },
   Trader: { bg: colors.muted, fg: colors.textMuted },
   Government: { bg: colors.bg, fg: colors.primary },
 };
@@ -296,7 +297,7 @@ export function MandiScreen() {
         <Text style={styles.sectionLabel}>ALL MARKET RATES</Text>
         {fetching && prices.length === 0 ? (
           <View style={styles.centerState}>
-            <View style={styles.fetchIconWrap}><Globe size={26} color={colors.accent} /></View>
+            <View style={styles.fetchIconWrap}><Globe size={26} color={colors.primary} /></View>
             <Text style={styles.centerTitle}>Fetching today's prices…</Text>
             <Text style={styles.centerSubtitle}>Checking government mandi rates, curing works and local buyers near you. This takes a minute or two.</Text>
           </View>
@@ -339,7 +340,7 @@ export function MandiScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
-  hero: { backgroundColor: "#7B3FBF", borderRadius: radius.md, padding: spacing.md },
+  hero: { backgroundColor: "#2F6B1F", borderRadius: radius.md, padding: spacing.md },
   heroIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
   heroTitle: { color: "#fff", fontSize: 14.5, fontWeight: "700" },
   heroSubtitle: { color: "rgba(255,255,255,0.8)", fontSize: 11, marginTop: 2, lineHeight: 15 },
@@ -377,7 +378,7 @@ const styles = StyleSheet.create({
   convText: { fontSize: 9.5, fontWeight: "700", color: colors.primary },
 
   centerState: { alignItems: "center", paddingVertical: spacing.xl, gap: spacing.xs },
-  fetchIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: "#F3E8FD", alignItems: "center", justifyContent: "center" },
+  fetchIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: "#FFF0C2", alignItems: "center", justifyContent: "center" },
   centerTitle: { fontSize: 13.5, fontWeight: "700", color: colors.text, textAlign: "center" },
   centerSubtitle: { fontSize: 11.5, color: colors.textMuted, textAlign: "center", maxWidth: 260 },
 

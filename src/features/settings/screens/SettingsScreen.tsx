@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from "react-native";
+import { Text } from "../../../components/Text";
 import {
   Archive,
   Bell,
@@ -66,7 +67,7 @@ export function SettingsScreen({ navigation }: { navigation: any }) {
     <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
       <Card>
         <View style={{ flexDirection: "row", alignItems: "flex-start", gap: spacing.sm }}>
-          <View style={[styles.iconWrap, { backgroundColor: "#E3E0EC" }]}>
+          <View style={[styles.iconWrap, { backgroundColor: "#FBF2D9" }]}>
             <Languages size={18} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
@@ -116,7 +117,7 @@ export function SettingsScreen({ navigation }: { navigation: any }) {
 
       <Card>
         <View style={{ flexDirection: "row", alignItems: "flex-start", gap: spacing.sm }}>
-          <View style={[styles.iconWrap, { backgroundColor: "#E3E0EC" }]}>
+          <View style={[styles.iconWrap, { backgroundColor: "#FBF2D9" }]}>
             <ImageDown size={18} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { ChevronDown, ChevronUp, MapPin, Plus, Check, Pencil } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { colors, radius, spacing } from "../../../components/theme";
@@ -40,7 +41,7 @@ export function EstateCard({
           {(estates?.length ?? 0) > 0 && (
             <Pressable style={styles.switchBtn} onPress={() => setOpen((o) => !o)}>
               <Text style={styles.switchLabel}>Switch</Text>
-              {open ? <ChevronUp size={15} color={colors.accent} /> : <ChevronDown size={15} color={colors.accent} />}
+              {open ? <ChevronUp size={15} color={colors.primary} /> : <ChevronDown size={15} color={colors.primary} />}
             </Pressable>
           )}
         </View>
@@ -99,12 +100,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    backgroundColor: "#E9E6FB",
+    backgroundColor: "#FFF0C2",
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: 7,
     borderRadius: radius.pill,
   },
-  switchLabel: { fontSize: 13, fontWeight: "600", color: colors.accent },
+  switchLabel: { fontSize: 13, fontWeight: "600", color: colors.primary },
   dropdown: { marginTop: spacing.xs, padding: 0, overflow: "hidden" },
   dropdownRow: {
     flexDirection: "row",

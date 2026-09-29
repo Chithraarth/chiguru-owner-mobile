@@ -8,9 +8,9 @@ import {
   Pressable,
   RefreshControl,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
+import { Text } from "../../../components/Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import {
@@ -1180,7 +1180,7 @@ export function AttendanceScreen({ route }: { route: any }) {
                         <Text style={styles.advBoxLabel}>Paid directly</Text>
                         <Text style={[styles.seasonTileValue, { color: "#1F9E5C" }]}>{inr(seasonResult.totals.totalWorkerPayments)}</Text>
                       </View>
-                      <View style={[styles.seasonTile, { backgroundColor: "#F3EEFB" }]}>
+                      <View style={[styles.seasonTile, { backgroundColor: "#FFF0C2" }]}>
                         <Text style={styles.advBoxLabel}>Remaining</Text>
                         <Text style={[styles.seasonTileValue, { color: colors.primary }]}>{inr(seasonResult.totals.totalRemaining)}</Text>
                       </View>
@@ -1590,7 +1590,7 @@ const styles = StyleSheet.create({
 
   // Single Person Face Attendance card — web's purple/violet gradient
   // (from-primary to-violet-500) approximated as a flat violet, matching how
-  // aiCard already uses a flat colors.accent instead of a real gradient (no
+  // aiCard already uses a flat colors.primary instead of a real gradient (no
   // expo-linear-gradient in this app).
   faceCard: {
     flex: 1,
@@ -1614,7 +1614,7 @@ const styles = StyleSheet.create({
   aiCard: {
     flex: 1,
     gap: spacing.sm,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.primary,
     borderRadius: radius.md,
     padding: spacing.md - 2,
   },
@@ -1628,7 +1628,7 @@ const styles = StyleSheet.create({
   },
   aiCardTitle: { fontSize: 13, fontWeight: "700", color: "#fff", lineHeight: 16 },
   aiCardSubtitle: { fontSize: 10.5, color: "rgba(255,255,255,0.85)", marginTop: 4, lineHeight: 14 },
-  aiResultCard: { backgroundColor: "#F3EEFB", borderColor: "#DDD0F0" },
+  aiResultCard: { backgroundColor: "#FFF0C2", borderColor: "#F0E4C2" },
   aiResultThumb: { width: 56, height: 56, borderRadius: radius.sm },
   aiResultCount: { fontSize: 22, fontWeight: "800", color: colors.primary },
   aiResultLabel: { fontSize: 13, color: colors.textMuted, fontWeight: "500" },
@@ -1636,11 +1636,11 @@ const styles = StyleSheet.create({
 
   // Work session card
   sessionHeader: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5 },
-  sessionDurationPill: { backgroundColor: "#F3EEFB", borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2 },
+  sessionDurationPill: { backgroundColor: "#FFF0C2", borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2 },
   sessionDurationText: { fontSize: 11.5, fontWeight: "700", color: colors.primary },
   sessionRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   sessionThumb: { width: 48, height: 48, borderRadius: radius.sm },
-  sessionThumbPlaceholder: { backgroundColor: "#F3EEFB", alignItems: "center", justifyContent: "center" },
+  sessionThumbPlaceholder: { backgroundColor: "#FFF0C2", alignItems: "center", justifyContent: "center" },
   sessionRowTitle: { fontSize: 13.5, fontWeight: "600", color: colors.text },
   sessionRowSubtitle: { fontSize: 11.5, color: colors.textMuted, marginTop: 1 },
   sessionActionBtn: {
@@ -1677,8 +1677,8 @@ const styles = StyleSheet.create({
   // Season-end account
   seasonTriggerCard: {
     gap: spacing.sm,
-    backgroundColor: "#F3EEFB",
-    borderColor: "#DDD0F0",
+    backgroundColor: "#FFF0C2",
+    borderColor: "#F0E4C2",
     borderWidth: 2,
     borderStyle: "dashed",
   },
@@ -1694,7 +1694,7 @@ const styles = StyleSheet.create({
   seasonSubtitle: { fontSize: 11, color: colors.primary, marginTop: 1 },
   seasonTile: { flex: 1, backgroundColor: "#F6F5F9", borderRadius: radius.sm, padding: spacing.sm, alignItems: "center" },
   seasonTileValue: { fontSize: 12, fontWeight: "700", color: colors.text, marginTop: 2 },
-  seasonClosedPill: { backgroundColor: "#F3EEFB", borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2 },
+  seasonClosedPill: { backgroundColor: "#FFF0C2", borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2 },
   seasonClosedPillText: { fontSize: 10.5, fontWeight: "600", color: colors.primary },
   seasonSummaryText: { fontSize: 12.5, color: colors.text, lineHeight: 18 },
 
@@ -1723,7 +1723,7 @@ const styles = StyleSheet.create({
   nameSuggestNewRow: {
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    backgroundColor: "#F3EEFB",
+    backgroundColor: "#FFF0C2",
   },
   nameSuggestNewText: { fontSize: 11.5, color: colors.primary },
   // Loan proof-photo badge + full-screen viewer (item 3)
@@ -1769,7 +1769,7 @@ const styles = StyleSheet.create({
   loanProofBtnText: { fontSize: 13, color: colors.textMuted },
   statusPill: { backgroundColor: "#FEF3C7", borderRadius: radius.pill, paddingHorizontal: spacing.xs + 2, paddingVertical: 1 },
   statusPillText: { fontSize: 10.5, fontWeight: "600", color: "#92600E" },
-  repayToggle: { backgroundColor: "#F3EEFB", borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
+  repayToggle: { backgroundColor: "#FFF0C2", borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
   repayToggleText: { fontSize: 11, fontWeight: "600", color: colors.primary },
   repayForm: {
     marginTop: spacing.xs,

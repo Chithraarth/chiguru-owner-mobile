@@ -9,9 +9,9 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
+import { Text } from "../../../components/Text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Bot, MessageSquare, Send, Sprout, Trash2, User } from "lucide-react-native";
 import Markdown from "react-native-markdown-display";

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import Constants from "expo-constants";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -392,7 +393,7 @@ export function SubscriptionScreen() {
                   <Text style={styles.paymentAmount}>{inr(Number(p.amount))}</Text>
                   <Text style={styles.paymentDate}>{new Date(p.createdAt).toLocaleDateString("en-IN")}</Text>
                 </View>
-                <View style={[styles.statusBadge, p.paymentStatus === "succeeded" ? { backgroundColor: "#E3E0EC" } : { backgroundColor: "#FDEAEA" }]}>
+                <View style={[styles.statusBadge, p.paymentStatus === "succeeded" ? { backgroundColor: "#FBF2D9" } : { backgroundColor: "#FDEAEA" }]}>
                   <Text style={[styles.statusBadgeText, { color: p.paymentStatus === "succeeded" ? colors.primary : colors.danger }]}>{p.paymentStatus}</Text>
                 </View>
               </Card>

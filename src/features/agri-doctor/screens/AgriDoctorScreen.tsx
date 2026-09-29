@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BadgeCheck, ChevronRight, Lock, Plus, Star, Stethoscope, Wallet, X } from "lucide-react-native";
 import { Card } from "../../../components/Card";
@@ -169,7 +170,7 @@ const styles = StyleSheet.create({
   addMoneyText: { fontSize: 12.5, fontWeight: "600", color: colors.primary },
 
   expertBanner: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm + 4 },
-  expertIconWrap: { width: 36, height: 36, borderRadius: radius.sm, backgroundColor: "#E3E0EC", alignItems: "center", justifyContent: "center" },
+  expertIconWrap: { width: 36, height: 36, borderRadius: radius.sm, backgroundColor: "#FBF2D9", alignItems: "center", justifyContent: "center" },
   expertTitle: { fontSize: 13, fontWeight: "700", color: colors.primary },
   expertSubtitle: { fontSize: 11, color: colors.primary },
 

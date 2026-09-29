@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text, TextInput } from "../../../components/Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Leaf, Plus, TrendingUp, Trash2, X } from "lucide-react-native";
 import { Card } from "../../../components/Card";
@@ -133,7 +134,7 @@ export function HarvestsScreen() {
               <Pressable style={[styles.statCard, { backgroundColor: colors.bg, borderColor: colors.border }]} onPress={() => openForm("general")}>
                 <Text style={[styles.statLabel, { color: colors.primary }]}>Total yield</Text>
                 <Text style={[styles.statValue, { color: colors.primary }]}>{totalKg.toLocaleString("en-IN")} kg</Text>
-                <View style={[styles.statAddBtn, { backgroundColor: "#E3E0EC" }]}>
+                <View style={[styles.statAddBtn, { backgroundColor: "#FBF2D9" }]}>
                   <Plus size={12} color={colors.primary} />
                   <Text style={[styles.statAddText, { color: colors.primary }]}>General Harvest</Text>
                 </View>
@@ -194,7 +195,7 @@ export function HarvestsScreen() {
                         <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
                           <Text style={styles.harvestCrop}>{h.cropName ?? "—"}</Text>
                           {h.grade ? <View style={styles.gradeBadge}><Text style={styles.gradeBadgeText}>{h.grade}</Text></View> : null}
-                          <View style={[styles.statusBadge, h.paymentStatus === "paid" && { backgroundColor: "#E3E0EC" }]}>
+                          <View style={[styles.statusBadge, h.paymentStatus === "paid" && { backgroundColor: "#FBF2D9" }]}>
                             <Text style={[styles.statusBadgeText, h.paymentStatus === "paid" && { color: colors.primary }]}>{h.paymentStatus}</Text>
                           </View>
                         </View>
@@ -291,8 +292,8 @@ const styles = StyleSheet.create({
   folderIcon: { width: 44, height: 44, borderRadius: radius.sm, backgroundColor: "#E4EEFB", alignItems: "center", justifyContent: "center" },
   folderName: { fontSize: 15, fontWeight: "700", color: colors.text },
   folderSubtitle: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
-  countBadge: { backgroundColor: "#E9E6FB", borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
-  countBadgeText: { fontSize: 12, fontWeight: "700", color: colors.accent },
+  countBadge: { backgroundColor: "#FFF0C2", borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
+  countBadgeText: { fontSize: 12, fontWeight: "700", color: colors.primary },
 
   backLink: { fontSize: 13, fontWeight: "700", color: colors.primary },
 

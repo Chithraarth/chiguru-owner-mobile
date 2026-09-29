@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { FlatList, Image, Modal, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { FlatList, Image, Modal, Pressable, RefreshControl, StyleSheet, View } from "react-native";
+import { Text } from "../../../../components/Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { X } from "lucide-react-native";
 import { Card } from "../../../../components/Card";

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Alert, FlatList, Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, FlatList, Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
 import {
@@ -316,7 +317,7 @@ const styles = StyleSheet.create({
   sendBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
 
   endedContainer: { flex: 1, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center", padding: spacing.lg, gap: spacing.sm },
-  endedIconWrap: { width: 72, height: 72, borderRadius: 36, backgroundColor: "#E3E0EC", alignItems: "center", justifyContent: "center" },
+  endedIconWrap: { width: 72, height: 72, borderRadius: 36, backgroundColor: "#FBF2D9", alignItems: "center", justifyContent: "center" },
   endedTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
   endedSubtitle: { fontSize: 13, color: colors.textMuted },
   endedCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md, width: "100%", maxWidth: 300, marginVertical: spacing.sm },

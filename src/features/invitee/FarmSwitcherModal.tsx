@@ -1,5 +1,6 @@
 import React from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../components/Text";
 import { useQueryClient } from "@tanstack/react-query";
 import { colors, radius, spacing } from "../../components/theme";
 import { useMyEstates } from "../estate/hooks/useMyEstates";

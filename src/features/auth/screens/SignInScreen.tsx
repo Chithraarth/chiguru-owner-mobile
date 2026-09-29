@@ -5,9 +5,9 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
+import { Text } from "../../../components/Text";
 import { Sprout, Eye, EyeOff } from "lucide-react-native";
 import { RecaptchaModal, type RecaptchaModalHandle } from "../../../components/RecaptchaModal";
 import { Button } from "../../../components/Button";

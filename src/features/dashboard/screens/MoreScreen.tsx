@@ -1,5 +1,6 @@
 import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { colors, spacing } from "../../../components/theme";

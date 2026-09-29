@@ -1,5 +1,6 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
+import { Text } from "./Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { colors, radius, spacing } from "./theme";
@@ -84,6 +85,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     gap: 6,
   },
-  tabActive: { backgroundColor: "#E9E6FB" },
+  tabActive: { backgroundColor: "#FFF0C2" },
   activeLabel: { color: colors.primary, fontWeight: "700", fontSize: 12.5 },
 });

@@ -1,5 +1,6 @@
 import React from "react";
-import { ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
+import { ScrollView, StyleSheet, View, Pressable } from "react-native";
+import { Text } from "../../../components/Text";
 import { Home, Users } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { LoadingView } from "../../../components/StateViews";

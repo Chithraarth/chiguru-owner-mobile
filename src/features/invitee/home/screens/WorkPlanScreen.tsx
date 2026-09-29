@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../../components/Text";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { Card } from "../../../../components/Card";
@@ -146,7 +147,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   pagerMonth: { fontSize: 17, fontWeight: "700", color: colors.text },
-  pagerSub: { fontSize: 12, color: colors.accent, fontWeight: "600", marginTop: 2 },
+  pagerSub: { fontSize: 12, color: colors.primary, fontWeight: "600", marginTop: 2 },
   sectionLabel: { fontSize: 11, fontWeight: "700", color: colors.primary, letterSpacing: 0.6, marginBottom: spacing.sm },
   muted: { color: colors.textMuted, fontSize: 13, paddingVertical: spacing.sm },
   taskCard: {

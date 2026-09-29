@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -39,7 +40,7 @@ import { useT } from "../../../lib/i18n";
 // minus "My Farms" (moved into the expandable More grid below).
 function primaryTools(t: (k: string) => string): ToolItem[] {
   return [
-    { icon: UserCheck, chipBg: "#E9E6FB", chipColor: "#6C5DD3", title: t("home.attendance"), desc: "Attendance & wages", screen: "WorkGroupList" },
+    { icon: UserCheck, chipBg: "#FFF0C2", chipColor: "#6C5DD3", title: t("home.attendance"), desc: "Attendance & wages", screen: "WorkGroupList" },
     { icon: Camera, chipBg: "#D5F1EE", chipColor: "#1F9E92", title: t("home.workUpdates"), desc: "Field photo log", screen: "DailyUpdateList" },
     { icon: BookOpen, chipBg: "#F3DBF5", chipColor: "#B45BC7", title: t("home.farmAccounts"), desc: "Income & expenses", screen: "FarmAccounts" },
   ];
@@ -55,14 +56,14 @@ function moreTools(t: (k: string) => string): ToolItem[] {
     { icon: Store, chipBg: "#E0F5E9", chipColor: "#4FAE72", title: t("more.market"), desc: "", screen: "Marketplace" },
     { icon: Stethoscope, chipBg: "#E4E7FB", chipColor: "#5B6ED6", title: t("more.agriDoctor"), desc: "", screen: "AgriDoctor" },
     { icon: ScanLine, chipBg: "#FBE4E4", chipColor: "#D66B6B", title: t("more.diseaseDetect"), desc: "", screen: "Disease" },
-    { icon: BotMessageSquare, chipBg: "#EDE4FB", chipColor: "#8B5BD6", title: t("more.agriAdvisor"), desc: "", screen: "AgriAi" },
+    { icon: BotMessageSquare, chipBg: "#FFF0C2", chipColor: "#8B5BD6", title: t("more.agriAdvisor"), desc: "", screen: "AgriAi" },
     // No source translation exists for this yet - Year Plan isn't in
     // chiguru-owner-web's own dictionary (it's a newer feature than that dict).
     { icon: LineChart, chipBg: "#E4EEFB", chipColor: "#5B8CD6", title: "Year Plan", desc: "", screen: "YearPlan" },
     // Same as Year Plan above - "Reports" has no source translation in
     // chiguru-owner-web's dictionary either, so this is a literal string too.
     { icon: LineChart, chipBg: "#E4EEFB", chipColor: "#5B8CD6", title: "Reports", desc: "", screen: "Reports" },
-    { icon: Leaf, chipBg: "#E3E0EC", chipColor: colors.primary, title: t("more.myFarms"), desc: "", screen: "Crops" },
+    { icon: Leaf, chipBg: "#FBF2D9", chipColor: colors.primary, title: t("more.myFarms"), desc: "", screen: "Crops" },
     { icon: RefreshCw, chipBg: "#EAEAEA", chipColor: "#6B6B6B", title: t("more.syncLog"), desc: "", screen: "SyncLog" },
   ];
 }
@@ -335,7 +336,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   planTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
-  planSubtitle: { fontSize: 12, color: colors.accent, fontWeight: "600", marginTop: 1 },
+  planSubtitle: { fontSize: 12, color: colors.primary, fontWeight: "600", marginTop: 1 },
   planRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   planCheckbox: {
     width: 14,

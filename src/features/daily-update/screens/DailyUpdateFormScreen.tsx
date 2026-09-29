@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { Button } from "../../../components/Button";

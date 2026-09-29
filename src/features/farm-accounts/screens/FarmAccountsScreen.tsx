@@ -1,12 +1,13 @@
 import React from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { Archive, Banknote, Camera, CalendarCheck, Landmark, Leaf, LineChart, Users } from "lucide-react-native";
 import { colors, radius, spacing } from "../../../components/theme";
 import { useT } from "../../../lib/i18n";
 
 function getAccounts(t: (key: string) => string) {
   return [
-    { screen: "ExpenseList", label: t("home.expenses"), icon: Banknote, chipBg: "#E9E6FB", chipColor: "#6C5DD3" },
+    { screen: "ExpenseList", label: t("home.expenses"), icon: Banknote, chipBg: "#FFF0C2", chipColor: "#6C5DD3" },
     { screen: "Harvests", label: t("home.harvest"), icon: Leaf, chipBg: "#D5F1EE", chipColor: "#1F9E92" },
     { screen: "Reports", label: t("home.reports"), icon: LineChart, chipBg: "#F3DBF5", chipColor: "#B45BC7" },
     { screen: "LabourRecords", label: t("farmAcct.labour"), icon: Users, chipBg: "#E2E8FA", chipColor: "#4F63D2" },

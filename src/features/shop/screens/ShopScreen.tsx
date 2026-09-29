@@ -1,5 +1,6 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { Sprout, Store, Tractor, Users } from "lucide-react-native";
 import { colors, radius, spacing } from "../../../components/theme";
 import { useT } from "../../../lib/i18n";
@@ -9,13 +10,13 @@ export function ShopScreen({ navigation }: { navigation: any }) {
   return (
     <View style={styles.container}>
       <View style={styles.grid}>
-        <Pressable style={[styles.tile, { backgroundColor: "#EDEBF7" }]} onPress={() => navigation.navigate("Nursery")}>
+        <Pressable style={[styles.tile, { backgroundColor: "#FFF0C2" }]} onPress={() => navigation.navigate("Nursery")}>
           <View style={styles.iconWrap}>
             <Sprout size={26} color={colors.primary} />
           </View>
           <Text style={[styles.tileText, { color: colors.primary }]}>{t("more.nursery")}</Text>
         </Pressable>
-        <Pressable style={[styles.tile, { backgroundColor: colors.accent }]} onPress={() => navigation.navigate("Marketplace")}>
+        <Pressable style={[styles.tile, { backgroundColor: colors.primary }]} onPress={() => navigation.navigate("Marketplace")}>
           <View style={styles.iconWrap}>
             <Store size={26} color="#fff" />
           </View>

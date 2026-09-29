@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Wallet as WalletIcon, Sparkles, Zap } from "lucide-react-native";
 import { Card } from "../../../components/Card";
@@ -152,7 +153,7 @@ export function WalletScreen() {
           {aiPrices.map(([key, cfg], i) => (
             <View key={key} style={[styles.priceRow, i > 0 && styles.priceRowBorder]}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs, flex: 1 }}>
-                <Sparkles size={14} color={colors.accent} />
+                <Sparkles size={14} color={colors.primary} />
                 <Text style={styles.priceLabel}>{cfg.label}</Text>
               </View>
               <Text style={styles.priceValue}>{inr(cfg.price)}</Text>

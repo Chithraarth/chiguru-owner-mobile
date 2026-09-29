@@ -1,5 +1,6 @@
 import React from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react-native";
 import { Card } from "../../../components/Card";

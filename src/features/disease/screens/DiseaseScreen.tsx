@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import * as ImagePicker from "expo-image-picker";
 import {
   AlertTriangle,
@@ -367,13 +368,13 @@ export function DiseaseScreen({ navigation }: { navigation: any }) {
 
           <Pressable style={styles.doctorCta} onPress={() => navigation.navigate("AgriDoctor")}>
             <View style={styles.doctorIconWrap}>
-              <FlaskConical size={18} color={colors.accent} />
+              <FlaskConical size={18} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.doctorCtaTitle}>Want a second opinion?</Text>
               <Text style={styles.doctorCtaSubtitle}>Consult an agriculture doctor to confirm & improve yield</Text>
             </View>
-            <ChevronRight size={16} color={colors.accent} />
+            <ChevronRight size={16} color={colors.primary} />
           </Pressable>
 
           {result.id != null ? (
@@ -393,7 +394,7 @@ export function DiseaseScreen({ navigation }: { navigation: any }) {
                   <Text style={[styles.feedbackBtnText, outcome === "not-helpful" && { color: "#fff" }]}>👎 Not helpful</Text>
                 </Pressable>
                 <Pressable
-                  style={[styles.feedbackBtn, outcome === "agronomist-confirmed" && { backgroundColor: colors.accent, borderColor: colors.accent }]}
+                  style={[styles.feedbackBtn, outcome === "agronomist-confirmed" && { backgroundColor: colors.primary, borderColor: colors.primary }]}
                   onPress={() => submitOutcome("agronomist-confirmed")}
                 >
                   <Text style={[styles.feedbackBtnText, outcome === "agronomist-confirmed" && { color: "#fff" }]}>✅ Confirmed</Text>
@@ -493,7 +494,7 @@ const styles = StyleSheet.create({
 
   blockTitle: { fontSize: 14, fontWeight: "700", color: colors.text, marginBottom: spacing.xs },
   checkItem: { fontSize: 13, color: colors.text, marginTop: spacing.xs, lineHeight: 18 },
-  stepNum: { width: 22, height: 22, borderRadius: 11, backgroundColor: "#E3E0EC", alignItems: "center", justifyContent: "center" },
+  stepNum: { width: 22, height: 22, borderRadius: 11, backgroundColor: "#FBF2D9", alignItems: "center", justifyContent: "center" },
   stepNumText: { fontSize: 11, fontWeight: "700", color: colors.primary },
   stepText: { flex: 1, fontSize: 13, color: colors.text, lineHeight: 18 },
 
@@ -501,10 +502,10 @@ const styles = StyleSheet.create({
   disclaimer: { flexDirection: "row", gap: spacing.xs, backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", borderRadius: radius.sm, padding: spacing.sm + 2 },
   disclaimerText: { flex: 1, fontSize: 11, color: "#92600E", lineHeight: 15 },
 
-  doctorCta: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: "#F3EEFB", borderWidth: 1, borderColor: "#DDD0F0", borderRadius: radius.md, padding: spacing.sm + 4 },
+  doctorCta: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: "#FFF0C2", borderWidth: 1, borderColor: "#F0E4C2", borderRadius: radius.md, padding: spacing.sm + 4 },
   doctorIconWrap: { width: 36, height: 36, borderRadius: radius.sm, backgroundColor: "#E3D5F5", alignItems: "center", justifyContent: "center" },
-  doctorCtaTitle: { fontSize: 13, fontWeight: "700", color: colors.accent },
-  doctorCtaSubtitle: { fontSize: 11, color: colors.accent },
+  doctorCtaTitle: { fontSize: 13, fontWeight: "700", color: colors.primary },
+  doctorCtaSubtitle: { fontSize: 11, color: colors.primary },
 
   feedbackTitle: { fontSize: 12, fontWeight: "600", color: colors.textMuted, textAlign: "center" },
   feedbackBtn: { flex: 1, alignItems: "center", paddingVertical: spacing.sm, borderWidth: 1, borderColor: colors.border, backgroundColor: "#fff", borderRadius: radius.sm },

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import * as Location from "expo-location";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../../components/Button";

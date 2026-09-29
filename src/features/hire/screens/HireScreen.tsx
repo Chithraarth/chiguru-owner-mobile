@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { Alert, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import * as Location from "expo-location";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -92,7 +93,7 @@ function ListingCard({ listing, dist, tab, onDelete }: { listing: HireListing; d
   return (
     <Card style={{ padding: 0, overflow: "hidden" }}>
       <View style={styles.cardTop}>
-        <View style={[styles.cardIcon, { backgroundColor: isRental ? "#EDEBF7" : "#FFF3E6" }]}>
+        <View style={[styles.cardIcon, { backgroundColor: isRental ? "#FFF0C2" : "#FFF3E6" }]}>
           <Text style={{ fontSize: 30 }}>{cat.emoji}</Text>
         </View>
         <View style={{ flex: 1, padding: spacing.sm + 4 }}>
@@ -241,7 +242,7 @@ export function HireScreen({ navigation, route }: { navigation: any; route?: { p
           </View>
         </View>
         <View style={{ flexDirection: "row", gap: spacing.sm }}>
-          <Pressable style={[styles.landingTile, { backgroundColor: "#EDEBF7" }]} onPress={() => { setTab("rental"); setFilter("all"); setMineOnly(false); }}>
+          <Pressable style={[styles.landingTile, { backgroundColor: "#FFF0C2" }]} onPress={() => { setTab("rental"); setFilter("all"); setMineOnly(false); }}>
             <View style={[styles.landingIconWrap, { backgroundColor: "#DCD6F0" }]}>
               <Tractor size={28} color={colors.primary} />
             </View>

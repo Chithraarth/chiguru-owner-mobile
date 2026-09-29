@@ -1,5 +1,6 @@
 import React from "react";
-import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Linking, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import * as ImagePicker from "expo-image-picker";
 import { AlertCircle, Camera, CheckCircle2, ImageIcon, RefreshCw, Sparkles, Sun } from "lucide-react-native";
 import { Button } from "../../../components/Button";
@@ -14,11 +15,11 @@ type Phase = "capture" | "preview" | "analyzing" | "results";
 
 const CAT_COLOR: Record<string, { bg: string; fg: string }> = {
   Labour: { bg: "#E4EEFB", fg: "#3E6FB0" },
-  Fertilizer: { bg: "#EDEBF7", fg: colors.primary },
+  Fertilizer: { bg: "#FFF0C2", fg: colors.primary },
   Pesticide: { bg: "#FDEAEA", fg: colors.danger },
   Seed: { bg: "#FEF9C3", fg: "#92600E" },
-  Harvest: { bg: "#EDEBF7", fg: colors.primary },
-  Equipment: { bg: "#F3E8FD", fg: "#7B3FBF" },
+  Harvest: { bg: "#FFF0C2", fg: colors.primary },
+  Equipment: { bg: "#FFF0C2", fg: "#2F6B1F" },
   Other: { bg: colors.muted, fg: colors.textMuted },
 };
 

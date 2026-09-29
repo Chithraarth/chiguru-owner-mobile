@@ -1,5 +1,6 @@
 import React from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { Banknote, BadgeCheck, ChevronRight, UserPlus } from "lucide-react-native";
 import { colors, radius, spacing } from "../../../components/theme";
 
@@ -13,7 +14,7 @@ export function AgriExpertHubScreen({ navigation }: { navigation: any }) {
       </View>
 
       <Pressable style={styles.row} onPress={() => navigation.navigate("AgriDoctorRegister")}>
-        <View style={[styles.iconWrap, { backgroundColor: "#E3E0EC" }]}><UserPlus size={18} color={colors.primary} /></View>
+        <View style={[styles.iconWrap, { backgroundColor: "#FBF2D9" }]}><UserPlus size={18} color={colors.primary} /></View>
         <View style={{ flex: 1 }}>
           <Text style={styles.rowTitle}>Add doctor profile</Text>
           <Text style={styles.rowSubtitle}>Register with your credentials so farmers can consult you</Text>

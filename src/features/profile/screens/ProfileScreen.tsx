@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as Clipboard from "expo-clipboard";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, CloudOff, CloudUpload, Copy, LogOut, Phone, RotateCcw, ShieldCheck, UserCircle2 } from "lucide-react-native";
 import { Card } from "../../../components/Card";
@@ -132,7 +133,7 @@ export function ProfileScreen({ navigation }: { navigation: any }) {
       {user ? (
         <Card>
           <View style={{ flexDirection: "row", alignItems: "flex-start", gap: spacing.sm }}>
-            <View style={[styles.iconWrap, activeLinked ? { backgroundColor: "#E3E0EC" } : { backgroundColor: "#FEF3C7" }]}>
+            <View style={[styles.iconWrap, activeLinked ? { backgroundColor: "#FBF2D9" } : { backgroundColor: "#FEF3C7" }]}>
               {activeLinked ? <CloudUpload size={18} color={colors.primary} /> : <CloudOff size={18} color="#92600E" />}
             </View>
             <View style={{ flex: 1 }}>
@@ -172,7 +173,7 @@ export function ProfileScreen({ navigation }: { navigation: any }) {
 
       <Card>
         <View style={{ flexDirection: "row", alignItems: "flex-start", gap: spacing.sm }}>
-          <View style={[styles.iconWrap, { backgroundColor: "#E3E0EC" }]}>
+          <View style={[styles.iconWrap, { backgroundColor: "#FBF2D9" }]}>
             <Phone size={18} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
@@ -207,7 +208,7 @@ export function ProfileScreen({ navigation }: { navigation: any }) {
       {!user ? (
       <Card>
         <View style={{ flexDirection: "row", alignItems: "flex-start", gap: spacing.sm }}>
-          <View style={[styles.iconWrap, { backgroundColor: "#E3E0EC" }]}>
+          <View style={[styles.iconWrap, { backgroundColor: "#FBF2D9" }]}>
             <ShieldCheck size={18} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>

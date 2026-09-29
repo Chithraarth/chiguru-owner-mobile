@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Alert, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, FlatList, Modal, Pressable, StyleSheet, View } from "react-native";
+import { Text, TextInput } from "../../../components/Text";
 import { Pencil, Trash2, X, Check } from "lucide-react-native";
 import { colors, radius, spacing } from "../../../components/theme";
 import { useEstates } from "../hooks/useEstates";

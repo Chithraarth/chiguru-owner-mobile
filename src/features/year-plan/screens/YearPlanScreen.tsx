@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import {
   ChevronLeft,
   ChevronRight,
@@ -353,7 +354,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondary,
   },
   pagerMonth: { fontSize: 16, fontWeight: "700", color: colors.text },
-  pagerSub: { fontSize: 12, color: colors.accent, fontWeight: "600", marginTop: 1 },
+  pagerSub: { fontSize: 12, color: colors.primary, fontWeight: "600", marginTop: 1 },
 
   weekRow: { flexDirection: "row" },
   weekdayText: { flex: 1, textAlign: "center", fontSize: 11, fontWeight: "600", color: colors.textMuted },
@@ -361,7 +362,7 @@ const styles = StyleSheet.create({
   dayCell: { width: `${100 / 7}%`, alignItems: "center", paddingVertical: 4 },
   dayNumWrap: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
   dayNumToday: { backgroundColor: colors.primary },
-  dayNumSelected: { backgroundColor: colors.accent },
+  dayNumSelected: { backgroundColor: colors.primary },
   dayNumText: { fontSize: 13, color: colors.text },
   dayNumTextActive: { color: "#fff", fontWeight: "700" },
   dayDot: { width: 5, height: 5, borderRadius: 2.5, marginTop: 2, backgroundColor: "transparent" },

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import * as Clipboard from "expo-clipboard";
-import { ScrollView, StyleSheet, Text } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
+import { Text } from "../../../components/Text";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";

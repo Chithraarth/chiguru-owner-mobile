@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { Text, TextInput } from "../../../components/Text";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, MapPin, Phone, Search, Sprout, Star, Store, X } from "lucide-react-native";
 import { Button } from "../../../components/Button";

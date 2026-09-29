@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text, TextInput } from "../../../components/Text";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -35,7 +36,7 @@ type FilterStatus = "all" | "pending" | "approved" | "suspended";
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; fg: string; icon: any }> = {
   pending: { label: "Pending", bg: "#FEF3C7", fg: "#B7791F", icon: Clock },
-  approved: { label: "Approved", bg: "#E3E0EC", fg: colors.primary, icon: CheckCircle2 },
+  approved: { label: "Approved", bg: "#FBF2D9", fg: colors.primary, icon: CheckCircle2 },
   suspended: { label: "Suspended", bg: "#FDEAEA", fg: colors.danger, icon: XCircle },
 };
 
@@ -170,7 +171,7 @@ function VendorDetail({ vendorId, onBack }: { vendorId: number; onBack: () => vo
                   <Text style={styles.listingMeta}>{l.category} · ₹{l.price} / {l.unit}</Text>
                   {l.qtyAvailable > 0 ? <Text style={styles.listingQty}>{l.qtyAvailable} available</Text> : null}
                 </View>
-                <View style={[styles.liveBadge, { backgroundColor: l.isAvailable ? "#E3E0EC" : colors.muted }]}>
+                <View style={[styles.liveBadge, { backgroundColor: l.isAvailable ? "#FBF2D9" : colors.muted }]}>
                   <Text style={{ fontSize: 11, fontWeight: "600", color: l.isAvailable ? colors.primary : colors.textMuted }}>
                     {l.isAvailable ? "Live" : "Hidden"}
                   </Text>
@@ -258,7 +259,7 @@ export function NurseryAdminScreen() {
           <Text style={[styles.statValue, { color: "#B7791F" }]}>{pending.length}</Text>
           <Text style={[styles.statLabel, { color: "#B7791F" }]}>Pending</Text>
         </View>
-        <View style={[styles.statBox, { backgroundColor: "#EDEBF7", borderColor: colors.border }]}>
+        <View style={[styles.statBox, { backgroundColor: "#FFF0C2", borderColor: colors.border }]}>
           <Text style={[styles.statValue, { color: colors.primary }]}>{approved.length}</Text>
           <Text style={[styles.statLabel, { color: colors.primary }]}>Approved</Text>
         </View>

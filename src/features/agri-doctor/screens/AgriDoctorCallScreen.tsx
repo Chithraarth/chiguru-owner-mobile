@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { BadgeCheck, PhoneOff } from "lucide-react-native";
 import { Button } from "../../../components/Button";
@@ -93,7 +94,7 @@ const styles = StyleSheet.create({
   endCallBtn: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.danger, alignItems: "center", justifyContent: "center" },
 
   endedContainer: { flex: 1, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center", padding: spacing.lg, gap: spacing.sm },
-  endedIconWrap: { width: 72, height: 72, borderRadius: 36, backgroundColor: "#E3E0EC", alignItems: "center", justifyContent: "center" },
+  endedIconWrap: { width: 72, height: 72, borderRadius: 36, backgroundColor: "#FBF2D9", alignItems: "center", justifyContent: "center" },
   endedTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
   endedSubtitle: { fontSize: 13, color: colors.textMuted },
   endedCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md, width: "100%", maxWidth: 300, marginVertical: spacing.sm },

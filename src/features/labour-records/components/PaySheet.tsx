@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, ExternalLink, X } from "lucide-react-native";
 import { Button } from "../../../components/Button";

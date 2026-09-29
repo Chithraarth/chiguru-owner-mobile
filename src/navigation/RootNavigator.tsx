@@ -19,6 +19,7 @@ import { LoadingView } from "../components/StateViews";
 import { AuthStack } from "./AuthStack";
 import { MainTabs } from "./MainTabs";
 import { InviteeStack } from "../features/invitee/InviteeStack";
+import { navTheme } from "./navTheme";
 
 export function RootNavigator() {
   useAuthListener();
@@ -115,7 +116,7 @@ export function RootNavigator() {
 
   if (!user) {
     return (
-      <NavigationContainer>
+      <NavigationContainer theme={navTheme}>
         <AuthStack />
       </NavigationContainer>
     );
@@ -172,14 +173,14 @@ export function RootNavigator() {
   // farm gets the full Owner app. Keyed so switching resets navigation.
   if (isInvitedEstate) {
     return (
-      <NavigationContainer key="invitee">
+      <NavigationContainer key="invitee" theme={navTheme}>
         <InviteeStack />
       </NavigationContainer>
     );
   }
 
   return (
-    <NavigationContainer key="owner" ref={navRef}>
+    <NavigationContainer key="owner" ref={navRef} theme={navTheme}>
       <MainTabs />
     </NavigationContainer>
   );

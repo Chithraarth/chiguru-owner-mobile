@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import * as ImagePicker from "expo-image-picker";
 import { useQuery } from "@tanstack/react-query";
 import { Camera, ChevronDown, ChevronUp, X } from "lucide-react-native";
@@ -338,8 +339,8 @@ const styles = StyleSheet.create({
   folderIcon: { width: 44, height: 44, borderRadius: radius.sm, backgroundColor: "#FDEAEA", alignItems: "center", justifyContent: "center" },
   folderName: { fontSize: 15, fontWeight: "700", color: colors.text },
   folderSubtitle: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
-  countBadge: { backgroundColor: "#E9E6FB", borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
-  countBadgeText: { fontSize: 12, fontWeight: "700", color: colors.accent },
+  countBadge: { backgroundColor: "#FFF0C2", borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
+  countBadgeText: { fontSize: 12, fontWeight: "700", color: colors.primary },
   backLink: { fontSize: 13, fontWeight: "700", color: colors.primary },
 
   workerName: { fontSize: 14.5, fontWeight: "700", color: colors.text },

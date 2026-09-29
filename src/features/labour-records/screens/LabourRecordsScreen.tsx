@@ -1,5 +1,6 @@
 import React, { useLayoutEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -851,8 +852,8 @@ const styles = StyleSheet.create({
   folderIcon: { width: 44, height: 44, borderRadius: radius.sm, backgroundColor: "#E4EEFB", alignItems: "center", justifyContent: "center" },
   folderName: { fontSize: 15, fontWeight: "700", color: colors.text },
   folderSubtitle: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
-  countBadge: { backgroundColor: "#E9E6FB", borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
-  countBadgeText: { fontSize: 12, fontWeight: "700", color: colors.accent },
+  countBadge: { backgroundColor: "#FFF0C2", borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
+  countBadgeText: { fontSize: 12, fontWeight: "700", color: colors.primary },
 
   tabs: { flexDirection: "row", backgroundColor: colors.muted, borderRadius: radius.sm, padding: 4, gap: 2 },
   tab: { flex: 1, paddingVertical: spacing.sm, borderRadius: radius.sm - 2, alignItems: "center" },
@@ -901,8 +902,8 @@ const styles = StyleSheet.create({
 
   // Employees list
   employeeRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 4 },
-  employeeAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#E9E6FB", alignItems: "center", justifyContent: "center" },
-  employeeAvatarText: { fontSize: 14, fontWeight: "700", color: colors.accent },
+  employeeAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#FFF0C2", alignItems: "center", justifyContent: "center" },
+  employeeAvatarText: { fontSize: 14, fontWeight: "700", color: colors.primary },
 
   // Per-employee net-due summary card
   netDueCard: { alignItems: "center", padding: spacing.lg },
