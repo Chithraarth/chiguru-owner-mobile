@@ -101,7 +101,7 @@ export function WorkUpdateScreen({ navigation }: { navigation: any }) {
     try {
       const { count } = await countWorkersInUpdatePhoto(dataUrl);
       setAttendanceCount(String(count));
-      setAiHint(`🤖 AI detected ${count} workers`);
+      setAiHint(`AI detected ${count} workers`);
     } catch {
       // best-effort only
     }
@@ -222,9 +222,9 @@ export function WorkUpdateScreen({ navigation }: { navigation: any }) {
       <TextField label="Notes" multiline numberOfLines={2} value={notes} onChangeText={setNotes} />
 
       <Text style={styles.locationStatus}>
-        {locationStatus === "locating" && "📍 Getting location..."}
-        {locationStatus === "attached" && "📍 Location attached"}
-        {locationStatus === "none" && "📍 Location not available"}
+        {locationStatus === "locating" && "Getting location..."}
+        {locationStatus === "attached" && "Location attached"}
+        {locationStatus === "none" && "Location not available"}
       </Text>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -247,8 +247,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   videoPreviewText: { flex: 1, color: colors.text, fontWeight: "600" },
-  aiHint: { color: colors.primary, fontSize: 13, marginTop: spacing.xs },
-  fieldLabel: { fontSize: 14, fontWeight: "500", color: colors.text, marginBottom: spacing.xs },
+  aiHint: { color: colors.primary, fontSize: 14.5, marginTop: spacing.xs },
+  fieldLabel: { fontSize: 15.5, fontWeight: "500", color: colors.text, marginBottom: spacing.xs },
   chip: {
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
@@ -258,8 +258,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { color: colors.text, fontSize: 13 },
+  chipText: { color: colors.text, fontSize: 14.5 },
   chipTextSelected: { color: "#fff", fontWeight: "600" },
-  locationStatus: { color: colors.textMuted, fontSize: 12, marginBottom: spacing.md },
+  locationStatus: { color: colors.textMuted, fontSize: 14, marginBottom: spacing.md },
   error: { color: colors.danger, marginBottom: spacing.md },
 });

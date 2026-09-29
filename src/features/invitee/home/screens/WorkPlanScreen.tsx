@@ -139,17 +139,17 @@ export function WorkPlanScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  subtitle: { fontSize: 13, color: colors.textMuted, marginBottom: spacing.md },
+  subtitle: { fontSize: 14.5, color: colors.textMuted, marginBottom: spacing.md },
   pagerCard: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: spacing.md,
   },
-  pagerMonth: { fontSize: 17, fontWeight: "700", color: colors.text },
-  pagerSub: { fontSize: 12, color: colors.primary, fontWeight: "600", marginTop: 2 },
-  sectionLabel: { fontSize: 11, fontWeight: "700", color: colors.primary, letterSpacing: 0.6, marginBottom: spacing.sm },
-  muted: { color: colors.textMuted, fontSize: 13, paddingVertical: spacing.sm },
+  pagerMonth: { fontSize: 18, fontWeight: "700", color: colors.text },
+  pagerSub: { fontSize: 14, color: colors.primary, fontWeight: "600", marginTop: 2 },
+  sectionLabel: { fontSize: 13, fontWeight: "700", color: colors.primary, letterSpacing: 0.6, marginBottom: spacing.sm },
+  muted: { color: colors.textMuted, fontSize: 14.5, paddingVertical: spacing.sm },
   taskCard: {
     backgroundColor: colors.card,
     borderRadius: radius.md,
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   overdueTag: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: "700",
     color: "#B7791F",
     backgroundColor: "#FEF3C7",
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     marginBottom: 4,
   },
-  taskTitle: { fontSize: 15, fontWeight: "600", color: colors.text },
-  taskDetails: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
-  taskMeta: { fontSize: 11.5, color: colors.textMuted, marginTop: spacing.xs, textTransform: "uppercase", letterSpacing: 0.3 },
+  taskTitle: { fontSize: 16.5, fontWeight: "600", color: colors.text },
+  taskDetails: { fontSize: 14.5, color: colors.textMuted, marginTop: 2 },
+  taskMeta: { fontSize: 13.5, color: colors.textMuted, marginTop: spacing.xs, textTransform: "uppercase", letterSpacing: 0.3 },
 });

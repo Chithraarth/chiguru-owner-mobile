@@ -57,7 +57,7 @@ export function AttendanceGroupsScreen({ navigation }: { navigation: any }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   row: { flexDirection: "row", alignItems: "center" },
-  name: { fontSize: 16, fontWeight: "600", color: colors.text },
-  meta: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
+  name: { fontSize: 17, fontWeight: "600", color: colors.text },
+  meta: { fontSize: 14.5, color: colors.textMuted, marginTop: 2 },
   footer: { padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
 });

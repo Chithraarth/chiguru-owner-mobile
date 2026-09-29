@@ -140,5 +140,5 @@ export function CreateWorkGroupScreen({ navigation }: { navigation: any }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   error: { color: colors.danger, marginBottom: spacing.md },
-  heldPreview: { fontSize: 12, color: colors.textMuted, marginTop: -spacing.sm, marginBottom: spacing.md },
+  heldPreview: { fontSize: 14, color: colors.textMuted, marginTop: -spacing.sm, marginBottom: spacing.md },
 });
