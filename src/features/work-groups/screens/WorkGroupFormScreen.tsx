@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Alert, ScrollView, StyleSheet } from "react-native";
 import { Text } from "../../../components/Text";
+import { Camera } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
@@ -92,7 +93,7 @@ export function WorkGroupFormScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: spacing.xl }}>
       <TextField label="Work name *" value={name} onChangeText={setName} />
       <TextField label="Block / area" value={blockName} onChangeText={setBlockName} />
       <SelectOrType label="Category" options={CATEGORIES} value={category} onChange={setCategory} />
@@ -136,7 +137,7 @@ export function WorkGroupFormScreen({ navigation }: { navigation: any }) {
         value={expectedWorkers}
         onChangeText={setExpectedWorkers}
       />
-      <Button title="📷 Scan headcount with AI" variant="secondary" onPress={scanHeadcount} loading={scanning} />
+      <Button title="Scan headcount with AI" icon={Camera} variant="light" onPress={scanHeadcount} loading={scanning} />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -153,5 +154,5 @@ export function WorkGroupFormScreen({ navigation }: { navigation: any }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   error: { color: colors.danger, marginBottom: spacing.md },
-  heldPreview: { fontSize: 12, color: colors.textMuted, marginTop: -spacing.sm, marginBottom: spacing.md },
+  heldPreview: { fontSize: 14, color: colors.textMuted, marginTop: -spacing.sm, marginBottom: spacing.md },
 });

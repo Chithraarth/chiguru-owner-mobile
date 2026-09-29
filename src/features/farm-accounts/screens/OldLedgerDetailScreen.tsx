@@ -35,7 +35,7 @@ export function OldLedgerDetailScreen({ route }: { route: any }) {
   if (!d) return <EmptyState title="Could not load this year" />;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: spacing.xl }}>
       <Section title="EXPENSES BY CATEGORY">
         {d.expenseCategories.length === 0 ? (
           <Text style={styles.muted}>No expenses recorded.</Text>
@@ -161,15 +161,15 @@ export function OldLedgerDetailScreen({ route }: { route: any }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  sectionTitle: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.6, marginBottom: spacing.sm },
-  muted: { fontSize: 13, color: colors.textMuted },
+  sectionTitle: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.6, marginBottom: spacing.sm },
+  muted: { fontSize: 14.5, color: colors.textMuted },
   line: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: spacing.xs + 2,
   },
-  lineLabel: { fontSize: 13.5, fontWeight: "600", color: colors.text },
-  lineSub: { fontSize: 11.5, color: colors.textMuted, marginTop: 1 },
-  lineValue: { fontSize: 13.5, fontWeight: "700", color: colors.text },
+  lineLabel: { fontSize: 15, fontWeight: "600", color: colors.text },
+  lineSub: { fontSize: 13.5, color: colors.textMuted, marginTop: 1 },
+  lineValue: { fontSize: 15, fontWeight: "700", color: colors.text },
 });

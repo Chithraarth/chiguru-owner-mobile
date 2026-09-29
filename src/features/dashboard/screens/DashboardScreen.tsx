@@ -59,7 +59,7 @@ function moreTools(t: (k: string) => string): ToolItem[] {
     { icon: Handshake, chipBg: "#E4F2FB", chipColor: "#4FA8D8", title: t("more.findWorkers"), desc: "", screen: "Hire", params: { initialTab: "job" } },
     { icon: ShoppingCart, chipBg: "#FBEEDD", chipColor: "#D69A4F", title: t("more.shop"), desc: "", screen: "Shop" },
     { icon: Store, chipBg: "#E0F5E9", chipColor: "#4FAE72", title: t("more.market"), desc: "", screen: "Marketplace" },
-    { icon: Stethoscope, chipBg: "#E4E7FB", chipColor: "#5B6ED6", title: t("more.agriDoctor"), desc: "", screen: "AgriDoctor" },
+    { icon: Stethoscope, chipBg: "#E3F4EA", chipColor: "#5B6ED6", title: t("more.agriDoctor"), desc: "", screen: "AgriDoctor" },
     { icon: ScanLine, chipBg: "#FBE4E4", chipColor: "#D66B6B", title: t("more.diseaseDetect"), desc: "", screen: "Disease" },
     { icon: BotMessageSquare, chipBg: "#FFF0C2", chipColor: "#8B5BD6", title: t("more.agriAdvisor"), desc: "", screen: "AgriAi" },
     // No source translation exists for this yet - Year Plan isn't in

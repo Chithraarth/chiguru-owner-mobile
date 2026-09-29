@@ -268,7 +268,7 @@ export function SubscriptionScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       {isActive ? (
         <View style={styles.statusCard}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
@@ -319,13 +319,13 @@ export function SubscriptionScreen() {
 
       {verifying ? (
         <Card style={{ backgroundColor: "#FFF8E6", borderColor: "#F0DFA6" }}>
-          <Text style={{ color: "#8A6D1D", fontSize: 12.5 }}>Payment received. Verifying your subscription...</Text>
+          <Text style={{ color: "#8A6D1D", fontSize: 14.5 }}>Payment received. Verifying your subscription...</Text>
         </Card>
       ) : null}
 
       {verifyingSeatAddon ? (
         <Card style={{ backgroundColor: "#FFF8E6", borderColor: "#F0DFA6" }}>
-          <Text style={{ color: "#8A6D1D", fontSize: 12.5 }}>Payment received. Verifying your invitee seat...</Text>
+          <Text style={{ color: "#8A6D1D", fontSize: 14.5 }}>Payment received. Verifying your invitee seat...</Text>
         </Card>
       ) : null}
 
@@ -418,32 +418,32 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
   statusCard: { backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md },
-  statusTitle: { color: "#fff", fontSize: 15, fontWeight: "700" },
-  statusDesc: { color: "rgba(255,255,255,0.85)", fontSize: 12.5, marginTop: spacing.xs, lineHeight: 17 },
-  statusMeta: { color: "rgba(255,255,255,0.6)", fontSize: 11, marginTop: spacing.sm },
+  statusTitle: { color: "#fff", fontSize: 16.5, fontWeight: "700" },
+  statusDesc: { color: "rgba(255,255,255,0.85)", fontSize: 14.5, marginTop: spacing.xs, lineHeight: 17 },
+  statusMeta: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginTop: spacing.sm },
   seatRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs, marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.2)" },
-  seatText: { color: "#fff", fontSize: 12.5, flex: 1 },
+  seatText: { color: "#fff", fontSize: 14.5, flex: 1 },
 
-  honestCard: { backgroundColor: "#EFEDF7", borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: "#DDD8EC", alignItems: "center" },
-  honestTitle: { fontSize: 14.5, fontWeight: "700", color: colors.primary, textAlign: "center" },
-  honestDesc: { fontSize: 12, color: colors.primary, opacity: 0.8, marginTop: spacing.xs, textAlign: "center", lineHeight: 16 },
+  honestCard: { backgroundColor: "#FBF2D9", borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: "#DDD8EC", alignItems: "center" },
+  honestTitle: { fontSize: 16, fontWeight: "700", color: colors.primary, textAlign: "center" },
+  honestDesc: { fontSize: 14, color: colors.primary, opacity: 0.8, marginTop: spacing.xs, textAlign: "center", lineHeight: 16 },
 
-  planCardCurrent: { borderColor: colors.primary, backgroundColor: "#F5F4FA" },
+  planCardCurrent: { borderColor: colors.primary, backgroundColor: "#FBF2D9" },
   planIconWrap: { width: 36, height: 36, borderRadius: radius.sm, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" },
-  planName: { fontSize: 15, fontWeight: "700", color: colors.text },
-  planTagline: { fontSize: 11.5, color: colors.textMuted, marginTop: 1 },
+  planName: { fontSize: 16.5, fontWeight: "700", color: colors.text },
+  planTagline: { fontSize: 13.5, color: colors.textMuted, marginTop: 1 },
   planPrice: { fontSize: 26, fontWeight: "700", color: colors.text, marginTop: spacing.sm },
-  planPerMonth: { fontSize: 12, color: colors.textMuted },
-  planFeature: { fontSize: 12, color: colors.text, flex: 1 },
+  planPerMonth: { fontSize: 14, color: colors.textMuted },
+  planFeature: { fontSize: 14, color: colors.text, flex: 1 },
 
-  sectionTitle: { fontSize: 14.5, fontWeight: "700", color: colors.text },
+  sectionTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
 
-  whyTitle: { fontSize: 14.5, fontWeight: "700", color: colors.text },
-  whyText: { fontSize: 12, color: colors.text, lineHeight: 17 },
+  whyTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
+  whyText: { fontSize: 14, color: colors.text, lineHeight: 17 },
 
-  emptyText: { fontSize: 13, color: colors.textMuted },
-  paymentAmount: { fontSize: 14, fontWeight: "700", color: colors.text },
-  paymentDate: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
+  emptyText: { fontSize: 14.5, color: colors.textMuted },
+  paymentAmount: { fontSize: 15.5, fontWeight: "700", color: colors.text },
+  paymentDate: { fontSize: 13, color: colors.textMuted, marginTop: 1 },
   statusBadge: { borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
-  statusBadgeText: { fontSize: 11, fontWeight: "700", textTransform: "capitalize" },
+  statusBadgeText: { fontSize: 13, fontWeight: "700", textTransform: "capitalize" },
 });

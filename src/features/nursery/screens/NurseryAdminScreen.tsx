@@ -94,7 +94,7 @@ function VendorDetail({ vendorId, onBack }: { vendorId: number; onBack: () => vo
   if (!vendor) return <EmptyState title="Vendor not found" />;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       <Pressable onPress={onBack} style={styles.backRow}>
         <ArrowLeft size={16} color={colors.primary} />
         <Text style={styles.backText}>All Vendors</Text>
@@ -160,7 +160,7 @@ function VendorDetail({ vendorId, onBack }: { vendorId: number; onBack: () => vo
         {(vendor.listings?.length ?? 0) === 0 ? (
           <View style={{ alignItems: "center", paddingVertical: spacing.xl }}>
             <Package size={36} color={colors.border} />
-            <Text style={{ color: colors.textMuted, marginTop: spacing.sm, fontSize: 13 }}>No listings yet</Text>
+            <Text style={{ color: colors.textMuted, marginTop: spacing.sm, fontSize: 14.5 }}>No listings yet</Text>
           </View>
         ) : (
           <View style={{ gap: spacing.sm }}>
@@ -172,7 +172,7 @@ function VendorDetail({ vendorId, onBack }: { vendorId: number; onBack: () => vo
                   {l.qtyAvailable > 0 ? <Text style={styles.listingQty}>{l.qtyAvailable} available</Text> : null}
                 </View>
                 <View style={[styles.liveBadge, { backgroundColor: l.isAvailable ? "#FBF2D9" : colors.muted }]}>
-                  <Text style={{ fontSize: 11, fontWeight: "600", color: l.isAvailable ? colors.primary : colors.textMuted }}>
+                  <Text style={{ fontSize: 13, fontWeight: "600", color: l.isAvailable ? colors.primary : colors.textMuted }}>
                     {l.isAvailable ? "Live" : "Hidden"}
                   </Text>
                 </View>
@@ -253,7 +253,7 @@ export function NurseryAdminScreen() {
   const displayed = filterStatus === "all" ? vendors : filterStatus === "pending" ? pending : filterStatus === "approved" ? approved : suspended;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       <View style={styles.statsRow}>
         <View style={[styles.statBox, { backgroundColor: "#FEF3C7", borderColor: "#FDE68A" }]}>
           <Text style={[styles.statValue, { color: "#B7791F" }]}>{pending.length}</Text>
@@ -293,7 +293,7 @@ export function NurseryAdminScreen() {
       {displayed.length === 0 ? (
         <View style={{ alignItems: "center", paddingVertical: spacing.xl }}>
           <Sprout size={40} color={colors.border} />
-          <Text style={{ color: colors.textMuted, marginTop: spacing.sm, fontSize: 13 }}>
+          <Text style={{ color: colors.textMuted, marginTop: spacing.sm, fontSize: 14.5 }}>
             No vendors {filterStatus !== "all" ? `with status "${filterStatus}"` : "registered yet"}
           </Text>
         </View>
@@ -364,70 +364,70 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: "row", gap: spacing.sm },
   statBox: { flex: 1, borderWidth: 1, borderRadius: radius.md, alignItems: "center", paddingVertical: spacing.sm + 2 },
   statValue: { fontSize: 22, fontWeight: "700" },
-  statLabel: { fontSize: 11, fontWeight: "600", marginTop: 2 },
+  statLabel: { fontSize: 13, fontWeight: "600", marginTop: 2 },
 
   alertBanner: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", borderRadius: radius.md, padding: spacing.sm + 4 },
-  alertTitle: { fontSize: 13, fontWeight: "700", color: "#92600E" },
-  alertSubtitle: { fontSize: 11, color: "#B7791F", marginTop: 2 },
-  alertLink: { fontSize: 12, fontWeight: "700", color: "#92600E", textDecorationLine: "underline" },
+  alertTitle: { fontSize: 14.5, fontWeight: "700", color: "#92600E" },
+  alertSubtitle: { fontSize: 13, color: "#B7791F", marginTop: 2 },
+  alertLink: { fontSize: 14, fontWeight: "700", color: "#92600E", textDecorationLine: "underline" },
 
   tabs: { flexDirection: "row", backgroundColor: colors.muted, borderRadius: radius.sm, padding: 4, gap: 2 },
   tab: { flex: 1, paddingVertical: spacing.sm - 2, borderRadius: radius.sm - 2, alignItems: "center" },
   tabActive: { backgroundColor: "#fff" },
-  tabText: { fontSize: 11, fontWeight: "600", color: colors.textMuted },
+  tabText: { fontSize: 13, fontWeight: "600", color: colors.textMuted },
   tabTextActive: { color: colors.text },
 
   badge: { flexDirection: "row", alignItems: "center", gap: 3, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 2 },
-  badgeText: { fontSize: 10, fontWeight: "700" },
+  badgeText: { fontSize: 12, fontWeight: "700" },
 
   vendorHeaderRow: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
-  vendorName: { fontSize: 15, fontWeight: "700", color: colors.text, flexShrink: 1 },
-  speciality: { fontSize: 11, color: colors.primary, marginTop: 1 },
+  vendorName: { fontSize: 16.5, fontWeight: "700", color: colors.text, flexShrink: 1 },
+  speciality: { fontSize: 13, color: colors.primary, marginTop: 1 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
-  metaText: { fontSize: 11, color: colors.textMuted, flexShrink: 1 },
-  listingCount: { fontSize: 17, fontWeight: "700", color: colors.primary },
-  listingCountLabel: { fontSize: 10, color: colors.textMuted },
+  metaText: { fontSize: 13, color: colors.textMuted, flexShrink: 1 },
+  listingCount: { fontSize: 18, fontWeight: "700", color: colors.primary },
+  listingCountLabel: { fontSize: 12, color: colors.textMuted },
 
   quickActionsRow: { flexDirection: "row", gap: spacing.xs, marginTop: spacing.sm + 4, paddingTop: spacing.sm + 4, borderTopWidth: 1, borderTopColor: colors.bg },
   quickBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: spacing.sm - 2, borderRadius: radius.sm },
   quickBtnPrimary: { backgroundColor: colors.primary },
-  quickBtnPrimaryText: { color: "#fff", fontSize: 11, fontWeight: "700" },
+  quickBtnPrimaryText: { color: "#fff", fontSize: 13, fontWeight: "700" },
   quickBtnDanger: { backgroundColor: "#FDEAEA", borderWidth: 1, borderColor: "#F5C6C6" },
-  quickBtnDangerText: { color: colors.danger, fontSize: 11, fontWeight: "700" },
+  quickBtnDangerText: { color: colors.danger, fontSize: 13, fontWeight: "700" },
   quickBtnSecondary: { backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border },
-  quickBtnSecondaryText: { color: colors.text, fontSize: 11, fontWeight: "700" },
+  quickBtnSecondaryText: { color: colors.text, fontSize: 13, fontWeight: "700" },
   quickBtnIcon: { width: 32, height: 32, backgroundColor: "#FDEAEA", borderWidth: 1, borderColor: "#F5C6C6", borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
 
   backRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  backText: { fontSize: 13, fontWeight: "700", color: colors.primary },
+  backText: { fontSize: 14.5, fontWeight: "700", color: colors.primary },
   detailHeaderRow: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
-  detailName: { fontSize: 17, fontWeight: "700", color: colors.text },
-  description: { fontSize: 12, color: colors.textMuted, marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.bg, lineHeight: 17 },
+  detailName: { fontSize: 18, fontWeight: "700", color: colors.text },
+  description: { fontSize: 14, color: colors.textMuted, marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.bg, lineHeight: 17 },
   notesBox: { backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", borderRadius: radius.sm, padding: spacing.sm + 2, marginTop: spacing.sm },
-  notesLabel: { fontSize: 11, fontWeight: "700", color: "#92600E" },
-  notesText: { fontSize: 12, color: "#B7791F", marginTop: 2 },
-  registeredText: { fontSize: 11, color: colors.textMuted, marginTop: spacing.sm },
+  notesLabel: { fontSize: 13, fontWeight: "700", color: "#92600E" },
+  notesText: { fontSize: 14, color: "#B7791F", marginTop: 2 },
+  registeredText: { fontSize: 13, color: colors.textMuted, marginTop: spacing.sm },
 
   actionGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   actionBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, flexGrow: 1, minWidth: "30%", paddingVertical: spacing.sm + 2, borderRadius: radius.sm },
   actionBtnPrimary: { backgroundColor: colors.primary },
-  actionBtnPrimaryText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  actionBtnPrimaryText: { color: "#fff", fontWeight: "700", fontSize: 14.5 },
   actionBtnDanger: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#F5C6C6" },
-  actionBtnDangerText: { color: colors.danger, fontWeight: "700", fontSize: 13 },
+  actionBtnDangerText: { color: colors.danger, fontWeight: "700", fontSize: 14.5 },
   actionBtnSecondary: { backgroundColor: "#fff", borderWidth: 1, borderColor: colors.border },
-  actionBtnSecondaryText: { color: colors.text, fontWeight: "600", fontSize: 13 },
+  actionBtnSecondaryText: { color: colors.text, fontWeight: "600", fontSize: 14.5 },
 
-  blockTitle: { fontSize: 14, fontWeight: "700", color: colors.text, marginBottom: spacing.sm },
+  blockTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text, marginBottom: spacing.sm },
   listingRow: { flexDirection: "row", alignItems: "center" },
-  listingName: { fontSize: 14, fontWeight: "600", color: colors.text },
-  listingMeta: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
-  listingQty: { fontSize: 11, color: "#5B8CD6", marginTop: 1 },
+  listingName: { fontSize: 15.5, fontWeight: "600", color: colors.text },
+  listingMeta: { fontSize: 13, color: colors.textMuted, marginTop: 1 },
+  listingQty: { fontSize: 13, color: "#5B8CD6", marginTop: 1 },
   liveBadge: { borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 3 },
 
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
   notesSheet: { position: "absolute", left: 0, right: 0, bottom: 0, backgroundColor: colors.card, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg, gap: spacing.sm },
   notesSheetHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  notesSheetTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
-  label: { fontSize: 12, color: colors.textMuted },
-  textarea: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, padding: spacing.sm + 2, fontSize: 14, color: colors.text, minHeight: 90, textAlignVertical: "top" },
+  notesSheetTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
+  label: { fontSize: 14, color: colors.textMuted },
+  textarea: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, padding: spacing.sm + 2, fontSize: 15.5, color: colors.text, minHeight: 90, textAlignVertical: "top" },
 });

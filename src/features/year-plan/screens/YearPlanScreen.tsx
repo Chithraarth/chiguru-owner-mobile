@@ -18,7 +18,7 @@ import {
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { useYearPlan } from "../hooks/useYearPlan";
 import { ApiError, isSubscriptionRequired } from "../../../api/errors";
 import type { PlanTask } from "../../../types/api";
@@ -124,7 +124,7 @@ function MonthGrid({
                   isToday && !isSel && styles.dayNumToday,
                 ]}
               >
-                <Text style={[styles.dayNumText, (isToday || isSel) && styles.dayNumTextActive]}>{d}</Text>
+                <Text style={[styles.dayNumText, (isToday || isSel) && styles.dayNumTextActive, isToday && !isSel && { color: colors.accentInk }]}>{d}</Text>
               </View>
               <View
                 style={[
@@ -311,8 +311,8 @@ export function YearPlanScreen({ navigation }: { navigation: any }) {
 
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionLabel}>PENDING WORKS</Text>
-            <Pressable onPress={openAdd} hitSlop={8} style={styles.addBtn}>
-              <Plus size={16} color={colors.primary} />
+            <Pressable onPress={openAdd} hitSlop={8} style={styles.addBtn} accessibilityLabel="Add task">
+              <Plus size={20} color="#FFFFFF" strokeWidth={2.4} />
             </Pressable>
           </View>
           {pending.length === 0 && overdue.length === 0 ? (
@@ -340,8 +340,8 @@ export function YearPlanScreen({ navigation }: { navigation: any }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  subtitle: { fontSize: 13, color: colors.textMuted, marginBottom: spacing.md },
-  hint: { fontSize: 12, color: colors.textMuted, marginTop: spacing.sm },
+  subtitle: { fontSize: 14.5, color: colors.textMuted, marginBottom: spacing.md },
+  hint: { fontSize: 14, color: colors.textMuted, marginTop: spacing.sm },
   link: { color: colors.primary, fontWeight: "600" },
 
   pagerRow: {
@@ -351,47 +351,46 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm + 2,
     paddingBottom: spacing.xs,
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.bg,
   },
-  pagerMonth: { fontSize: 16, fontWeight: "700", color: colors.text },
-  pagerSub: { fontSize: 12, color: colors.primary, fontWeight: "600", marginTop: 1 },
+  pagerMonth: { fontSize: 22, fontWeight: "800", color: colors.text },
+  pagerSub: { fontSize: 14, color: colors.primary, fontWeight: "600", marginTop: 1 },
 
   weekRow: { flexDirection: "row" },
-  weekdayText: { flex: 1, textAlign: "center", fontSize: 11, fontWeight: "600", color: colors.textMuted },
+  weekdayText: { flex: 1, textAlign: "center", fontSize: 13, fontWeight: "600", color: colors.textMuted },
   gridRow: { flexDirection: "row", flexWrap: "wrap" },
   dayCell: { width: `${100 / 7}%`, alignItems: "center", paddingVertical: 4 },
-  dayNumWrap: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
-  dayNumToday: { backgroundColor: colors.primary },
+  dayNumWrap: { width: 36, height: 36, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  dayNumToday: { backgroundColor: colors.accent },
   dayNumSelected: { backgroundColor: colors.primary },
-  dayNumText: { fontSize: 13, color: colors.text },
+  dayNumText: { fontSize: 14.5, color: colors.text },
   dayNumTextActive: { color: "#fff", fontWeight: "700" },
   dayDot: { width: 5, height: 5, borderRadius: 2.5, marginTop: 2, backgroundColor: "transparent" },
 
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.sm },
-  sectionLabel: { fontSize: 11, fontWeight: "700", color: colors.primary, letterSpacing: 0.6 },
-  addBtn: { width: 26, height: 26, borderRadius: 13, backgroundColor: colors.secondary, alignItems: "center", justifyContent: "center" },
-  muted: { color: colors.textMuted, fontSize: 13, paddingVertical: spacing.sm },
+  sectionLabel: { fontSize: 20, fontWeight: "800", color: colors.text },
+  addBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+  muted: { color: colors.textMuted, fontSize: 14.5, paddingVertical: spacing.sm },
 
   taskCard: {
     flexDirection: "row",
     gap: spacing.sm,
     backgroundColor: colors.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderRadius: 22,
+    ...shadow,
     padding: spacing.md,
     alignItems: "flex-start",
   },
   checkbox: { paddingTop: 2 },
   checkboxDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: colors.border,
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    borderWidth: 2.5,
+    borderColor: colors.primary,
   },
   overdueTag: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: "700",
     color: "#B7791F",
     backgroundColor: "#FEF3C7",
@@ -401,11 +400,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     marginBottom: 4,
   },
-  taskTitle: { fontSize: 15, fontWeight: "600", color: colors.text },
-  taskDetails: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
+  taskTitle: { fontSize: 16.5, fontWeight: "700", color: colors.text },
+  taskDetails: { fontSize: 14.5, color: colors.textMuted, marginTop: 2 },
   taskMetaRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: spacing.xs, flexWrap: "wrap" },
   catChip: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.pill },
-  catChipText: { fontSize: 11, fontWeight: "700" },
-  taskMeta: { fontSize: 12, color: colors.textMuted },
+  catChipText: { fontSize: 13, fontWeight: "700" },
+  taskMeta: { fontSize: 14, color: colors.textMuted },
   taskActions: { gap: spacing.sm, alignItems: "center", paddingTop: 2 },
 });

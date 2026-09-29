@@ -163,7 +163,7 @@ export function AccountsScanScreen({ navigation }: { navigation: any }) {
   const pendingChecks = entries.filter((e, i) => needsCheck(e, i)).length;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       {phase === "capture" ? (
         <>
           <View style={styles.instructionsCard}>
@@ -332,55 +332,55 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
   instructionsCard: { backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", borderRadius: radius.md, padding: spacing.md, gap: spacing.sm },
-  instructionsTitle: { fontSize: 14.5, fontWeight: "700", color: "#92600E" },
+  instructionsTitle: { fontSize: 16, fontWeight: "700", color: "#92600E" },
   tipRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   tipIconWrap: { width: 26, height: 26, borderRadius: radius.sm, backgroundColor: "#FDE68A", alignItems: "center", justifyContent: "center" },
-  tipText: { fontSize: 12.5, color: "#92600E", flex: 1 },
+  tipText: { fontSize: 14.5, color: "#92600E", flex: 1 },
 
   readBtn: { backgroundColor: "#D9861F", borderRadius: radius.md, padding: spacing.lg, alignItems: "center", gap: spacing.xs },
-  readBtnTitle: { color: "#fff", fontSize: 17, fontWeight: "700" },
-  readBtnHint: { color: "rgba(255,255,255,0.85)", fontSize: 12 },
+  readBtnTitle: { color: "#fff", fontSize: 18, fontWeight: "700" },
+  readBtnHint: { color: "rgba(255,255,255,0.85)", fontSize: 14 },
 
   previewImage: { width: "100%", height: 260, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border },
-  previewHint: { fontSize: 12, color: colors.textMuted, textAlign: "center" },
-  retakeLink: { textAlign: "center", fontSize: 13, color: colors.textMuted, paddingVertical: spacing.sm },
-  errorText: { color: colors.danger, fontSize: 12.5, textAlign: "center" },
+  previewHint: { fontSize: 14, color: colors.textMuted, textAlign: "center" },
+  retakeLink: { textAlign: "center", fontSize: 14.5, color: colors.textMuted, paddingVertical: spacing.sm },
+  errorText: { color: colors.danger, fontSize: 14.5, textAlign: "center" },
 
   analyzingWrap: { alignItems: "center", gap: spacing.sm, paddingVertical: spacing.xl * 1.5 },
-  analyzingTitle: { fontSize: 15, fontWeight: "700", color: colors.text, marginTop: spacing.sm },
-  analyzingSubtitle: { fontSize: 12, color: colors.textMuted },
+  analyzingTitle: { fontSize: 16.5, fontWeight: "700", color: colors.text, marginTop: spacing.sm },
+  analyzingSubtitle: { fontSize: 14, color: colors.textMuted },
 
   summaryCard: { backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md },
-  summaryTitle: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  summaryTitle: { color: "#fff", fontSize: 17, fontWeight: "700" },
   yearBadge: { backgroundColor: "rgba(255,255,255,0.2)", borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: 2 },
-  yearBadgeText: { color: "#fff", fontSize: 12, fontWeight: "700" },
-  summaryStat: { color: "rgba(255,255,255,0.85)", fontSize: 12.5 },
-  summaryDesc: { color: "rgba(255,255,255,0.8)", fontSize: 11, marginTop: spacing.xs, lineHeight: 15 },
+  yearBadgeText: { color: "#fff", fontSize: 14, fontWeight: "700" },
+  summaryStat: { color: "rgba(255,255,255,0.85)", fontSize: 14.5 },
+  summaryDesc: { color: "rgba(255,255,255,0.8)", fontSize: 13, marginTop: spacing.xs, lineHeight: 15 },
 
   warningBanner: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: "#FFF3E6", borderWidth: 1, borderColor: "#FBD9AE", borderRadius: radius.sm, padding: spacing.sm + 2 },
-  warningBannerText: { flex: 1, fontSize: 12.5, fontWeight: "600", color: "#95530F" },
+  warningBannerText: { flex: 1, fontSize: 14.5, fontWeight: "600", color: "#95530F" },
 
-  categoryLabel: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5 },
+  categoryLabel: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5 },
   entryCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm + 4 },
   entryCardWarn: { borderColor: "#FBD9AE" },
   typeBadge: { borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 3, marginTop: 2 },
-  typeBadgeText: { fontSize: 10.5, fontWeight: "700" },
-  entryDesc: { fontSize: 13.5, fontWeight: "600", color: colors.text, lineHeight: 18 },
-  entryOriginal: { fontSize: 11, color: colors.textMuted, fontStyle: "italic", marginTop: 2 },
-  entryMeta: { fontSize: 11, color: colors.textMuted },
-  doubtTag: { fontSize: 10.5, color: "#95530F", backgroundColor: "#FFF3E6", borderRadius: 4, paddingHorizontal: 4 },
-  checkedTag: { fontSize: 10.5, color: colors.primary, backgroundColor: colors.bg, borderRadius: 4, paddingHorizontal: 4 },
-  entryAmount: { fontSize: 13.5, fontWeight: "700" },
+  typeBadgeText: { fontSize: 12.5, fontWeight: "700" },
+  entryDesc: { fontSize: 15, fontWeight: "600", color: colors.text, lineHeight: 18 },
+  entryOriginal: { fontSize: 13, color: colors.textMuted, fontStyle: "italic", marginTop: 2 },
+  entryMeta: { fontSize: 13, color: colors.textMuted },
+  doubtTag: { fontSize: 12.5, color: "#95530F", backgroundColor: "#FFF3E6", borderRadius: 4, paddingHorizontal: 4 },
+  checkedTag: { fontSize: 12.5, color: colors.primary, backgroundColor: colors.bg, borderRadius: 4, paddingHorizontal: 4 },
+  entryAmount: { fontSize: 15, fontWeight: "700" },
   saveBtn: { backgroundColor: "#D9861F", borderRadius: radius.sm, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs + 2 },
   saveBtnDone: { backgroundColor: colors.bg },
-  saveBtnText: { fontSize: 11.5, fontWeight: "700", color: "#fff" },
+  saveBtnText: { fontSize: 13.5, fontWeight: "700", color: "#fff" },
 
   doubtBox: { marginTop: spacing.sm, backgroundColor: "#FFF3E6", borderWidth: 1, borderColor: "#FBD9AE", borderRadius: radius.sm, padding: spacing.sm + 4 },
-  doubtQuestion: { fontSize: 12.5, fontWeight: "600", color: "#95530F", marginBottom: spacing.sm },
+  doubtQuestion: { fontSize: 14.5, fontWeight: "600", color: "#95530F", marginBottom: spacing.sm },
 
   notesBox: { backgroundColor: "#E4EEFB", borderWidth: 1, borderColor: "#C7DCF5", borderRadius: radius.sm, padding: spacing.sm + 4 },
-  notesText: { fontSize: 11.5, color: "#3E6FB0", lineHeight: 16 },
+  notesText: { fontSize: 13.5, color: "#3E6FB0", lineHeight: 16 },
 
   scanAnotherBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: spacing.sm },
-  scanAnotherText: { fontSize: 13, color: colors.textMuted, fontWeight: "500" },
+  scanAnotherText: { fontSize: 14.5, color: colors.textMuted, fontWeight: "500" },
 });

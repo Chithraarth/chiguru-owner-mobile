@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Image, ScrollView, StyleSheet } from "react-native";
 import { Text } from "../../../components/Text";
+import { Camera } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
@@ -64,9 +65,9 @@ export function EquipmentFormScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: spacing.xl }}>
       {photoUri ? <Image source={{ uri: photoUri }} style={styles.preview} /> : (
-        <Button title="📷 Add equipment photo" variant="secondary" onPress={pickPhoto} />
+        <Button title="Add equipment photo" icon={Camera} variant="light" onPress={pickPhoto} />
       )}
       <TextField label="What are you selling? *" value={title} onChangeText={setTitle} placeholder="e.g. Mahindra 575 Tractor" />
       <ChipSelect label="Condition" options={["used", "new"]} value={condition} onChange={(v) => setCondition(v as "new" | "used")} />

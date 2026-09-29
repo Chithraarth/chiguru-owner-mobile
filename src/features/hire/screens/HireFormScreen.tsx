@@ -158,5 +158,5 @@ const styles = StyleSheet.create({
     gap: 6,
     marginBottom: spacing.md,
   },
-  locationBtnText: { color: colors.primary, fontSize: 13, fontWeight: "600" },
+  locationBtnText: { color: colors.primary, fontSize: 14.5, fontWeight: "600" },
 });

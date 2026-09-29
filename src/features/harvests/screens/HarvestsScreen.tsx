@@ -119,7 +119,7 @@ export function HarvestsScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
         {openFolder === null ? (
           <>
             <View style={{ flexDirection: "row", gap: spacing.sm }}>
@@ -226,7 +226,7 @@ export function HarvestsScreen() {
 
       {openFolder !== null ? (
         <View style={[styles.footer, { paddingBottom: spacing.md + insets.bottom }]}>
-          <Button title="+ Add Harvest" onPress={() => openForm(null)} />
+          <Button title="Add Harvest" icon={Plus} onPress={() => openForm(null)} />
         </View>
       ) : null}
 
@@ -282,38 +282,38 @@ export function HarvestsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   statCard: { flex: 1, borderWidth: 1, borderRadius: radius.md, padding: spacing.sm + 4 },
-  statLabel: { fontSize: 11.5, fontWeight: "600" },
+  statLabel: { fontSize: 13.5, fontWeight: "600" },
   statValue: { fontSize: 19, fontWeight: "700", marginTop: 2 },
   statAddBtn: { flexDirection: "row", alignItems: "center", gap: 3, alignSelf: "flex-start", borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 3, marginTop: spacing.sm },
-  statAddText: { fontSize: 10.5, fontWeight: "700" },
+  statAddText: { fontSize: 12.5, fontWeight: "700" },
 
-  sectionLabel: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5 },
+  sectionLabel: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5 },
   folderRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   folderIcon: { width: 44, height: 44, borderRadius: radius.sm, backgroundColor: "#E4EEFB", alignItems: "center", justifyContent: "center" },
-  folderName: { fontSize: 15, fontWeight: "700", color: colors.text },
-  folderSubtitle: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  folderName: { fontSize: 16.5, fontWeight: "700", color: colors.text },
+  folderSubtitle: { fontSize: 14, color: colors.textMuted, marginTop: 2 },
   countBadge: { backgroundColor: "#FFF0C2", borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
-  countBadgeText: { fontSize: 12, fontWeight: "700", color: colors.primary },
+  countBadgeText: { fontSize: 14, fontWeight: "700", color: colors.primary },
 
-  backLink: { fontSize: 13, fontWeight: "700", color: colors.primary },
+  backLink: { fontSize: 14.5, fontWeight: "700", color: colors.primary },
 
-  harvestCrop: { fontSize: 14.5, fontWeight: "700", color: colors.text },
+  harvestCrop: { fontSize: 16, fontWeight: "700", color: colors.text },
   gradeBadge: { backgroundColor: "#FEF3C7", borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 2 },
-  gradeBadgeText: { fontSize: 10.5, color: "#92600E", fontWeight: "600" },
+  gradeBadgeText: { fontSize: 12.5, color: "#92600E", fontWeight: "600" },
   statusBadge: { backgroundColor: colors.muted, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 2 },
-  statusBadgeText: { fontSize: 10.5, color: colors.textMuted, fontWeight: "600" },
-  harvestMeta: { fontSize: 11.5, color: colors.textMuted, marginTop: 3 },
-  harvestQty: { fontSize: 12.5, color: colors.text, marginTop: 3 },
-  harvestIncome: { fontSize: 14, fontWeight: "700", color: colors.primary },
+  statusBadgeText: { fontSize: 12.5, color: colors.textMuted, fontWeight: "600" },
+  harvestMeta: { fontSize: 13.5, color: colors.textMuted, marginTop: 3 },
+  harvestQty: { fontSize: 14.5, color: colors.text, marginTop: 3 },
+  harvestIncome: { fontSize: 15.5, fontWeight: "700", color: colors.primary },
 
   footer: { padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.bg },
 
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
   formSheet: { position: "absolute", left: 0, right: 0, bottom: 0, maxHeight: "88%", backgroundColor: colors.card, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg },
   formHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: spacing.md },
-  formTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
-  formSubtitle: { fontSize: 12, color: "#3E6FB0", fontWeight: "600", marginTop: 2 },
+  formTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
+  formSubtitle: { fontSize: 14, color: "#3E6FB0", fontWeight: "600", marginTop: 2 },
   estimateBox: { backgroundColor: colors.bg, borderRadius: radius.sm, padding: spacing.sm + 2, alignItems: "center", marginBottom: spacing.md },
-  estimateText: { fontSize: 13, color: colors.primary },
-  errorText: { color: colors.danger, fontSize: 12.5, marginBottom: spacing.md },
+  estimateText: { fontSize: 14.5, color: colors.primary },
+  errorText: { color: colors.danger, fontSize: 14.5, marginBottom: spacing.md },
 });

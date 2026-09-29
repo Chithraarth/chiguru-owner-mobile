@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, ChevronUp } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
+import { Avatar } from "../../../components/harvest";
 import { colors, radius, spacing } from "../../../components/theme";
 import { getAllAttendance } from "../../../api/endpoints/attendance";
 import { useEstateStore } from "../../estate/store/estateStore";
@@ -63,14 +64,14 @@ export function EmployeeAttendanceScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+      contentContainerStyle={{ padding: 20, gap: 12 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       <Text style={styles.subtitle}>Attendance totals to date — no payment figures here.</Text>
       {summaries.length === 0 ? (
         <EmptyState title="No attendance yet" subtitle="Mark attendance from a work group to see totals here." />
       ) : (
-        summaries.map((s) => {
+        summaries.map((s, i) => {
           const expanded = expandedId === s.workerId;
           const roster = s.records.slice().sort((a, b) => (a.date < b.date ? 1 : -1));
           return (
@@ -79,6 +80,7 @@ export function EmployeeAttendanceScreen() {
                 style={styles.row}
                 onPress={() => setExpandedId(expanded ? null : s.workerId)}
               >
+                <Avatar name={s.workerName} index={i} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.name}>{s.workerName}</Text>
                   <Text style={styles.meta}>
@@ -89,6 +91,13 @@ export function EmployeeAttendanceScreen() {
               </Pressable>
               {expanded ? (
                 <View style={styles.roster}>
+                  <View style={styles.dayGrid}>
+                    {roster.slice(0, 35).map((r) => (
+                      <View key={`d-${r.id}`} style={styles.dayCell}>
+                        <Text style={styles.dayNum}>{r.date.slice(8, 10)}</Text>
+                      </View>
+                    ))}
+                  </View>
                   {roster.map((r) => (
                     <View key={r.id} style={styles.rosterRow}>
                       <Text style={styles.rosterDate}>{r.date}</Text>
@@ -109,12 +118,15 @@ export function EmployeeAttendanceScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  subtitle: { fontSize: 13, color: colors.textMuted, marginBottom: spacing.xs },
-  row: { flexDirection: "row", alignItems: "center" },
-  name: { fontSize: 15, fontWeight: "700", color: colors.text },
-  meta: { fontSize: 12.5, color: colors.textMuted, marginTop: 2 },
+  subtitle: { fontSize: 14.5, color: colors.textMuted, marginBottom: spacing.xs },
+  row: { flexDirection: "row", alignItems: "center", gap: 12 },
+  dayGrid: { flexDirection: "row", flexWrap: "wrap", gap: 5, marginBottom: spacing.sm },
+  dayCell: { width: 38, height: 34, borderRadius: 10, backgroundColor: "#D6EFC6", alignItems: "center", justifyContent: "center" },
+  dayNum: { fontSize: 13, fontWeight: "700", color: colors.text },
+  name: { fontSize: 16.5, fontWeight: "700", color: colors.text },
+  meta: { fontSize: 14.5, color: colors.textMuted, marginTop: 2 },
   roster: { marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, gap: 6 },
   rosterRow: { flexDirection: "row", justifyContent: "space-between" },
-  rosterDate: { fontSize: 12.5, color: colors.text },
-  rosterMeta: { fontSize: 12.5, color: colors.textMuted },
+  rosterDate: { fontSize: 14.5, color: colors.text },
+  rosterMeta: { fontSize: 14.5, color: colors.textMuted },
 });

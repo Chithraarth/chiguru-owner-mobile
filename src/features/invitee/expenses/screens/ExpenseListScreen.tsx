@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { FlatList, Image, Modal, Pressable, RefreshControl, StyleSheet, View } from "react-native";
 import { Text } from "../../../../components/Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { X } from "lucide-react-native";
+import { X, Plus } from "lucide-react-native";
 import { Card } from "../../../../components/Card";
 import { Button } from "../../../../components/Button";
 import { EmptyState, LoadingView } from "../../../../components/StateViews";
@@ -66,7 +66,7 @@ export function ExpenseListScreen({ navigation }: { navigation: any }) {
       <FlatList
         data={groups}
         keyExtractor={([key]) => key}
-        contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}
+        contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={<EmptyState title="No expenses yet" subtitle="Add your first expense with a receipt photo." />}
         renderItem={({ item: [key, entries] }) => {
@@ -100,7 +100,7 @@ export function ExpenseListScreen({ navigation }: { navigation: any }) {
         }}
       />
       <View style={[styles.footer, { paddingBottom: spacing.md + insets.bottom }]}>
-        <Button title="+ Add expense" onPress={() => navigation.navigate("ExpenseForm")} />
+        <Button title="Add expense" icon={Plus} onPress={() => navigation.navigate("ExpenseForm")} />
       </View>
 
       <Modal visible={!!receiptUrl || loadingReceiptId != null} transparent animationType="fade" onRequestClose={() => setReceiptUrl(null)}>

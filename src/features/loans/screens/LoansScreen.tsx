@@ -3,7 +3,7 @@ import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, View } from "re
 import { Text } from "../../../components/Text";
 import * as ImagePicker from "expo-image-picker";
 import { useQuery } from "@tanstack/react-query";
-import { Camera, ChevronDown, ChevronUp, X } from "lucide-react-native";
+import { Camera, ChevronDown, ChevronUp, X, Plus } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
@@ -155,7 +155,7 @@ export function LoansScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
         {openFolder === null ? (
           <>
             {allOutstanding > 0 ? (
@@ -192,7 +192,7 @@ export function LoansScreen() {
             ) : null}
 
             {folderLoans.length > 0 ? (
-              <Button title="+ Record loan" onPress={openLoanForm} />
+              <Button title="Record loan" icon={Plus} onPress={openLoanForm} />
             ) : (
               <EmptyState title={`No loans for ${openFolder.name} yet`} actionLabel="Record loan" onAction={openLoanForm} />
             )}
@@ -331,52 +331,52 @@ export function LoansScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   outstandingCard: { backgroundColor: "#FDEAEA", borderWidth: 1, borderColor: "#F5C6C6", borderRadius: radius.md, padding: spacing.md },
-  outstandingLabel: { fontSize: 11.5, color: colors.danger, fontWeight: "600" },
+  outstandingLabel: { fontSize: 13.5, color: colors.danger, fontWeight: "600" },
   outstandingValue: { fontSize: 22, fontWeight: "700", color: colors.danger, marginTop: 2 },
 
-  sectionLabel: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5 },
+  sectionLabel: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5 },
   folderRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   folderIcon: { width: 44, height: 44, borderRadius: radius.sm, backgroundColor: "#FDEAEA", alignItems: "center", justifyContent: "center" },
-  folderName: { fontSize: 15, fontWeight: "700", color: colors.text },
-  folderSubtitle: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  folderName: { fontSize: 16.5, fontWeight: "700", color: colors.text },
+  folderSubtitle: { fontSize: 14, color: colors.textMuted, marginTop: 2 },
   countBadge: { backgroundColor: "#FFF0C2", borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
-  countBadgeText: { fontSize: 12, fontWeight: "700", color: colors.primary },
-  backLink: { fontSize: 13, fontWeight: "700", color: colors.primary },
+  countBadgeText: { fontSize: 14, fontWeight: "700", color: colors.primary },
+  backLink: { fontSize: 14.5, fontWeight: "700", color: colors.primary },
 
-  workerName: { fontSize: 14.5, fontWeight: "700", color: colors.text },
-  loanMeta: { fontSize: 11.5, color: colors.textMuted, marginTop: 2 },
-  groupTag: { fontSize: 11, color: "#3E6FB0", marginTop: 2 },
-  remainingLabel: { fontSize: 10.5, color: colors.textMuted },
-  remainingValue: { fontSize: 15, fontWeight: "700", color: colors.danger },
+  workerName: { fontSize: 16, fontWeight: "700", color: colors.text },
+  loanMeta: { fontSize: 13.5, color: colors.textMuted, marginTop: 2 },
+  groupTag: { fontSize: 13, color: "#3E6FB0", marginTop: 2 },
+  remainingLabel: { fontSize: 12.5, color: colors.textMuted },
+  remainingValue: { fontSize: 16.5, fontWeight: "700", color: colors.danger },
   progressTrack: { height: 6, borderRadius: 3, backgroundColor: colors.muted, overflow: "hidden", marginTop: spacing.sm, marginBottom: 4 },
   progressFill: { height: "100%", backgroundColor: colors.primary, borderRadius: 3 },
-  progressText: { fontSize: 10.5, color: colors.textMuted },
+  progressText: { fontSize: 12.5, color: colors.textMuted },
   proofBadge: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: spacing.xs },
-  proofBadgeText: { fontSize: 10.5, color: colors.primary, fontWeight: "600" },
+  proofBadgeText: { fontSize: 12.5, color: colors.primary, fontWeight: "600" },
   expandBtn: { width: 40, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm },
-  notesText: { fontSize: 12, color: colors.textMuted, marginTop: spacing.sm, fontStyle: "italic" },
+  notesText: { fontSize: 14, color: colors.textMuted, marginTop: spacing.sm, fontStyle: "italic" },
 
   closedRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: colors.muted, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, opacity: 0.7 },
-  closedName: { fontSize: 13.5, fontWeight: "600", color: colors.text },
-  closedMeta: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
+  closedName: { fontSize: 15, fontWeight: "600", color: colors.text },
+  closedMeta: { fontSize: 13, color: colors.textMuted, marginTop: 1 },
   closedBadge: { backgroundColor: colors.border, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 3 },
-  closedBadgeText: { fontSize: 10.5, fontWeight: "600", color: colors.text },
+  closedBadgeText: { fontSize: 12.5, fontWeight: "600", color: colors.text },
 
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
   sheet: { position: "absolute", left: 0, right: 0, bottom: 0, maxHeight: "88%", backgroundColor: colors.card, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg },
   sheetHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: spacing.md },
-  sheetTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
-  sheetSubtitle: { fontSize: 12, color: "#3E6FB0", fontWeight: "600", marginTop: 2 },
+  sheetTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
+  sheetSubtitle: { fontSize: 14, color: "#3E6FB0", fontWeight: "600", marginTop: 2 },
 
-  label: { fontSize: 14, fontWeight: "500", color: colors.text, marginBottom: 2 },
-  hint: { fontSize: 11, color: colors.textMuted, marginBottom: spacing.sm },
+  label: { fontSize: 15.5, fontWeight: "500", color: colors.text, marginBottom: 2 },
+  hint: { fontSize: 13, color: colors.textMuted, marginBottom: spacing.sm },
   proofPreview: { width: 90, height: 90, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border },
   removeProofBtn: { position: "absolute", top: -6, right: -6, backgroundColor: colors.danger, borderRadius: 12, padding: 4 },
   proofPicker: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.xs, borderWidth: 2, borderStyle: "dashed", borderColor: colors.border, borderRadius: radius.md, paddingVertical: spacing.md },
-  proofPickerText: { fontSize: 13, color: colors.textMuted },
-  errorText: { color: colors.danger, fontSize: 12.5, marginBottom: spacing.md },
+  proofPickerText: { fontSize: 14.5, color: colors.textMuted },
+  errorText: { color: colors.danger, fontSize: 14.5, marginBottom: spacing.md },
 
   payingBox: { backgroundColor: "#FDEAEA", borderRadius: radius.sm, padding: spacing.sm + 4, marginBottom: spacing.md },
-  payingWorker: { fontSize: 13.5, fontWeight: "600", color: colors.danger },
-  payingOutstanding: { fontSize: 12.5, color: colors.danger, marginTop: 2 },
+  payingWorker: { fontSize: 15, fontWeight: "600", color: colors.danger },
+  payingOutstanding: { fontSize: 14.5, color: colors.danger, marginTop: 2 },
 });

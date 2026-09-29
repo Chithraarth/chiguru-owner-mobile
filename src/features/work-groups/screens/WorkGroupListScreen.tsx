@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from "react";
+import React, { useLayoutEffect, useMemo, useState } from "react";
 import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, View } from "react-native";
 import { Text } from "../../../components/Text";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
+import { Trash2, UserCheck } from "lucide-react-native";
+import { HeaderAddButton, IconChip, Pill, ProgressBar } from "../../../components/harvest";
+import { Enter } from "../../../components/motion";
 import { Card } from "../../../components/Card";
-import { Button } from "../../../components/Button";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
 import { NoEstateNotice } from "../../../components/NoEstateNotice";
 import { colors, spacing } from "../../../components/theme";
@@ -24,9 +25,14 @@ export function WorkGroupListScreen({ navigation }: { navigation: any }) {
   const activeEstateId = useEstateStore((s) => s.activeEstateId);
   const { data, isLoading, refetch, deleteWorkGroup } = useWorkGroups();
   const [refreshing, setRefreshing] = useState(false);
-  const insets = useSafeAreaInsets();
   const { t } = useT();
   const today = todayIso();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => <HeaderAddButton label="New work group" onPress={() => navigation.navigate("WorkGroupForm")} />,
+    });
+  }, [navigation]);
 
   // Lightweight "today's status" hint per group — one all-groups query for
   // today's date, counted client-side per workGroupId. Not a full dashboard,
@@ -70,62 +76,67 @@ export function WorkGroupListScreen({ navigation }: { navigation: any }) {
       <FlatList
         data={data ?? []}
         keyExtractor={(g) => String(g.id)}
-        contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+        contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
           <EmptyState
             title="No work groups yet"
             subtitle="Create a work group to start marking attendance."
+            actionLabel="New work group"
+            onAction={() => navigation.navigate("WorkGroupForm")}
           />
         }
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
           const markedCount = todayCountByGroup.get(item.id) ?? 0;
+          const expected = item.expectedWorkers ?? 0;
+          const done = expected > 0 && markedCount >= expected;
           return (
-            <Pressable onPress={() => navigation.navigate("Attendance", { workGroupId: item.id, workGroupName: item.name })}>
-              <Card style={styles.row}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.name}>{item.name}</Text>
-                  <Text style={styles.meta}>
-                    {item.paymentType} · ₹{item.rate}
-                    {item.blockName ? ` · ${item.blockName}` : ""}
-                  </Text>
-                  <View style={[styles.statusPill, markedCount > 0 && styles.statusPillMarked]}>
-                    <Text style={[styles.statusPillText, markedCount > 0 && styles.statusPillTextMarked]}>
-                      {markedCount > 0 ? `${markedCount} marked today` : "Not marked yet"}
-                    </Text>
+            <Enter delay={Math.min(index, 6) * 80}>
+              <Pressable
+                onPress={() => navigation.navigate("Attendance", { workGroupId: item.id, workGroupName: item.name })}
+                style={({ pressed }) => pressed && { transform: [{ scale: 0.98 }] }}
+              >
+                <Card style={styles.card}>
+                  <View style={styles.row}>
+                    <IconChip icon={UserCheck} index={index} size={46} />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={styles.name} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                      <Text style={styles.meta} numberOfLines={1}>
+                        {item.blockName ? `${item.blockName} · ` : ""}₹{item.rate} {item.paymentType.toLowerCase()}
+                      </Text>
+                    </View>
+                    <Pill
+                      text={done ? "Done" : markedCount > 0 ? "Going on" : "Not started"}
+                      tone={done ? "good" : markedCount > 0 ? "warn" : "neutral"}
+                    />
                   </View>
-                </View>
-                <Pressable onPress={() => confirmDelete(item)} hitSlop={10}>
-                  <Text style={styles.delete}>Delete</Text>
-                </Pressable>
-              </Card>
-            </Pressable>
+                  <View style={styles.row}>
+                    {expected > 0 ? <ProgressBar value={markedCount / expected} /> : <View style={{ flex: 1 }} />}
+                    <Text style={styles.count}>
+                      {markedCount}
+                      {expected > 0 ? `/${expected}` : ""} marked today
+                    </Text>
+                    <Pressable onPress={() => confirmDelete(item)} hitSlop={10} accessibilityLabel={`Delete ${item.name}`}>
+                      <Trash2 size={18} color={colors.danger} />
+                    </Pressable>
+                  </View>
+                </Card>
+              </Pressable>
+            </Enter>
           );
         }}
       />
-      <View style={[styles.footer, { paddingBottom: spacing.md + insets.bottom }]}>
-        <Button title="+ New work group" onPress={() => navigation.navigate("WorkGroupForm")} />
-      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  row: { flexDirection: "row", alignItems: "center" },
-  name: { fontSize: 16, fontWeight: "600", color: colors.text },
-  meta: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
-  delete: { color: colors.danger, fontSize: 13 },
-  footer: { padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
-  statusPill: {
-    alignSelf: "flex-start",
-    backgroundColor: colors.muted,
-    borderRadius: 999,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    marginTop: spacing.xs,
-  },
-  statusPillMarked: { backgroundColor: "#DCF5E6" },
-  statusPillText: { fontSize: 11, fontWeight: "600", color: colors.textMuted },
-  statusPillTextMarked: { color: "#1F9E5C" },
+  card: { gap: 12 },
+  row: { flexDirection: "row", alignItems: "center", gap: 12 },
+  name: { fontSize: 18, fontWeight: "800", color: colors.text },
+  meta: { fontSize: 14, color: colors.textMuted },
+  count: { fontSize: 15, fontWeight: "800", color: colors.text },
 });

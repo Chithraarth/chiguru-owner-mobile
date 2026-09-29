@@ -161,7 +161,7 @@ export function AgriAiScreen({ navigation }: { navigation: any }) {
 
   if (conversationId == null) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+      <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
         <View style={styles.hero}>
           <View style={styles.heroIconWrap}>
             <Sprout size={30} color="#fff" />
@@ -227,7 +227,7 @@ export function AgriAiScreen({ navigation }: { navigation: any }) {
         <FlatList
           data={messagesQuery.data ?? []}
           keyExtractor={(m) => String(m.id)}
-          contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}
+          contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}
           renderItem={({ item }) => <MessageBubble msg={item} />}
           ListFooterComponent={sending ? <TypingBubble /> : null}
         />
@@ -261,30 +261,30 @@ const styles = StyleSheet.create({
   hero: { backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.lg, alignItems: "center" },
   heroIconWrap: { width: 64, height: 64, borderRadius: 32, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", marginBottom: spacing.sm },
   heroTitle: { color: "#fff", fontSize: 19, fontWeight: "700" },
-  heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 13, marginTop: spacing.xs, textAlign: "center", lineHeight: 18 },
+  heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 14.5, marginTop: spacing.xs, textAlign: "center", lineHeight: 18 },
 
   disclaimer: { flexDirection: "row", gap: spacing.sm, backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", borderRadius: radius.md, padding: spacing.sm + 4 },
-  disclaimerText: { flex: 1, fontSize: 11.5, color: "#92600E", lineHeight: 16 },
+  disclaimerText: { flex: 1, fontSize: 13.5, color: "#92600E", lineHeight: 16 },
   disclaimerBold: { fontWeight: "700" },
 
-  sectionLabel: { fontSize: 12, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, marginBottom: spacing.sm },
+  sectionLabel: { fontSize: 14, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, marginBottom: spacing.sm },
   questionRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm + 4 },
-  questionEmoji: { fontSize: 15 },
-  questionText: { flex: 1, fontSize: 13.5, color: colors.text },
+  questionEmoji: { fontSize: 16.5 },
+  questionText: { flex: 1, fontSize: 15, color: colors.text },
 
   convRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm + 4 },
-  convTitle: { fontSize: 13.5, color: colors.text },
+  convTitle: { fontSize: 15, color: colors.text },
 
   emptyChat: { flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.sm },
-  emptyChatText: { color: colors.textMuted, fontSize: 13 },
+  emptyChatText: { color: colors.textMuted, fontSize: 14.5 },
 
   msgRow: { flexDirection: "row", alignItems: "flex-end", gap: spacing.sm },
   avatar: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
   bubble: { maxWidth: "78%", borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
   userBubble: { backgroundColor: colors.primary, borderTopRightRadius: 4 },
   aiBubble: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderTopLeftRadius: 4 },
-  userText: { color: "#fff", fontSize: 13.5, lineHeight: 19 },
-  aiText: { color: colors.text, fontSize: 13.5, lineHeight: 19 },
+  userText: { color: "#fff", fontSize: 15, lineHeight: 19 },
+  aiText: { color: colors.text, fontSize: 15, lineHeight: 19 },
 
   typingBubble: { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: spacing.sm + 6 },
   typingDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: colors.primary, opacity: 0.5 },
@@ -295,10 +295,10 @@ const styles = StyleSheet.create({
 
 /** Markdown node styles for AI replies, matched to the app's aiText look (colors.text, 13.5/19). */
 const markdownStyles = StyleSheet.create({
-  body: { color: colors.text, fontSize: 13.5, lineHeight: 19 },
-  heading1: { color: colors.text, fontSize: 17, fontWeight: "700", marginTop: spacing.sm, marginBottom: spacing.xs },
-  heading2: { color: colors.text, fontSize: 15.5, fontWeight: "700", marginTop: spacing.sm, marginBottom: spacing.xs },
-  heading3: { color: colors.text, fontSize: 14, fontWeight: "700", marginTop: spacing.sm, marginBottom: spacing.xs },
+  body: { color: colors.text, fontSize: 15, lineHeight: 19 },
+  heading1: { color: colors.text, fontSize: 18, fontWeight: "700", marginTop: spacing.sm, marginBottom: spacing.xs },
+  heading2: { color: colors.text, fontSize: 17, fontWeight: "700", marginTop: spacing.sm, marginBottom: spacing.xs },
+  heading3: { color: colors.text, fontSize: 15.5, fontWeight: "700", marginTop: spacing.sm, marginBottom: spacing.xs },
   strong: { fontWeight: "700" },
   em: { fontStyle: "italic" },
   paragraph: { marginTop: 0, marginBottom: spacing.xs },

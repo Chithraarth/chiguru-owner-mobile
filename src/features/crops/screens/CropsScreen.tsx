@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, View } from "react-native";
 import { Text } from "../../../components/Text";
+import { Plus } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
@@ -78,7 +79,7 @@ export function CropsScreen({ navigation }: { navigation: any }) {
           title="No farms yet"
           subtitle="Create your first estate to start tracking crops, sprays, and harvests."
         />
-        <Button title="+ Create New Estate" onPress={() => navigation.navigate("Onboarding")} />
+        <Button title="Create New Estate" icon={Plus} onPress={() => navigation.navigate("Onboarding")} />
       </View>
     );
   }
@@ -88,7 +89,7 @@ export function CropsScreen({ navigation }: { navigation: any }) {
       <FlatList
         data={data ?? []}
         keyExtractor={(c) => String(c.id)}
-        contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+        contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: spacing.xl }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListHeaderComponent={
           <View style={{ marginBottom: spacing.md }}>
@@ -103,7 +104,7 @@ export function CropsScreen({ navigation }: { navigation: any }) {
             ))}
             <View style={{ height: spacing.sm }} />
             <Button
-              title="+ Create New Estate"
+              title="Create New Estate" icon={Plus}
               variant="secondary"
               onPress={() => navigation.navigate("Onboarding")}
             />
@@ -173,7 +174,7 @@ export function CropsScreen({ navigation }: { navigation: any }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   sectionLabel: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: "700",
     color: colors.textMuted,
     letterSpacing: 0.6,
@@ -186,21 +187,21 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   estateRowActive: { borderColor: colors.primary, borderWidth: 2 },
-  estateName: { fontSize: 15, fontWeight: "600", color: colors.text },
-  activeBadge: { fontSize: 12, color: colors.primary, fontWeight: "700" },
+  estateName: { fontSize: 16.5, fontWeight: "600", color: colors.text },
+  activeBadge: { fontSize: 14, color: colors.primary, fontWeight: "700" },
   row: { flexDirection: "row", alignItems: "center" },
   mergeTargetRow: { borderColor: colors.primary, borderWidth: 2 },
-  name: { fontSize: 16, fontWeight: "600", color: colors.text },
-  meta: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
-  delete: { color: colors.danger, fontSize: 13 },
+  name: { fontSize: 17, fontWeight: "600", color: colors.text },
+  meta: { fontSize: 14.5, color: colors.textMuted, marginTop: 2 },
+  delete: { color: colors.danger, fontSize: 14.5 },
   dupBadge: {
     backgroundColor: colors.amberBg,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
   },
-  dupBadgeText: { fontSize: 10.5, fontWeight: "700", color: colors.warning },
-  mergeHere: { color: colors.primary, fontSize: 13, fontWeight: "700" },
+  dupBadgeText: { fontSize: 12.5, fontWeight: "700", color: colors.warning },
+  mergeHere: { color: colors.primary, fontSize: 14.5, fontWeight: "700" },
   mergeBanner: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -210,7 +211,7 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.md,
     borderRadius: radius.sm,
   },
-  mergeBannerText: { flex: 1, fontSize: 12.5, color: colors.text, marginRight: spacing.sm },
-  mergeCancel: { color: colors.danger, fontWeight: "700", fontSize: 13 },
+  mergeBannerText: { flex: 1, fontSize: 14.5, color: colors.text, marginRight: spacing.sm },
+  mergeCancel: { color: colors.danger, fontWeight: "700", fontSize: 14.5 },
   footer: { padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
 });

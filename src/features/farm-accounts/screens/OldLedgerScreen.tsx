@@ -26,7 +26,7 @@ export function OldLedgerScreen({ navigation }: { navigation: any }) {
   const years = query.data ?? [];
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: spacing.xl }}>
       <Text style={styles.subtitle}>Closed-year totals — income, expenses, wages, loans.</Text>
       {years.length === 0 ? (
         <EmptyState title="No past years yet" subtitle="Records from before this year will show up here once you have them." />
@@ -57,11 +57,11 @@ export function OldLedgerScreen({ navigation }: { navigation: any }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  subtitle: { fontSize: 13, color: colors.textMuted, marginBottom: spacing.xs },
+  subtitle: { fontSize: 14.5, color: colors.textMuted, marginBottom: spacing.xs },
   row: { flexDirection: "row", alignItems: "center" },
-  year: { fontSize: 17, fontWeight: "700", color: colors.text },
-  meta: { fontSize: 12.5, color: colors.textMuted, marginTop: 2 },
-  net: { fontSize: 13, fontWeight: "700", marginTop: 4 },
+  year: { fontSize: 18, fontWeight: "700", color: colors.text },
+  meta: { fontSize: 14.5, color: colors.textMuted, marginTop: 2 },
+  net: { fontSize: 14.5, fontWeight: "700", marginTop: 4 },
   netPositive: { color: colors.primary },
   netNegative: { color: colors.danger },
 });

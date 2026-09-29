@@ -105,7 +105,7 @@ export function SprayFormScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: spacing.xl }}>
       <TextField label="Product name *" value={productName} onChangeText={setProductName} />
       <SelectOrType label="Product type" options={PRODUCT_TYPES} value={productType} onChange={setProductType} />
       <ChipSelect

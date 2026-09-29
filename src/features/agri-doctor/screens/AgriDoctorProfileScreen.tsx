@@ -47,7 +47,7 @@ export function AgriDoctorProfileScreen({ navigation, route }: { navigation: any
   if (isLoading || !d) return <LoadingView label="Loading doctor..." />;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       <Card>
         <View style={{ flexDirection: "row", gap: spacing.sm }}>
           <View style={styles.emojiWrap}><Text style={{ fontSize: 34 }}>{d.emoji ?? "🌾"}</Text></View>
@@ -135,21 +135,21 @@ export function AgriDoctorProfileScreen({ navigation, route }: { navigation: any
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   emojiWrap: { width: 64, height: 64, borderRadius: radius.md, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center" },
-  name: { fontSize: 17, fontWeight: "700", color: colors.text },
-  speciality: { fontSize: 13, color: colors.primary, fontWeight: "600", marginTop: 1 },
-  ratingText: { fontSize: 12, fontWeight: "700", color: colors.text },
-  onlineText: { fontSize: 11, fontWeight: "600" },
-  rowText: { fontSize: 13, color: colors.text, flexShrink: 1 },
-  bio: { fontSize: 13, color: colors.textMuted, marginTop: spacing.md, lineHeight: 18 },
-  certLabel: { fontSize: 11.5, fontWeight: "600", color: colors.primary },
+  name: { fontSize: 18, fontWeight: "700", color: colors.text },
+  speciality: { fontSize: 14.5, color: colors.primary, fontWeight: "600", marginTop: 1 },
+  ratingText: { fontSize: 14, fontWeight: "700", color: colors.text },
+  onlineText: { fontSize: 13, fontWeight: "600" },
+  rowText: { fontSize: 14.5, color: colors.text, flexShrink: 1 },
+  bio: { fontSize: 14.5, color: colors.textMuted, marginTop: spacing.md, lineHeight: 18 },
+  certLabel: { fontSize: 13.5, fontWeight: "600", color: colors.primary },
   certImage: { width: "100%", height: 180, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border, backgroundColor: "#fff" },
   planBox: { backgroundColor: colors.bg, borderRadius: radius.sm, padding: spacing.sm + 4, marginTop: spacing.md },
-  planLabel: { fontSize: 11, color: colors.textMuted },
-  planValue: { fontSize: 13.5, fontWeight: "700", color: colors.primary, marginTop: 2 },
+  planLabel: { fontSize: 13, color: colors.textMuted },
+  planValue: { fontSize: 15, fontWeight: "700", color: colors.primary, marginTop: 2 },
   warningBox: { flexDirection: "row", gap: spacing.sm, backgroundColor: "#FFF3E6", borderWidth: 1, borderColor: "#FBD9AE", borderRadius: radius.sm, padding: spacing.sm + 4 },
-  warningText: { flex: 1, fontSize: 12, color: "#95530F", lineHeight: 16 },
+  warningText: { flex: 1, fontSize: 14, color: "#95530F", lineHeight: 16 },
   actionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: radius.sm, paddingVertical: spacing.md - 2 },
-  actionBtnText: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  actionBtnText: { color: "#fff", fontWeight: "700", fontSize: 15.5 },
   dialBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingVertical: spacing.sm + 2 },
-  dialBtnText: { fontSize: 13, color: colors.text, fontWeight: "600" },
+  dialBtnText: { fontSize: 14.5, color: colors.text, fontWeight: "600" },
 });

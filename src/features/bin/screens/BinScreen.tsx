@@ -40,7 +40,7 @@ export function BinScreen() {
         <SectionList
           sections={sections}
           keyExtractor={(item: any) => String(item.id)}
-          contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+          contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: spacing.xl }}
           renderSectionHeader={({ section }) => <Text style={styles.sectionTitle}>{section.title}</Text>}
           renderItem={({ item, section }: any) => (
             <Card style={[styles.row, { marginBottom: spacing.sm }]}>
@@ -67,7 +67,7 @@ export function BinScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  sectionTitle: { fontSize: 15, fontWeight: "700", color: colors.text, marginTop: spacing.md, marginBottom: spacing.xs },
+  sectionTitle: { fontSize: 16.5, fontWeight: "700", color: colors.text, marginTop: spacing.md, marginBottom: spacing.xs },
   row: { gap: spacing.sm },
-  name: { fontSize: 14, color: colors.text },
+  name: { fontSize: 15.5, color: colors.text },
 });

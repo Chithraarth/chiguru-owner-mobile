@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Image, ScrollView, StyleSheet } from "react-native";
 import { Text } from "../../../components/Text";
+import { Camera } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
@@ -102,7 +103,7 @@ export function ExpenseFormScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: spacing.xl }}>
       <TextField
         label="Amount spent *"
         keyboardType="decimal-pad"
@@ -142,8 +143,8 @@ export function ExpenseFormScreen({ navigation }: { navigation: any }) {
         <Image source={{ uri: photoUri }} style={styles.preview} />
       ) : (
         <Button
-          title="📷 Take bill photo *"
-          variant="secondary"
+          title="Take bill photo *" icon={Camera}
+          variant="light"
           onPress={pickReceipt}
           loading={compressing}
         />

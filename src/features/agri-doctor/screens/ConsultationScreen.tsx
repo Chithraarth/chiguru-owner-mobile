@@ -212,14 +212,14 @@ export function ConsultationScreen({ navigation, route }: { navigation: any; rou
       <FlatList
         data={messagesQuery.data ?? []}
         keyExtractor={(m) => String(m.id)}
-        contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+        contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: spacing.xl }}
         renderItem={({ item }: { item: ConsultationMessage }) => {
           const isFarmer = item.sender === "farmer";
           const bubbleTextStyle = isFarmer ? styles.farmerText : styles.doctorText;
           return (
             <View style={[styles.msgRow, isFarmer && { flexDirection: "row-reverse" }]}>
               <View style={[styles.avatar, { backgroundColor: isFarmer ? colors.primary : colors.bg }]}>
-                {isFarmer ? <User size={14} color="#fff" /> : <Text style={{ fontSize: 14 }}>{doctor?.emoji ?? "🌾"}</Text>}
+                {isFarmer ? <User size={14} color="#fff" /> : <Text style={{ fontSize: 15.5 }}>{doctor?.emoji ?? "🌾"}</Text>}
               </View>
               <View style={[styles.bubble, isFarmer ? styles.farmerBubble : styles.doctorBubble]}>
                 {item.mediaType === "image" && item.mediaUrl ? (
@@ -284,17 +284,17 @@ export function ConsultationScreen({ navigation, route }: { navigation: any; rou
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: colors.primary, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  headerEndText: { color: "#fff", fontSize: 12, fontWeight: "600" },
-  headerTimer: { color: "#fff", fontSize: 12 },
-  headerCost: { color: "#fff", fontSize: 13, fontWeight: "700" },
+  headerEndText: { color: "#fff", fontSize: 14, fontWeight: "600" },
+  headerTimer: { color: "#fff", fontSize: 14 },
+  headerCost: { color: "#fff", fontSize: 14.5, fontWeight: "700" },
 
   msgRow: { flexDirection: "row", alignItems: "flex-end", gap: spacing.xs },
   avatar: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   bubble: { maxWidth: "78%", borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   farmerBubble: { backgroundColor: colors.primary, borderTopRightRadius: 4 },
   doctorBubble: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderTopLeftRadius: 4 },
-  farmerText: { color: "#fff", fontSize: 13.5 },
-  doctorText: { color: colors.text, fontSize: 13.5 },
+  farmerText: { color: "#fff", fontSize: 15 },
+  doctorText: { color: colors.text, fontSize: 15 },
 
   msgImage: { width: 200, height: 200, borderRadius: radius.sm, marginBottom: spacing.xs, backgroundColor: colors.muted },
 
@@ -302,15 +302,15 @@ const styles = StyleSheet.create({
   voicePlayBtn: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   voiceTrack: { flex: 1, height: 4, borderRadius: 2, backgroundColor: "rgba(120,120,120,0.25)", overflow: "hidden" },
   voiceProgress: { height: "100%", borderRadius: 2 },
-  voiceDuration: { fontSize: 11, color: colors.textMuted, minWidth: 32 },
+  voiceDuration: { fontSize: 13, color: colors.textMuted, minWidth: 32 },
 
   iconBtn: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", backgroundColor: colors.muted },
 
   recordingBar: { flexDirection: "row", alignItems: "center", gap: spacing.sm, padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.card },
   recordingDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.danger },
-  recordingText: { flex: 1, fontSize: 13, color: colors.text, fontWeight: "600" },
+  recordingText: { flex: 1, fontSize: 14.5, color: colors.text, fontWeight: "600" },
   recordingCancel: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
-  recordingCancelText: { fontSize: 12.5, color: colors.textMuted, fontWeight: "600" },
+  recordingCancelText: { fontSize: 14.5, color: colors.textMuted, fontWeight: "600" },
   recordingStop: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.danger, alignItems: "center", justifyContent: "center" },
 
   inputRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.card },
@@ -318,13 +318,13 @@ const styles = StyleSheet.create({
 
   endedContainer: { flex: 1, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center", padding: spacing.lg, gap: spacing.sm },
   endedIconWrap: { width: 72, height: 72, borderRadius: 36, backgroundColor: "#FBF2D9", alignItems: "center", justifyContent: "center" },
-  endedTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
-  endedSubtitle: { fontSize: 13, color: colors.textMuted },
+  endedTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
+  endedSubtitle: { fontSize: 14.5, color: colors.textMuted },
   endedCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md, width: "100%", maxWidth: 300, marginVertical: spacing.sm },
   endedRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 4 },
   endedRowBorder: { borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 4, paddingBottom: 6 },
-  endedLabel: { fontSize: 13, color: colors.textMuted },
-  endedValue: { fontSize: 13, fontWeight: "700", color: colors.text },
-  endedSubLabel: { fontSize: 11, color: colors.textMuted, paddingLeft: spacing.sm },
-  endedSubValue: { fontSize: 11, color: colors.textMuted },
+  endedLabel: { fontSize: 14.5, color: colors.textMuted },
+  endedValue: { fontSize: 14.5, fontWeight: "700", color: colors.text },
+  endedSubLabel: { fontSize: 13, color: colors.textMuted, paddingLeft: spacing.sm },
+  endedSubValue: { fontSize: 13, color: colors.textMuted },
 });

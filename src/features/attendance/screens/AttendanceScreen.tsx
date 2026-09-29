@@ -16,6 +16,7 @@ import * as ImagePicker from "expo-image-picker";
 import {
   Banknote,
   Camera,
+  Check,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
@@ -29,13 +30,15 @@ import {
   Wallet,
   Wheat,
   X,
+  Plus,
 } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { ChipSelect } from "../../../components/ChipSelect";
 import { TextField } from "../../../components/TextField";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, shadow, spacing } from "../../../components/theme";
+import { Avatar } from "../../../components/harvest";
 import { useAttendance } from "../hooks/useAttendance";
 import { useWorkGroups } from "../../work-groups/hooks/useWorkGroups";
 import { describeDevice } from "../../../lib/device";
@@ -604,16 +607,16 @@ export function AttendanceScreen({ route }: { route: any }) {
 
       <View style={styles.tabRow}>
         <Pressable style={[styles.tabBtn, tab === "attendance" && styles.tabBtnActive]} onPress={() => setTab("attendance")}>
-          <Banknote size={14} color={tab === "attendance" ? colors.primary : colors.textMuted} />
+          <Banknote size={16} color={tab === "attendance" ? colors.primary : colors.textMuted} />
           <Text style={[styles.tabText, tab === "attendance" && styles.tabTextActive]}>Attend</Text>
         </Pressable>
         <Pressable style={[styles.tabBtn, tab === "payments" && styles.tabBtnActive]} onPress={() => setTab("payments")}>
-          <Wallet size={14} color={tab === "payments" ? "#C77A2E" : colors.textMuted} />
-          <Text style={[styles.tabText, tab === "payments" && { color: "#C77A2E" }]}>Advance</Text>
+          <Wallet size={16} color={tab === "payments" ? colors.primary : colors.textMuted} />
+          <Text style={[styles.tabText, tab === "payments" && styles.tabTextActive]}>Advance</Text>
         </Pressable>
         <Pressable style={[styles.tabBtn, tab === "loans" && styles.tabBtnActive]} onPress={() => setTab("loans")}>
-          <CreditCard size={14} color={tab === "loans" ? colors.danger : colors.textMuted} />
-          <Text style={[styles.tabText, tab === "loans" && { color: colors.danger }]}>Loans</Text>
+          <CreditCard size={16} color={tab === "loans" ? colors.primary : colors.textMuted} />
+          <Text style={[styles.tabText, tab === "loans" && styles.tabTextActive]}>Loans</Text>
         </Pressable>
       </View>
 
@@ -621,7 +624,7 @@ export function AttendanceScreen({ route }: { route: any }) {
         <FlatList
           data={eligibleWorkers}
           keyExtractor={(w) => String(w.id)}
-          contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+          contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: spacing.xl }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           ListHeaderComponent={
             <View style={{ gap: spacing.sm, marginBottom: spacing.sm }}>
@@ -638,7 +641,7 @@ export function AttendanceScreen({ route }: { route: any }) {
                   disabled={faceMatching}
                 >
                   <View style={styles.faceIconWrap}>
-                    {faceMatching ? <ActivityIndicator color="#fff" /> : <ScanFace size={20} color="#fff" />}
+                    {faceMatching ? <ActivityIndicator color={colors.accentInk} /> : <ScanFace size={22} color={colors.accentInk} />}
                   </View>
                   <View>
                     <Text style={styles.faceCardTitle}>Single Person Face Attendance</Text>
@@ -928,13 +931,21 @@ export function AttendanceScreen({ route }: { route: any }) {
               <Card style={[styles.workerRow, isSelected && styles.workerRowSelected, marked && !isSelected && styles.workerRowMarked]}>
                 <View style={styles.workerRowMain}>
                   <Pressable onPress={() => toggle(item.id)} style={styles.workerRowMainPressable}>
-                    <Text style={styles.workerName}>{item.name}</Text>
-                    {marked ? (
-                      <Text style={styles.markedLabel}>
-                        {isSelected ? "Editing entry…" : "Marked present ✓ · tap to edit"}
+                    <Avatar name={item.name} index={item.id} />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={styles.workerName} numberOfLines={1}>
+                        {item.name}
                       </Text>
+                      {marked ? (
+                        <Text style={styles.markedLabel}>{isSelected ? "Editing entry…" : "Marked present · tap to edit"}</Text>
+                      ) : null}
+                    </View>
+                    {marked && !isSelected ? (
+                      <CheckCircle2 size={26} color={colors.success} />
                     ) : (
-                      <View style={[styles.checkbox, isSelected && styles.checkboxSelected]} />
+                      <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                        {isSelected ? <Check size={18} color="#FFFFFF" strokeWidth={3} /> : null}
+                      </View>
                     )}
                   </Pressable>
                   <Pressable
@@ -1013,7 +1024,7 @@ export function AttendanceScreen({ route }: { route: any }) {
         <FlatList
           data={advancePayments}
           keyExtractor={(p) => String(p.id)}
-          contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+          contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: spacing.xl }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           ListHeaderComponent={
             <View style={{ gap: spacing.sm, marginBottom: spacing.sm }}>
@@ -1052,7 +1063,7 @@ export function AttendanceScreen({ route }: { route: any }) {
                 <Card style={{ gap: 4 }}>
                   <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                     <Text style={styles.summaryLabel}>Total advance paid</Text>
-                    <Text style={[styles.summaryValue, { fontSize: 15, color: "#C77A2E" }]}>{inr(totalAdvancePaid)}</Text>
+                    <Text style={[styles.summaryValue, { fontSize: 16.5, color: "#C77A2E" }]}>{inr(totalAdvancePaid)}</Text>
                   </View>
                   <Text style={styles.advCount}>
                     {advancePayments.length} payment{advancePayments.length !== 1 ? "s" : ""} recorded
@@ -1060,7 +1071,7 @@ export function AttendanceScreen({ route }: { route: any }) {
                 </Card>
               ) : null}
 
-              <Button title="+ Record advance payment" onPress={openPaymentForm} variant="secondary" />
+              <Button title="Record advance payment" icon={Plus} onPress={openPaymentForm} variant="secondary" />
 
               {showPaymentForm ? (
                 <Card style={{ gap: spacing.sm }}>
@@ -1210,7 +1221,7 @@ export function AttendanceScreen({ route }: { route: any }) {
                   {item.notes ? <Text style={styles.advNotes}>{item.notes}</Text> : null}
                 </View>
                 <View style={{ alignItems: "flex-end", gap: spacing.xs }}>
-                  <Text style={[styles.summaryValue, { fontSize: 15, color: "#C77A2E" }]}>{inr(Number(item.totalAdvancePaid))}</Text>
+                  <Text style={[styles.summaryValue, { fontSize: 16.5, color: "#C77A2E" }]}>{inr(Number(item.totalAdvancePaid))}</Text>
                   <Pressable onPress={() => confirmDeletePayment(item.id)} hitSlop={8}>
                     <X size={16} color={colors.textMuted} />
                   </Pressable>
@@ -1225,7 +1236,7 @@ export function AttendanceScreen({ route }: { route: any }) {
         <FlatList
           data={groupLoans}
           keyExtractor={(l) => String(l.id)}
-          contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+          contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: spacing.xl }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           ListHeaderComponent={
             <View style={{ gap: spacing.sm, marginBottom: spacing.sm }}>
@@ -1236,7 +1247,7 @@ export function AttendanceScreen({ route }: { route: any }) {
                       <Text style={styles.formTitle}>Loan taken by group (upfront)</Text>
                       {workGroup.loanNotes ? <Text style={styles.advCount}>{workGroup.loanNotes}</Text> : null}
                     </View>
-                    <Text style={[styles.summaryValue, { fontSize: 15 }]}>{inr(Number(workGroup.loanTaken))}</Text>
+                    <Text style={[styles.summaryValue, { fontSize: 16.5 }]}>{inr(Number(workGroup.loanTaken))}</Text>
                   </View>
                 </Card>
               ) : null}
@@ -1360,7 +1371,7 @@ export function AttendanceScreen({ route }: { route: any }) {
                     <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
                       <Image source={{ uri: loanProofPhoto }} style={{ width: 72, height: 72, borderRadius: radius.sm }} />
                       <Pressable onPress={() => setLoanProofPhoto(null)}>
-                        <Text style={{ color: colors.danger, fontSize: 13 }}>Remove photo</Text>
+                        <Text style={{ color: colors.danger, fontSize: 14.5 }}>Remove photo</Text>
                       </Pressable>
                     </View>
                   ) : (
@@ -1421,7 +1432,7 @@ export function AttendanceScreen({ route }: { route: any }) {
                     ) : null}
                   </View>
                   <View style={{ alignItems: "flex-end", gap: 4 }}>
-                    <Text style={[styles.summaryValue, { fontSize: 15, color: colors.danger }]}>{inr(outstanding)}</Text>
+                    <Text style={[styles.summaryValue, { fontSize: 16.5, color: colors.danger }]}>{inr(outstanding)}</Text>
                     <Text style={styles.advCount}>outstanding</Text>
                     {item.status !== "repaid" && item.status !== "closed" && outstanding > 0 ? (
                       <Pressable
@@ -1522,15 +1533,15 @@ export function AttendanceScreen({ route }: { route: any }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   offlineBanner: { backgroundColor: colors.amberBg, padding: spacing.sm },
-  offlineText: { color: colors.warning, textAlign: "center", fontSize: 12 },
+  offlineText: { color: colors.warning, textAlign: "center", fontSize: 14 },
 
   tabRow: {
     flexDirection: "row",
     backgroundColor: colors.muted,
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
     padding: 4,
-    margin: spacing.md,
-    marginBottom: 0,
+    marginHorizontal: 20,
+    marginTop: spacing.md,
     gap: 4,
   },
   tabBtn: {
@@ -1539,27 +1550,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.sm,
+    minHeight: 44,
+    borderRadius: radius.pill,
   },
-  tabBtnActive: { backgroundColor: "#fff" },
-  tabText: { fontSize: 12.5, fontWeight: "600", color: colors.textMuted },
-  tabTextActive: { color: colors.primary },
+  tabBtnActive: { backgroundColor: "#fff", ...shadow },
+  tabText: { fontSize: 14.5, fontWeight: "600", color: colors.textMuted },
+  tabTextActive: { color: colors.text, fontWeight: "800" },
 
   workerRow: {},
   workerRowMain: { flexDirection: "row", alignItems: "center" },
-  workerRowMainPressable: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  workerRowMainPressable: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12 },
   removeWorkerBtn: { paddingLeft: spacing.sm, paddingVertical: spacing.xs },
   workerRowSelected: { borderColor: colors.primary, borderWidth: 2 },
   workerRowMarked: { opacity: 0.6 },
-  workerName: { fontSize: 15, color: colors.text, fontWeight: "500" },
-  markedLabel: { fontSize: 12, color: colors.primary },
+  workerName: { fontSize: 16.5, color: colors.text, fontWeight: "700" },
+  markedLabel: { fontSize: 14, color: colors.primary },
   checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 4,
-    borderWidth: 2,
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    borderWidth: 2.5,
     borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
   },
   checkboxSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   extraToggle: {
@@ -1571,11 +1584,11 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
-  extraToggleText: { fontSize: 12.5, color: colors.primary, fontWeight: "600" },
+  extraToggleText: { fontSize: 14.5, color: colors.primary, fontWeight: "600" },
   extraFields: { marginTop: spacing.sm },
   footer: { padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
-  ruleTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
-  ruleSubtitle: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  ruleTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text },
+  ruleSubtitle: { fontSize: 14, color: colors.textMuted, marginTop: 2 },
   settleHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -1584,9 +1597,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 2,
   },
-  settleHeaderText: { color: "#fff", fontWeight: "700", fontSize: 13 },
-  settleLine: { fontSize: 13, color: colors.text },
-  settleLineMuted: { fontSize: 12, color: colors.textMuted },
+  settleHeaderText: { color: "#fff", fontWeight: "700", fontSize: 14.5 },
+  settleLine: { fontSize: 14.5, color: colors.text },
+  settleLineMuted: { fontSize: 14, color: colors.textMuted },
 
   // Single Person Face Attendance card — web's purple/violet gradient
   // (from-primary to-violet-500) approximated as a flat violet, matching how
@@ -1595,27 +1608,27 @@ const styles = StyleSheet.create({
   faceCard: {
     flex: 1,
     gap: spacing.sm,
-    backgroundColor: "#7C4DBF",
-    borderRadius: radius.md,
+    backgroundColor: colors.accent,
+    borderRadius: 24,
     padding: spacing.md - 2,
   },
   faceIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
   },
-  faceCardTitle: { fontSize: 13, fontWeight: "700", color: "#fff", lineHeight: 16 },
-  faceCardSubtitle: { fontSize: 10.5, color: "rgba(255,255,255,0.8)", marginTop: 4, lineHeight: 14 },
+  faceCardTitle: { fontSize: 14.5, fontWeight: "800", color: colors.accentInk, lineHeight: 19 },
+  faceCardSubtitle: { fontSize: 12.5, color: colors.accentInkSoft, marginTop: 4, lineHeight: 16 },
 
   // AI Group Attendance card
   aiCard: {
     flex: 1,
     gap: spacing.sm,
     backgroundColor: colors.primary,
-    borderRadius: radius.md,
+    borderRadius: 24,
     padding: spacing.md - 2,
   },
   aiIconWrap: {
@@ -1626,23 +1639,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  aiCardTitle: { fontSize: 13, fontWeight: "700", color: "#fff", lineHeight: 16 },
-  aiCardSubtitle: { fontSize: 10.5, color: "rgba(255,255,255,0.85)", marginTop: 4, lineHeight: 14 },
+  aiCardTitle: { fontSize: 14.5, fontWeight: "800", color: "#fff", lineHeight: 19 },
+  aiCardSubtitle: { fontSize: 12.5, color: "rgba(255,255,255,0.85)", marginTop: 4, lineHeight: 16 },
   aiResultCard: { backgroundColor: "#FFF0C2", borderColor: "#F0E4C2" },
   aiResultThumb: { width: 56, height: 56, borderRadius: radius.sm },
   aiResultCount: { fontSize: 22, fontWeight: "800", color: colors.primary },
-  aiResultLabel: { fontSize: 13, color: colors.textMuted, fontWeight: "500" },
-  aiResultNote: { fontSize: 11.5, color: colors.primary, fontWeight: "600", marginTop: 2 },
+  aiResultLabel: { fontSize: 14.5, color: colors.textMuted, fontWeight: "500" },
+  aiResultNote: { fontSize: 13.5, color: colors.primary, fontWeight: "600", marginTop: 2 },
 
   // Work session card
-  sessionHeader: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5 },
+  sessionHeader: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5 },
   sessionDurationPill: { backgroundColor: "#FFF0C2", borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2 },
-  sessionDurationText: { fontSize: 11.5, fontWeight: "700", color: colors.primary },
+  sessionDurationText: { fontSize: 13.5, fontWeight: "700", color: colors.primary },
   sessionRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   sessionThumb: { width: 48, height: 48, borderRadius: radius.sm },
   sessionThumbPlaceholder: { backgroundColor: "#FFF0C2", alignItems: "center", justifyContent: "center" },
-  sessionRowTitle: { fontSize: 13.5, fontWeight: "600", color: colors.text },
-  sessionRowSubtitle: { fontSize: 11.5, color: colors.textMuted, marginTop: 1 },
+  sessionRowTitle: { fontSize: 15, fontWeight: "600", color: colors.text },
+  sessionRowSubtitle: { fontSize: 13.5, color: colors.textMuted, marginTop: 1 },
   sessionActionBtn: {
     flex: 1,
     flexDirection: "row",
@@ -1652,27 +1665,27 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingVertical: spacing.sm + 2,
   },
-  sessionActionText: { fontSize: 12, fontWeight: "700" },
+  sessionActionText: { fontSize: 14, fontWeight: "700" },
 
   // Today's summary
   summaryCard: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  summaryLabel: { fontSize: 11.5, color: colors.textMuted },
+  summaryLabel: { fontSize: 13.5, color: colors.textMuted },
   summaryValue: { fontSize: 20, fontWeight: "800", color: colors.text, marginTop: 2 },
 
   // Advance tab
-  advTitle: { fontSize: 12.5, fontWeight: "700", color: "#C77A2E" },
+  advTitle: { fontSize: 14.5, fontWeight: "700", color: "#C77A2E" },
   advBox: { flex: 1, backgroundColor: "#fff", borderRadius: radius.sm, padding: spacing.sm, alignItems: "center" },
-  advBoxLabel: { fontSize: 10.5, color: colors.textMuted },
-  advBoxValue: { fontSize: 13.5, fontWeight: "700", color: colors.text, marginTop: 2 },
-  advFreq: { fontSize: 11.5, color: "#C77A2E", marginTop: spacing.sm },
-  advEmptyText: { fontSize: 12.5, color: colors.textMuted, marginTop: spacing.xs },
-  advEmptySubtext: { fontSize: 11, color: colors.textMuted, marginTop: 2, textAlign: "center" },
-  advCount: { fontSize: 11.5, color: colors.textMuted },
-  advNotes: { fontSize: 11.5, color: colors.textMuted, fontStyle: "italic", marginTop: 2 },
+  advBoxLabel: { fontSize: 12.5, color: colors.textMuted },
+  advBoxValue: { fontSize: 15, fontWeight: "700", color: colors.text, marginTop: 2 },
+  advFreq: { fontSize: 13.5, color: "#C77A2E", marginTop: spacing.sm },
+  advEmptyText: { fontSize: 14.5, color: colors.textMuted, marginTop: spacing.xs },
+  advEmptySubtext: { fontSize: 13, color: colors.textMuted, marginTop: 2, textAlign: "center" },
+  advCount: { fontSize: 13.5, color: colors.textMuted },
+  advNotes: { fontSize: 13.5, color: colors.textMuted, fontStyle: "italic", marginTop: 2 },
   advPreviewBox: { backgroundColor: "#FFF3E6", borderRadius: radius.sm, padding: spacing.sm },
-  advPreviewText: { fontSize: 13, fontWeight: "700", color: "#C77A2E" },
-  advPreviewSubtext: { fontSize: 11, color: "#C77A2E", marginTop: 2 },
-  formTitle: { fontSize: 14.5, fontWeight: "700", color: colors.text },
+  advPreviewText: { fontSize: 14.5, fontWeight: "700", color: "#C77A2E" },
+  advPreviewSubtext: { fontSize: 13, color: "#C77A2E", marginTop: 2 },
+  formTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
 
   // Season-end account
   seasonTriggerCard: {
@@ -1690,16 +1703,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  seasonTitle: { fontSize: 13.5, fontWeight: "700", color: colors.primary },
-  seasonSubtitle: { fontSize: 11, color: colors.primary, marginTop: 1 },
-  seasonTile: { flex: 1, backgroundColor: "#F6F5F9", borderRadius: radius.sm, padding: spacing.sm, alignItems: "center" },
-  seasonTileValue: { fontSize: 12, fontWeight: "700", color: colors.text, marginTop: 2 },
+  seasonTitle: { fontSize: 15, fontWeight: "700", color: colors.primary },
+  seasonSubtitle: { fontSize: 13, color: colors.primary, marginTop: 1 },
+  seasonTile: { flex: 1, backgroundColor: "#FBF2D9", borderRadius: radius.sm, padding: spacing.sm, alignItems: "center" },
+  seasonTileValue: { fontSize: 14, fontWeight: "700", color: colors.text, marginTop: 2 },
   seasonClosedPill: { backgroundColor: "#FFF0C2", borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2 },
-  seasonClosedPillText: { fontSize: 10.5, fontWeight: "600", color: colors.primary },
-  seasonSummaryText: { fontSize: 12.5, color: colors.text, lineHeight: 18 },
+  seasonClosedPillText: { fontSize: 12.5, fontWeight: "600", color: colors.primary },
+  seasonSummaryText: { fontSize: 14.5, color: colors.text, lineHeight: 18 },
 
   // Loans tab
-  loanDaysText: { fontSize: 11.5, color: colors.danger, textAlign: "center", marginTop: spacing.sm },
+  loanDaysText: { fontSize: 13.5, color: colors.danger, textAlign: "center", marginTop: spacing.sm },
   // Worker-name-input suggestion dropdown (item 4)
   nameSuggestBox: {
     position: "absolute",
@@ -1719,13 +1732,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  nameSuggestText: { fontSize: 13.5, color: colors.text },
+  nameSuggestText: { fontSize: 15, color: colors.text },
   nameSuggestNewRow: {
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     backgroundColor: "#FFF0C2",
   },
-  nameSuggestNewText: { fontSize: 11.5, color: colors.primary },
+  nameSuggestNewText: { fontSize: 13.5, color: colors.primary },
   // Loan proof-photo badge + full-screen viewer (item 3)
   proofBadge: {
     flexDirection: "row",
@@ -1741,7 +1754,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   proofBadgeThumb: { width: 24, height: 24, borderRadius: 4 },
-  proofBadgeText: { fontSize: 11, fontWeight: "600", color: "#3E6FB0" },
+  proofBadgeText: { fontSize: 13, fontWeight: "600", color: "#3E6FB0" },
   proofModalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.9)" },
   proofModalHeader: {
     flexDirection: "row",
@@ -1749,12 +1762,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     padding: spacing.md,
   },
-  proofModalTitle: { color: "#fff", fontSize: 14, fontWeight: "700" },
-  proofModalSubtitle: { color: "#D1D5DB", fontSize: 12, marginTop: 2 },
+  proofModalTitle: { color: "#fff", fontSize: 15.5, fontWeight: "700" },
+  proofModalSubtitle: { color: "#D1D5DB", fontSize: 14, marginTop: 2 },
   proofModalImageWrap: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: spacing.sm },
   proofModalImage: { width: "100%", height: "100%" },
   proofModalFooter: { padding: spacing.md, alignItems: "center" },
-  proofModalFooterText: { color: "#E5E7EB", fontSize: 13, fontWeight: "500" },
+  proofModalFooterText: { color: "#E5E7EB", fontSize: 14.5, fontWeight: "500" },
   loanProofBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -1766,11 +1779,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingVertical: spacing.md,
   },
-  loanProofBtnText: { fontSize: 13, color: colors.textMuted },
+  loanProofBtnText: { fontSize: 14.5, color: colors.textMuted },
   statusPill: { backgroundColor: "#FEF3C7", borderRadius: radius.pill, paddingHorizontal: spacing.xs + 2, paddingVertical: 1 },
-  statusPillText: { fontSize: 10.5, fontWeight: "600", color: "#92600E" },
+  statusPillText: { fontSize: 12.5, fontWeight: "600", color: "#92600E" },
   repayToggle: { backgroundColor: "#FFF0C2", borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
-  repayToggleText: { fontSize: 11, fontWeight: "600", color: colors.primary },
+  repayToggleText: { fontSize: 13, fontWeight: "600", color: colors.primary },
   repayForm: {
     marginTop: spacing.xs,
     paddingTop: spacing.sm,

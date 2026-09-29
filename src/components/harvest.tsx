@@ -312,3 +312,26 @@ const tileStyles = StyleSheet.create({
   tileTitle: { fontSize: 17, fontWeight: "800", color: colors.text, textAlign: "center", lineHeight: 20 },
   tileSub: { fontSize: 13.5, color: colors.textMuted, textAlign: "center", lineHeight: 17 },
 });
+
+/** Green round ＋ for the right side of the yellow header. */
+export function HeaderAddButton({ onPress, label = "Add" }: { onPress: () => void; label?: string }) {
+  return <RoundButton icon={PlusIcon} label={label} onPress={onPress} variant="green" />;
+}
+
+function PlusIcon({ size = 24, color, strokeWidth }: { size?: number; color?: string; strokeWidth?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d="M12 5v14M5 12h14" stroke={color} strokeWidth={strokeWidth ?? 2.4} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** Rounded progress bar: yellow track, green fill. */
+export function ProgressBar({ value }: { value: number }) {
+  const pct = Math.max(0, Math.min(1, value)) * 100;
+  return (
+    <View style={{ flex: 1, height: 12, borderRadius: 6, backgroundColor: colors.tint, overflow: "hidden" }}>
+      <View style={{ width: `${pct}%`, height: "100%", backgroundColor: colors.primary, borderRadius: 6 }} />
+    </View>
+  );
+}

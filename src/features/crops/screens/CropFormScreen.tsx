@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Alert, ScrollView, StyleSheet } from "react-native";
 import { Text } from "../../../components/Text";
+import { Plus } from "lucide-react-native";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { ChipSelect } from "../../../components/ChipSelect";
@@ -90,7 +91,7 @@ export function CropFormScreen({ navigation, route }: { navigation: any; route: 
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: spacing.xl }}>
       <ChipSelect
         label={isEdit ? "Crop name *" : "Crop name(s) * — tap to select multiple"}
         options={CROP_NAMES}
@@ -106,7 +107,7 @@ export function CropFormScreen({ navigation, route }: { navigation: any; route: 
             onSubmitEditing={addCustomName}
             placeholder="e.g. Vanilla"
           />
-          <Button title="+ Add name" variant="secondary" size="compact" onPress={addCustomName} />
+          <Button title="Add name" icon={Plus} variant="secondary" size="compact" onPress={addCustomName} />
         </>
       ) : null}
       {multiNames.length > 0 ? (
@@ -132,5 +133,5 @@ export function CropFormScreen({ navigation, route }: { navigation: any; route: 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   error: { color: colors.danger, marginBottom: spacing.md },
-  selectedNames: { fontSize: 13, color: colors.textMuted, marginTop: -spacing.sm, marginBottom: spacing.md },
+  selectedNames: { fontSize: 14.5, color: colors.textMuted, marginTop: -spacing.sm, marginBottom: spacing.md },
 });

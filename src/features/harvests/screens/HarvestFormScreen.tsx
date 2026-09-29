@@ -5,7 +5,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { ChipSelect } from "../../../components/ChipSelect";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { useHarvests } from "../hooks/useHarvests";
 
 const PAYMENT_STATUSES = ["pending", "partial", "paid"];
@@ -55,7 +55,7 @@ export function HarvestFormScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: spacing.xl }}>
       {crops.length > 0 ? (
         <ChipSelect
           label="Crop *"
@@ -103,15 +103,14 @@ export function HarvestFormScreen({ navigation }: { navigation: any }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   error: { color: colors.danger, marginBottom: spacing.md },
-  label: { fontSize: 14, fontWeight: "500", color: colors.text, marginBottom: spacing.xs },
+  label: { fontSize: 15.5, fontWeight: "500", color: colors.text, marginBottom: spacing.xs },
   dateInput: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.sm,
+    ...shadow,
+    borderRadius: 22,
     paddingVertical: spacing.sm + 2,
     paddingHorizontal: spacing.md,
     backgroundColor: "#fff",
     marginBottom: spacing.md,
   },
-  dateText: { fontSize: 16, color: colors.text },
+  dateText: { fontSize: 17, color: colors.text },
 });

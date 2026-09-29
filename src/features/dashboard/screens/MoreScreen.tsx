@@ -55,7 +55,7 @@ function sections(t: (k: string) => string) {
 export function MoreScreen({ navigation }: { navigation: any }) {
   const { t } = useT();
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: spacing.xl }}>
       {sections(t).map((section) => (
         <View key={section.title} style={{ marginBottom: spacing.lg }}>
           <Text style={styles.sectionTitle}>{section.title}</Text>
@@ -77,5 +77,5 @@ export function MoreScreen({ navigation }: { navigation: any }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  sectionTitle: { fontSize: 14, fontWeight: "700", color: colors.textMuted, marginBottom: spacing.sm, textTransform: "uppercase" },
+  sectionTitle: { fontSize: 15.5, fontWeight: "700", color: colors.textMuted, marginBottom: spacing.sm, textTransform: "uppercase" },
 });

@@ -125,7 +125,7 @@ export function ManagerDevicesScreen() {
       <FlatList
         data={query.data ?? []}
         keyExtractor={(m) => String(m.id)}
-        contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+        contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: spacing.xl }}
         ListEmptyComponent={<EmptyState title="No invitees yet" />}
         renderItem={({ item }) => (
           <Card style={styles.row}>
@@ -148,7 +148,7 @@ export function ManagerDevicesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  sectionTitle: { fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: spacing.sm },
+  sectionTitle: { fontSize: 16.5, fontWeight: "700", color: colors.text, marginBottom: spacing.sm },
   modeRow: { flexDirection: "row", gap: spacing.xs, marginBottom: spacing.sm },
   modeTab: {
     paddingVertical: spacing.xs,
@@ -158,10 +158,10 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   modeTabActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  modeTabText: { fontSize: 12.5, fontWeight: "600", color: colors.text },
+  modeTabText: { fontSize: 14.5, fontWeight: "600", color: colors.text },
   modeTabTextActive: { color: "#fff" },
   row: { flexDirection: "row", alignItems: "center" },
-  name: { fontSize: 15, fontWeight: "600", color: colors.text },
-  meta: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  name: { fontSize: 16.5, fontWeight: "600", color: colors.text },
+  meta: { fontSize: 14, color: colors.textMuted, marginTop: 2 },
   error: { color: colors.danger, marginBottom: spacing.md },
 });

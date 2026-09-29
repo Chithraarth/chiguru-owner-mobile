@@ -38,7 +38,7 @@ export function HelpScreen() {
   const messages = query.data ?? [];
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       <View style={styles.intro}>
         <View style={styles.introIconWrap}>
           <LifeBuoy size={20} color="#fff" />
@@ -159,22 +159,22 @@ const styles = StyleSheet.create({
 
   intro: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm, backgroundColor: colors.primary + "0D", borderWidth: 1, borderColor: colors.primary + "1A", borderRadius: radius.lg, padding: spacing.md },
   introIconWrap: { width: 36, height: 36, borderRadius: radius.sm, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
-  introTitle: { fontSize: 14.5, fontWeight: "700", color: colors.primary },
-  introSubtitle: { fontSize: 12, color: colors.primary, opacity: 0.8, marginTop: 3, lineHeight: 17 },
+  introTitle: { fontSize: 16, fontWeight: "700", color: colors.primary },
+  introSubtitle: { fontSize: 14, color: colors.primary, opacity: 0.8, marginTop: 3, lineHeight: 17 },
 
   tile: { flex: 1, alignItems: "center", gap: spacing.xs, paddingVertical: spacing.sm + 4, borderWidth: 2, borderRadius: radius.md },
-  tileLabel: { fontSize: 12.5, fontWeight: "600", color: colors.textMuted, textAlign: "center" },
+  tileLabel: { fontSize: 14.5, fontWeight: "600", color: colors.textMuted, textAlign: "center" },
 
-  sectionTitle: { fontSize: 13.5, fontWeight: "700", color: colors.text, paddingHorizontal: 2 },
-  emptyText: { fontSize: 12.5, color: colors.textMuted, marginTop: spacing.xs, textAlign: "center" },
+  sectionTitle: { fontSize: 15, fontWeight: "700", color: colors.text, paddingHorizontal: 2 },
+  emptyText: { fontSize: 14.5, color: colors.textMuted, marginTop: spacing.xs, textAlign: "center" },
 
-  msgType: { fontSize: 10.5, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.4, textTransform: "uppercase" },
-  msgDate: { marginLeft: "auto", fontSize: 10.5, color: colors.textMuted },
-  msgBody: { fontSize: 13.5, color: colors.text, marginTop: spacing.sm },
+  msgType: { fontSize: 12.5, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.4, textTransform: "uppercase" },
+  msgDate: { marginLeft: "auto", fontSize: 12.5, color: colors.textMuted },
+  msgBody: { fontSize: 15, color: colors.text, marginTop: spacing.sm },
 
   replyBox: { marginTop: spacing.sm, backgroundColor: colors.primary + "0D", borderWidth: 1, borderColor: colors.primary + "33", borderRadius: radius.sm, padding: spacing.sm + 4 },
-  replyLabel: { fontSize: 11, fontWeight: "700", color: colors.primary },
-  replyBody: { fontSize: 13, color: colors.primary, marginTop: 5 },
+  replyLabel: { fontSize: 13, fontWeight: "700", color: colors.primary },
+  replyBody: { fontSize: 14.5, color: colors.primary, marginTop: 5 },
 
-  pendingText: { fontSize: 11.5, color: colors.textMuted, flex: 1 },
+  pendingText: { fontSize: 13.5, color: colors.textMuted, flex: 1 },
 });

@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
   grid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   tile: { width: "47%", borderRadius: radius.md, padding: spacing.md, alignItems: "center", gap: spacing.sm },
   iconWrap: { width: 48, height: 48, borderRadius: radius.sm, backgroundColor: "rgba(255,255,255,0.5)", alignItems: "center", justifyContent: "center" },
-  tileText: { fontSize: 13, fontWeight: "700", textAlign: "center" },
+  tileText: { fontSize: 14.5, fontWeight: "700", textAlign: "center" },
   adminLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: spacing.lg, paddingVertical: spacing.sm },
-  adminLinkText: { fontSize: 12.5, color: colors.textMuted, fontWeight: "500" },
+  adminLinkText: { fontSize: 14.5, color: colors.textMuted, fontWeight: "500" },
 });

@@ -75,7 +75,7 @@ export function PlanTaskFormScreen({ navigation, route }: { navigation: any; rou
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: spacing.xl }}>
       <TextField label="Task title *" value={title} onChangeText={setTitle} placeholder="e.g. Apply NPK fertilizer" />
       <TextField
         label="Details"

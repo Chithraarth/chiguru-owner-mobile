@@ -6,7 +6,7 @@ import { colors, radius, spacing } from "../../../components/theme";
 
 export function AgriExpertHubScreen({ navigation }: { navigation: any }) {
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       <View style={styles.hero}>
         <View style={styles.heroIconWrap}><BadgeCheck size={26} color="#fff" /></View>
         <Text style={styles.heroTitle}>For agriculture experts</Text>
@@ -38,10 +38,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   hero: { backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.lg },
   heroIconWrap: { width: 52, height: 52, borderRadius: 26, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", marginBottom: spacing.sm },
-  heroTitle: { color: "#fff", fontSize: 17, fontWeight: "700" },
-  heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 12.5, marginTop: spacing.xs, lineHeight: 17 },
+  heroTitle: { color: "#fff", fontSize: 18, fontWeight: "700" },
+  heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 14.5, marginTop: spacing.xs, lineHeight: 17 },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md },
   iconWrap: { width: 40, height: 40, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
-  rowTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
-  rowSubtitle: { fontSize: 11.5, color: colors.textMuted, marginTop: 1 },
+  rowTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text },
+  rowSubtitle: { fontSize: 13.5, color: colors.textMuted, marginTop: 1 },
 });

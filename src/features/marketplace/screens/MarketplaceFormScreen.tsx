@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Image, ScrollView, StyleSheet } from "react-native";
 import { Text } from "../../../components/Text";
+import { Camera } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
@@ -66,9 +67,9 @@ export function MarketplaceFormScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: spacing.xl }}>
       {photoUri ? <Image source={{ uri: photoUri }} style={styles.preview} /> : (
-        <Button title="📷 Add product photo" variant="secondary" onPress={pickPhoto} />
+        <Button title="Add product photo" icon={Camera} variant="light" onPress={pickPhoto} />
       )}
       <TextField label="What are you selling? *" value={productName} onChangeText={setProductName} placeholder="e.g. Arabica Coffee Beans" />
       <ChipSelect label="Category" options={CATEGORIES} value={category} onChange={setCategory} />

@@ -15,6 +15,7 @@ import {
   Tractor,
   Users,
   Wrench,
+  Plus,
 } from "lucide-react-native";
 import { Button } from "../../../components/Button";
 import { Card } from "../../../components/Card";
@@ -231,7 +232,7 @@ export function HireScreen({ navigation, route }: { navigation: any; route?: { p
 
   if (tab === null) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+      <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
         <View style={styles.hero}>
           <View style={styles.heroIconWrap}>
             <Handshake size={22} color="#fff" />
@@ -267,7 +268,7 @@ export function HireScreen({ navigation, route }: { navigation: any; route?: { p
   return (
     <View style={styles.container}>
       <ScrollView
-        contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}
+        contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <Pressable
@@ -301,7 +302,7 @@ export function HireScreen({ navigation, route }: { navigation: any; route?: { p
           </Pressable>
           {myLoc ? (
             <Pressable onPress={() => { setMyLoc(null); setRadius(null); }}>
-              <Text style={{ fontSize: 12, color: colors.textMuted }}>Clear</Text>
+              <Text style={{ fontSize: 14, color: colors.textMuted }}>Clear</Text>
             </Pressable>
           ) : null}
         </View>
@@ -350,7 +351,7 @@ export function HireScreen({ navigation, route }: { navigation: any; route?: { p
         )}
       </ScrollView>
       <View style={[styles.footer, { paddingBottom: spacing.md + insets.bottom }]}>
-        <Button title="+ Post listing" onPress={() => navigation.navigate("HireForm", { listingType: tab })} />
+        <Button title="Post listing" icon={Plus} onPress={() => navigation.navigate("HireForm", { listingType: tab })} />
       </View>
     </View>
   );
@@ -361,40 +362,40 @@ const styles = StyleSheet.create({
 
   hero: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md },
   heroIconWrap: { width: 40, height: 40, borderRadius: radius.sm, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
-  heroTitle: { color: "#fff", fontSize: 16, fontWeight: "700" },
-  heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 12, marginTop: 2 },
+  heroTitle: { color: "#fff", fontSize: 17, fontWeight: "700" },
+  heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 14, marginTop: 2 },
 
   landingTile: { flex: 1, borderRadius: radius.md, padding: spacing.md, alignItems: "center", gap: spacing.xs },
   landingIconWrap: { width: 56, height: 56, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
-  landingTitle: { fontSize: 14, fontWeight: "700", textAlign: "center" },
-  landingSubtitle: { fontSize: 10.5, textAlign: "center", opacity: 0.85 },
+  landingTitle: { fontSize: 15.5, fontWeight: "700", textAlign: "center" },
+  landingSubtitle: { fontSize: 12.5, textAlign: "center", opacity: 0.85 },
 
-  backLink: { fontSize: 13, fontWeight: "700" },
+  backLink: { fontSize: 14.5, fontWeight: "700" },
 
   locBtn: { flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 1, borderColor: colors.border, backgroundColor: "#fff", borderRadius: radius.pill, paddingHorizontal: spacing.sm + 4, paddingVertical: spacing.xs + 2 },
-  locBtnText: { fontSize: 12, fontWeight: "500", color: colors.textMuted },
+  locBtnText: { fontSize: 14, fontWeight: "500", color: colors.textMuted },
 
   chip: { paddingVertical: spacing.xs + 2, paddingHorizontal: spacing.sm + 4, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: "#fff" },
-  chipText: { fontSize: 12.5, color: colors.textMuted, fontWeight: "500" },
+  chipText: { fontSize: 14.5, color: colors.textMuted, fontWeight: "500" },
   chipTextActive: { color: "#fff", fontWeight: "700" },
 
   cardTop: { flexDirection: "row" },
   cardIcon: { width: 76, height: 76, alignItems: "center", justifyContent: "center" },
-  cardTitle: { fontSize: 14, fontWeight: "700", color: colors.text, flexShrink: 1 },
-  cardMeta: { fontSize: 11, color: colors.textMuted, flexShrink: 1 },
-  cardRate: { fontSize: 13, fontWeight: "700" },
+  cardTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text, flexShrink: 1 },
+  cardMeta: { fontSize: 13, color: colors.textMuted, flexShrink: 1 },
+  cardRate: { fontSize: 14.5, fontWeight: "700" },
   mineBadge: { backgroundColor: "#E4EEFB", borderRadius: radius.pill, paddingHorizontal: 6, paddingVertical: 1 },
-  mineBadgeText: { fontSize: 9, fontWeight: "700", color: "#5B8CD6" },
+  mineBadgeText: { fontSize: 11, fontWeight: "700", color: "#5B8CD6" },
   tinyBadge: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#FFEBD6", borderRadius: radius.pill, paddingHorizontal: 6, paddingVertical: 2 },
-  tinyBadgeText: { fontSize: 9.5, fontWeight: "700", color: "#95530F" },
-  description: { fontSize: 12, color: colors.textMuted, paddingHorizontal: spacing.sm + 4, paddingTop: spacing.xs },
+  tinyBadgeText: { fontSize: 11.5, fontWeight: "700", color: "#95530F" },
+  description: { fontSize: 14, color: colors.textMuted, paddingHorizontal: spacing.sm + 4, paddingTop: spacing.xs },
 
   cardActions: { flexDirection: "row", gap: spacing.sm, padding: spacing.sm + 4, paddingTop: spacing.sm },
   callBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: radius.sm, paddingVertical: spacing.sm },
-  callBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  callBtnText: { color: "#fff", fontWeight: "700", fontSize: 14.5 },
   waBtn: { width: 40, alignItems: "center", justifyContent: "center", borderWidth: 1, borderRadius: radius.sm },
   deleteBtn: { paddingHorizontal: spacing.sm + 2, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#F5C6C6", borderRadius: radius.sm },
-  deleteBtnText: { color: colors.danger, fontSize: 12, fontWeight: "700" },
+  deleteBtnText: { color: colors.danger, fontSize: 14, fontWeight: "700" },
 
   footer: { padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.bg },
 });

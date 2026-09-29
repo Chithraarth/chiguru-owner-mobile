@@ -64,7 +64,7 @@ export function SettingsScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       <Card>
         <View style={{ flexDirection: "row", alignItems: "flex-start", gap: spacing.sm }}>
           <View style={[styles.iconWrap, { backgroundColor: "#FBF2D9" }]}>
@@ -172,17 +172,17 @@ export function SettingsScreen({ navigation }: { navigation: any }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   iconWrap: { width: 38, height: 38, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
-  cardTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
-  cardSubtitle: { fontSize: 12, color: colors.textMuted, marginTop: 2, lineHeight: 16 },
+  cardTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text },
+  cardSubtitle: { fontSize: 14, color: colors.textMuted, marginTop: 2, lineHeight: 16 },
   pushSub: { marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
-  pushLastSent: { fontSize: 11, color: colors.textMuted, marginTop: spacing.xs },
+  pushLastSent: { fontSize: 13, color: colors.textMuted, marginTop: spacing.xs },
   langRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: spacing.sm },
   langChip: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: "#fff" },
   langChipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  langChipText: { fontSize: 13, color: colors.text },
+  langChipText: { fontSize: 14.5, color: colors.text },
   langChipTextSelected: { color: "#fff", fontWeight: "700" },
 
   linkRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm + 4 },
   linkIconWrap: { width: 32, height: 32, borderRadius: radius.sm, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center" },
-  linkLabel: { flex: 1, fontSize: 14, fontWeight: "600", color: colors.text },
+  linkLabel: { flex: 1, fontSize: 15.5, fontWeight: "600", color: colors.text },
 });

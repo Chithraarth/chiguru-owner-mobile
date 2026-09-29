@@ -228,7 +228,7 @@ export function MandiScreen() {
   if (query.isLoading) return <LoadingView label="Loading mandi prices..." />;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       <View style={styles.hero}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
           <View style={styles.heroIconWrap}><Sparkles size={18} color="#fff" /></View>
@@ -342,45 +342,45 @@ const styles = StyleSheet.create({
 
   hero: { backgroundColor: "#2F6B1F", borderRadius: radius.md, padding: spacing.md },
   heroIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
-  heroTitle: { color: "#fff", fontSize: 14.5, fontWeight: "700" },
-  heroSubtitle: { color: "rgba(255,255,255,0.8)", fontSize: 11, marginTop: 2, lineHeight: 15 },
-  heroUpdated: { color: "rgba(255,255,255,0.7)", fontSize: 10.5, flex: 1 },
+  heroTitle: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  heroSubtitle: { color: "rgba(255,255,255,0.8)", fontSize: 13, marginTop: 2, lineHeight: 15 },
+  heroUpdated: { color: "rgba(255,255,255,0.7)", fontSize: 12.5, flex: 1 },
   syncBtn: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
-  syncBtnText: { color: "#fff", fontSize: 11, fontWeight: "700" },
+  syncBtnText: { color: "#fff", fontSize: 13, fontWeight: "700" },
 
   searchWrap: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs + 2 },
-  searchInput: { flex: 1, fontSize: 13.5, color: colors.text },
+  searchInput: { flex: 1, fontSize: 15, color: colors.text },
 
   recentChip: { flexDirection: "row", alignItems: "center", gap: 5, borderWidth: 1, borderColor: colors.border, backgroundColor: "#fff", borderRadius: radius.pill, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs },
   recentChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  recentChipText: { fontSize: 11.5, color: colors.text, textTransform: "capitalize" },
+  recentChipText: { fontSize: 13.5, color: colors.text, textTransform: "capitalize" },
   recentChipTextActive: { color: "#fff", fontWeight: "600" },
 
-  sectionLabel: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, marginBottom: spacing.sm },
+  sectionLabel: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, marginBottom: spacing.sm },
 
   cropGroup: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, overflow: "hidden" },
   cropGroupHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: colors.bg, paddingHorizontal: spacing.sm + 4, paddingVertical: spacing.sm },
-  cropGroupTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
-  cropGroupCount: { fontSize: 10.5, color: colors.textMuted },
+  cropGroupTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text },
+  cropGroupCount: { fontSize: 12.5, color: colors.textMuted },
 
   priceCard: { backgroundColor: colors.card, borderRadius: radius.sm, padding: spacing.sm + 4 },
   priceCardBest: { backgroundColor: "#FFF8E8" },
-  sellerName: { fontSize: 13, fontWeight: "700", color: colors.text },
+  sellerName: { fontSize: 14.5, fontWeight: "700", color: colors.text },
   typeBadge: { borderRadius: radius.pill, paddingHorizontal: 6, paddingVertical: 1 },
-  typeBadgeText: { fontSize: 9.5, fontWeight: "600" },
+  typeBadgeText: { fontSize: 11.5, fontWeight: "600" },
   freshBadge: { borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 },
-  freshBadgeText: { fontSize: 9.5, fontWeight: "700" },
-  notesText: { fontSize: 10.5, color: "#92600E", backgroundColor: "#FEF3C7", borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 },
-  metaText: { fontSize: 10.5, color: colors.textMuted, flexShrink: 1 },
-  phoneText: { fontSize: 11.5, color: colors.primary, fontWeight: "600" },
-  priceValue: { fontSize: 15, fontWeight: "700", color: colors.text },
-  unitText: { fontSize: 9.5, color: colors.textMuted },
-  convText: { fontSize: 9.5, fontWeight: "700", color: colors.primary },
+  freshBadgeText: { fontSize: 11.5, fontWeight: "700" },
+  notesText: { fontSize: 12.5, color: "#92600E", backgroundColor: "#FEF3C7", borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 },
+  metaText: { fontSize: 12.5, color: colors.textMuted, flexShrink: 1 },
+  phoneText: { fontSize: 13.5, color: colors.primary, fontWeight: "600" },
+  priceValue: { fontSize: 16.5, fontWeight: "700", color: colors.text },
+  unitText: { fontSize: 11.5, color: colors.textMuted },
+  convText: { fontSize: 11.5, fontWeight: "700", color: colors.primary },
 
   centerState: { alignItems: "center", paddingVertical: spacing.xl, gap: spacing.xs },
   fetchIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: "#FFF0C2", alignItems: "center", justifyContent: "center" },
-  centerTitle: { fontSize: 13.5, fontWeight: "700", color: colors.text, textAlign: "center" },
-  centerSubtitle: { fontSize: 11.5, color: colors.textMuted, textAlign: "center", maxWidth: 260 },
+  centerTitle: { fontSize: 15, fontWeight: "700", color: colors.text, textAlign: "center" },
+  centerSubtitle: { fontSize: 13.5, color: colors.textMuted, textAlign: "center", maxWidth: 260 },
 
-  footerNote: { fontSize: 10.5, color: colors.textMuted, textAlign: "center", lineHeight: 14, paddingBottom: spacing.sm },
+  footerNote: { fontSize: 12.5, color: colors.textMuted, textAlign: "center", lineHeight: 14, paddingBottom: spacing.sm },
 });

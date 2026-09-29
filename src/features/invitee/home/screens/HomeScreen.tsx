@@ -35,7 +35,7 @@ export function HomeScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: spacing.xl }}>
       <View style={styles.headerRow}>
         <Text style={styles.farmName} onPress={() => setSwitcherOpen(true)}>
           {activeEstate?.farmName ?? "Select farm"} ▾

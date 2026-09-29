@@ -47,7 +47,7 @@ export function AgriDoctorEarningsScreen() {
 
   if (selectedId == null) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}>
+      <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: spacing.xl }}>
         <Text style={styles.intro}>Select your doctor profile to see your consultation earnings and request a payout.</Text>
         {(doctorsQuery.data ?? []).map((d) => (
           <Pressable key={d.id} onPress={() => setSelectedId(d.id)}>
@@ -72,7 +72,7 @@ export function AgriDoctorEarningsScreen() {
   const canRequest = amt > 0 && earnings != null && amt <= earnings.available && earnings.payoutReady;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       <Pressable onPress={() => setSelectedId(null)}>
         <Text style={styles.backLink}>← All doctors</Text>
       </Pressable>
@@ -181,37 +181,37 @@ export function AgriDoctorEarningsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  intro: { fontSize: 12.5, color: colors.textMuted, lineHeight: 17 },
+  intro: { fontSize: 14.5, color: colors.textMuted, lineHeight: 17 },
   doctorRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   emojiWrap: { width: 44, height: 44, borderRadius: radius.sm, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center" },
-  doctorName: { fontSize: 14, fontWeight: "700", color: colors.text },
-  doctorSpeciality: { fontSize: 11.5, color: colors.primary },
-  emptyText: { fontSize: 13, color: colors.textMuted, textAlign: "center", paddingVertical: spacing.lg },
-  backLink: { fontSize: 13, fontWeight: "700", color: colors.primary },
+  doctorName: { fontSize: 15.5, fontWeight: "700", color: colors.text },
+  doctorSpeciality: { fontSize: 13.5, color: colors.primary },
+  emptyText: { fontSize: 14.5, color: colors.textMuted, textAlign: "center", paddingVertical: spacing.lg },
+  backLink: { fontSize: 14.5, fontWeight: "700", color: colors.primary },
 
   balanceCard: { backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.lg },
-  balanceLabel: { color: "rgba(255,255,255,0.8)", fontSize: 11.5 },
+  balanceLabel: { color: "rgba(255,255,255,0.8)", fontSize: 13.5 },
   balanceValue: { color: "#fff", fontSize: 28, fontWeight: "700", marginTop: 2 },
   balanceStat: { flex: 1, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: radius.sm, paddingVertical: spacing.sm, alignItems: "center" },
-  balanceStatLabel: { color: "rgba(255,255,255,0.8)", fontSize: 10 },
-  balanceStatValue: { color: "#fff", fontSize: 13, fontWeight: "700", marginTop: 2 },
+  balanceStatLabel: { color: "rgba(255,255,255,0.8)", fontSize: 12 },
+  balanceStatValue: { color: "#fff", fontSize: 14.5, fontWeight: "700", marginTop: 2 },
 
-  blockTitle: { fontSize: 13.5, fontWeight: "700", color: colors.text },
+  blockTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
   pmRow: { flexDirection: "row", justifyContent: "space-between" },
-  pmLabel: { fontSize: 12, color: colors.textMuted },
-  pmValue: { fontSize: 12, fontWeight: "600", color: colors.text },
+  pmLabel: { fontSize: 14, color: colors.textMuted },
+  pmValue: { fontSize: 14, fontWeight: "600", color: colors.text },
   warningBox: { flexDirection: "row", gap: spacing.xs, backgroundColor: "#FFF3E6", borderRadius: radius.sm, padding: spacing.sm },
-  warningText: { flex: 1, fontSize: 11.5, color: "#95530F", lineHeight: 15 },
+  warningText: { flex: 1, fontSize: 13.5, color: "#95530F", lineHeight: 15 },
 
   requestBtn: { backgroundColor: colors.primary, borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
-  requestBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
-  errorText: { color: colors.danger, fontSize: 11.5, marginTop: spacing.xs },
+  requestBtnText: { color: "#fff", fontWeight: "700", fontSize: 14.5 },
+  errorText: { color: colors.danger, fontSize: 13.5, marginTop: spacing.xs },
 
-  sectionLabel: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, marginBottom: spacing.sm },
-  payoutAmount: { fontSize: 13.5, fontWeight: "700", color: colors.text },
-  payoutMeta: { fontSize: 10.5, color: colors.textMuted, marginTop: 1 },
+  sectionLabel: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, marginBottom: spacing.sm },
+  payoutAmount: { fontSize: 15, fontWeight: "700", color: colors.text },
+  payoutMeta: { fontSize: 12.5, color: colors.textMuted, marginTop: 1 },
   paidBadge: { backgroundColor: colors.bg, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 3 },
-  paidBadgeText: { fontSize: 11, fontWeight: "600", color: colors.primary },
+  paidBadgeText: { fontSize: 13, fontWeight: "600", color: colors.primary },
   markPaidBtn: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs + 2 },
-  markPaidText: { fontSize: 11.5, fontWeight: "600", color: colors.text },
+  markPaidText: { fontSize: 13.5, fontWeight: "600", color: colors.text },
 });

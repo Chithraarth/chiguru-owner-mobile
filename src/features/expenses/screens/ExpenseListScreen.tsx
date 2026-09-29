@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, View } from "react-native";
 import { Text } from "../../../components/Text";
+import { Plus } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
@@ -46,7 +47,7 @@ export function ExpenseListScreen({ navigation }: { navigation: any }) {
       <FlatList
         data={data ?? []}
         keyExtractor={(e) => String(e.id)}
-        contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+        contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: spacing.xl }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={<EmptyState title="No expenses yet" subtitle="Add your first expense with a receipt photo." />}
         renderItem={({ item }) => (
@@ -67,7 +68,7 @@ export function ExpenseListScreen({ navigation }: { navigation: any }) {
         )}
       />
       <View style={[styles.footer, { paddingBottom: spacing.md + insets.bottom }]}>
-        <Button title="+ Add expense" onPress={() => navigation.navigate("ExpenseForm")} />
+        <Button title="Add expense" icon={Plus} onPress={() => navigation.navigate("ExpenseForm")} />
       </View>
     </View>
   );
@@ -76,12 +77,12 @@ export function ExpenseListScreen({ navigation }: { navigation: any }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   totalCard: { margin: spacing.md, alignItems: "center" },
-  totalLabel: { color: colors.textMuted, fontSize: 13 },
+  totalLabel: { color: colors.textMuted, fontSize: 14.5 },
   totalValue: { fontSize: 24, fontWeight: "700", color: colors.primaryDark, marginTop: spacing.xs },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  category: { fontSize: 14, fontWeight: "600", color: colors.text },
-  meta: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
-  amount: { fontSize: 15, fontWeight: "700", color: colors.text },
-  delete: { color: colors.danger, fontSize: 13 },
+  category: { fontSize: 15.5, fontWeight: "600", color: colors.text },
+  meta: { fontSize: 14, color: colors.textMuted, marginTop: 2 },
+  amount: { fontSize: 16.5, fontWeight: "700", color: colors.text },
+  delete: { color: colors.danger, fontSize: 14.5 },
   footer: { padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
 });

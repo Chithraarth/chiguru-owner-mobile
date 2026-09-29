@@ -115,7 +115,7 @@ export function ProfileScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       <Card>
         <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
           <UserCircle2 size={48} color={colors.border} />
@@ -243,29 +243,29 @@ export function ProfileScreen({ navigation }: { navigation: any }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  userName: { fontSize: 15, fontWeight: "700", color: colors.text },
-  userEmail: { fontSize: 12.5, color: colors.textMuted, marginTop: 1 },
+  userName: { fontSize: 16.5, fontWeight: "700", color: colors.text },
+  userEmail: { fontSize: 14.5, color: colors.textMuted, marginTop: 1 },
   signOutBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderWidth: 1, borderColor: "#F5C6C6", borderRadius: radius.sm, paddingVertical: spacing.sm + 2, marginTop: spacing.md },
-  signOutText: { color: colors.danger, fontWeight: "600", fontSize: 13.5 },
+  signOutText: { color: colors.danger, fontWeight: "600", fontSize: 15 },
 
   iconWrap: { width: 38, height: 38, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
-  cardTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
-  cardSubtitle: { fontSize: 12, color: colors.textMuted, marginTop: 2, lineHeight: 16 },
-  sectionLabel: { fontSize: 10.5, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, marginBottom: spacing.xs },
+  cardTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text },
+  cardSubtitle: { fontSize: 14, color: colors.textMuted, marginTop: 2, lineHeight: 16 },
+  sectionLabel: { fontSize: 12.5, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, marginBottom: spacing.xs },
 
   farmRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.sm },
-  farmName: { fontSize: 13, fontWeight: "600", color: colors.text, textTransform: "capitalize" },
-  farmLocation: { fontSize: 10.5, color: colors.textMuted },
+  farmName: { fontSize: 14.5, fontWeight: "600", color: colors.text, textTransform: "capitalize" },
+  farmLocation: { fontSize: 12.5, color: colors.textMuted },
   openFarmBtn: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: 4 },
-  openFarmBtnText: { fontSize: 11, fontWeight: "600", color: colors.text },
+  openFarmBtnText: { fontSize: 13, fontWeight: "600", color: colors.text },
 
   saveBtn: { backgroundColor: colors.primary, borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 4 },
-  saveBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  saveBtnText: { color: "#fff", fontWeight: "700", fontSize: 14.5 },
 
   codeBox: { flex: 1, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingVertical: spacing.sm + 4, alignItems: "center" },
-  codeText: { fontSize: 15, fontWeight: "700", color: colors.text, letterSpacing: 1 },
+  codeText: { fontSize: 16.5, fontWeight: "700", color: colors.text, letterSpacing: 1 },
   copyBtn: { width: 44, height: 44, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
 
   restoreSection: { marginTop: spacing.md, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
-  restoreTitle: { fontSize: 13, fontWeight: "600", color: colors.text },
+  restoreTitle: { fontSize: 14.5, fontWeight: "600", color: colors.text },
 });

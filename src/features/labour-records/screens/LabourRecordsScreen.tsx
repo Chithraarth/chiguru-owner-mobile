@@ -18,7 +18,8 @@ import {
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { LoadingView, EmptyState } from "../../../components/StateViews";
-import { colors, radius, spacing } from "../../../components/theme";
+import { Avatar } from "../../../components/harvest";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { getAllAttendance, getAdvancePayments, getWorkerMoney } from "../../../api/endpoints/attendance";
 import {
   clearWorkGroup,
@@ -297,7 +298,7 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
 
   if (openFolder === null) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+      <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
         <View>
           <Text style={styles.sectionLabel}>👥 YOUR WORK GROUPS</Text>
           <View style={{ gap: spacing.sm }}>
@@ -354,7 +355,7 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
     const m = workerMoney;
     return (
       <View style={styles.container}>
-        <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+        <ScrollView contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
           {moneyLoading ? <LoadingView label="Loading account..." /> : null}
 
           {m ? (
@@ -481,7 +482,7 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
         {groupOpen ? (
           <View style={styles.tabs}>
             {([["weekly", "Weekly"], ["monthly", "Monthly"], ["yearly", "Yearly"], ["final", "Final Account"]] as [ViewMode, string][]).map(([key, label]) => (
@@ -554,9 +555,7 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
                 style={[styles.employeeRow, idx > 0 && styles.periodRowBorder]}
                 onPress={() => setOpenWorker({ id: w.id, name: w.name })}
               >
-                <View style={styles.employeeAvatar}>
-                  <Text style={styles.employeeAvatarText}>{w.name.charAt(0).toUpperCase()}</Text>
-                </View>
+                <Avatar name={w.name} index={idx} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.simpleRowTitle}>{w.name}</Text>
                   <Text style={styles.simpleRowMeta}>{w.days} day{w.days !== 1 ? "s" : ""} worked</Text>
@@ -847,88 +846,88 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  sectionLabel: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.6, marginBottom: spacing.sm },
+  sectionLabel: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.6, marginBottom: spacing.sm },
   folderRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  folderIcon: { width: 44, height: 44, borderRadius: radius.sm, backgroundColor: "#E4EEFB", alignItems: "center", justifyContent: "center" },
-  folderName: { fontSize: 15, fontWeight: "700", color: colors.text },
-  folderSubtitle: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  folderIcon: { width: 46, height: 46, borderRadius: 23, backgroundColor: "#9FD8EA", alignItems: "center", justifyContent: "center" },
+  folderName: { fontSize: 16.5, fontWeight: "700", color: colors.text },
+  folderSubtitle: { fontSize: 14, color: colors.textMuted, marginTop: 2 },
   countBadge: { backgroundColor: "#FFF0C2", borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
-  countBadgeText: { fontSize: 12, fontWeight: "700", color: colors.primary },
+  countBadgeText: { fontSize: 14, fontWeight: "700", color: colors.primary },
 
-  tabs: { flexDirection: "row", backgroundColor: colors.muted, borderRadius: radius.sm, padding: 4, gap: 2 },
-  tab: { flex: 1, paddingVertical: spacing.sm, borderRadius: radius.sm - 2, alignItems: "center" },
-  tabActive: { backgroundColor: "#fff" },
-  tabText: { fontSize: 11, fontWeight: "600", color: colors.textMuted },
-  tabTextActive: { color: colors.primary },
+  tabs: { flexDirection: "row", backgroundColor: colors.muted, borderRadius: radius.pill, padding: 4, gap: 2 },
+  tab: { flex: 1, minHeight: 44, justifyContent: "center", borderRadius: radius.pill, alignItems: "center" },
+  tabActive: { backgroundColor: "#fff", ...shadow },
+  tabText: { fontSize: 13, fontWeight: "600", color: colors.textMuted },
+  tabTextActive: { color: colors.text, fontWeight: "800" },
 
-  payButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.xs, backgroundColor: colors.primary, borderRadius: radius.lg, paddingVertical: spacing.md },
-  payButtonText: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  payButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.xs, backgroundColor: colors.primary, borderRadius: radius.pill, minHeight: 58 },
+  payButtonText: { color: "#fff", fontWeight: "700", fontSize: 18 },
 
   finalHeader: { flexDirection: "row", alignItems: "center", gap: spacing.xs, backgroundColor: colors.primary, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
-  finalHeaderText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  finalHeaderText: { color: "#fff", fontWeight: "700", fontSize: 14.5 },
   finalRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, borderBottomWidth: 1, borderBottomColor: colors.bg },
   finalRowLeft: { flexDirection: "row", alignItems: "center", gap: 6, flex: 1 },
-  finalRowLabel: { fontSize: 13, color: colors.textMuted, flexShrink: 1 },
-  finalRowValue: { fontSize: 13, fontWeight: "700", color: colors.text },
-  finalNote: { fontSize: 11, color: colors.textMuted, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
+  finalRowLabel: { fontSize: 14.5, color: colors.textMuted, flexShrink: 1 },
+  finalRowValue: { fontSize: 14.5, fontWeight: "700", color: colors.text },
+  finalNote: { fontSize: 13, color: colors.textMuted, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   finalTotal: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: spacing.md },
-  finalTotalLabel: { fontSize: 13, fontWeight: "600", flexShrink: 1 },
-  finalTotalValue: { fontSize: 16, fontWeight: "700" },
+  finalTotalLabel: { fontSize: 14.5, fontWeight: "600", flexShrink: 1 },
+  finalTotalValue: { fontSize: 17, fontWeight: "700" },
 
   settleHeader: { flexDirection: "row", alignItems: "center", gap: spacing.xs, backgroundColor: "#B7791F", paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
-  settleHeaderText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  settleHeaderText: { color: "#fff", fontWeight: "700", fontSize: 14.5 },
   settleBody: {},
 
   periodRow: { padding: spacing.md },
   periodRowBorder: { borderTopWidth: 1, borderTopColor: colors.bg },
   periodRowTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  periodLabel: { fontSize: 14, fontWeight: "700", color: colors.text },
-  periodValue: { fontSize: 14, fontWeight: "700" },
+  periodLabel: { fontSize: 15.5, fontWeight: "700", color: colors.text },
+  periodValue: { fontSize: 15.5, fontWeight: "700" },
   periodMetaRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: 4 },
-  periodMeta: { fontSize: 11, color: colors.textMuted },
+  periodMeta: { fontSize: 13, color: colors.textMuted },
 
-  blockTitle: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, padding: spacing.md, paddingBottom: spacing.xs },
-  blockTitleLight: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5 },
+  blockTitle: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, padding: spacing.md, paddingBottom: spacing.xs },
+  blockTitleLight: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5 },
   simpleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
-  simpleRowTitle: { fontSize: 13, fontWeight: "600", color: colors.text },
-  simpleRowMutedLabel: { fontSize: 13, color: colors.textMuted },
-  simpleRowMeta: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
-  simpleRowValue: { fontSize: 13, fontWeight: "700" },
+  simpleRowTitle: { fontSize: 14.5, fontWeight: "600", color: colors.text },
+  simpleRowMutedLabel: { fontSize: 14.5, color: colors.textMuted },
+  simpleRowMeta: { fontSize: 13, color: colors.textMuted, marginTop: 1 },
+  simpleRowValue: { fontSize: 14.5, fontWeight: "700" },
 
   // "Payment due now" card
   dueHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, borderBottomWidth: 1, borderBottomColor: colors.bg },
-  dueSubtitle: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
-  dueHeaderValue: { fontSize: 17, fontWeight: "700", color: colors.primary },
+  dueSubtitle: { fontSize: 13, color: colors.textMuted, marginTop: 1 },
+  dueHeaderValue: { fontSize: 18, fontWeight: "700", color: colors.primary },
 
   // Employees list
   employeeRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 4 },
   employeeAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#FFF0C2", alignItems: "center", justifyContent: "center" },
-  employeeAvatarText: { fontSize: 14, fontWeight: "700", color: colors.primary },
+  employeeAvatarText: { fontSize: 15.5, fontWeight: "700", color: colors.primary },
 
   // Per-employee net-due summary card
   netDueCard: { alignItems: "center", padding: spacing.lg },
-  netDuePositive: { backgroundColor: "#EEF0FB", borderColor: "#D8DCF3" },
+  netDuePositive: { backgroundColor: "#E3F4EA", borderColor: "#CDEBD8" },
   netDueNegative: { backgroundColor: "#FDEAEA", borderColor: "#F6D2D9" },
-  netDueLabel: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, textTransform: "uppercase" },
-  netDueValue: { fontSize: 28, fontWeight: "700", marginTop: 4 },
-  netDueMeta: { fontSize: 11, color: colors.textMuted, marginTop: 4 },
+  netDueLabel: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, textTransform: "uppercase" },
+  netDueValue: { fontSize: 34, fontWeight: "800", marginTop: 4 },
+  netDueMeta: { fontSize: 13, color: colors.textMuted, marginTop: 4 },
 
   // Account cleared (archival)
   clearedBanner: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: "#D8F3E6", borderWidth: 1, borderColor: "#B7E4CB", borderRadius: radius.md, padding: spacing.md },
-  clearedBannerTitle: { fontSize: 14, fontWeight: "700", color: "#1F9E5C" },
-  clearedBannerSubtitle: { fontSize: 12, color: "#1F9E5C", marginTop: 2 },
-  clearButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.xs, backgroundColor: "#1F9E5C", borderRadius: radius.lg, paddingVertical: spacing.md },
-  clearButtonText: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  clearedBannerTitle: { fontSize: 15.5, fontWeight: "700", color: "#1F9E5C" },
+  clearedBannerSubtitle: { fontSize: 14, color: "#1F9E5C", marginTop: 2 },
+  clearButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.xs, backgroundColor: colors.success, borderRadius: radius.pill, minHeight: 58 },
+  clearButtonText: { color: "#fff", fontWeight: "700", fontSize: 15.5 },
 
   dateHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: colors.primary, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
-  dateHeaderText: { color: "#fff", fontWeight: "700", fontSize: 13 },
-  dateHeaderMeta: { color: "rgba(255,255,255,0.8)", fontSize: 11 },
+  dateHeaderText: { color: "#fff", fontWeight: "700", fontSize: 14.5 },
+  dateHeaderMeta: { color: "rgba(255,255,255,0.8)", fontSize: 13 },
   dateHeaderBadge: { backgroundColor: "rgba(255,255,255,0.2)", borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 2 },
-  dateHeaderBadgeText: { color: "#fff", fontWeight: "700", fontSize: 11 },
+  dateHeaderBadgeText: { color: "#fff", fontWeight: "700", fontSize: 13 },
   entryRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", padding: spacing.md, gap: spacing.sm },
-  entryName: { fontSize: 14, fontWeight: "600", color: colors.text },
-  entryMeta: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
-  entryNotes: { fontSize: 12, color: colors.textMuted, marginTop: 4 },
-  entryRecordedAt: { fontSize: 10, color: colors.textMuted, marginTop: 2 },
-  entryWage: { fontSize: 14, fontWeight: "700", color: colors.primary, marginTop: 2 },
+  entryName: { fontSize: 15.5, fontWeight: "600", color: colors.text },
+  entryMeta: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
+  entryNotes: { fontSize: 14, color: colors.textMuted, marginTop: 4 },
+  entryRecordedAt: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  entryWage: { fontSize: 15.5, fontWeight: "700", color: colors.primary, marginTop: 2 },
 });

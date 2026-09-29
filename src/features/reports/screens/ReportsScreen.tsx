@@ -108,7 +108,7 @@ export function ReportsScreen() {
   });
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       <View style={styles.tabs}>
         {(["season", "monthly", "weekly"] as Tab[]).map((t) => (
           <Pressable key={t} onPress={() => setTab(t)} style={[styles.tab, tab === t && styles.tabActive]}>
@@ -179,7 +179,7 @@ export function ReportsScreen() {
                         .map((item, i) => (
                           <View key={item.category} style={styles.pieRow}>
                             <View style={[styles.pieDot, { backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }]} />
-                            <Text style={{ flex: 1, fontSize: 13, color: colors.text }}>{item.category}</Text>
+                            <Text style={{ flex: 1, fontSize: 14.5, color: colors.text }}>{item.category}</Text>
                             <Text style={styles.pieAmount}>{inr(item.amount)}</Text>
                             <Text style={styles.piePercent}>{item.percentage.toFixed(1)}%</Text>
                           </View>
@@ -226,9 +226,9 @@ export function ReportsScreen() {
                   <Card key={d.date} style={styles.dayRow}>
                     <Text style={styles.dayLabel}>{dayLabel(d.date)}</Text>
                     <View style={{ flexDirection: "row", gap: spacing.md }}>
-                      <Text style={{ color: colors.primary, fontWeight: "600", fontSize: 12 }}>{inr(d.income)}</Text>
-                      <Text style={{ color: colors.danger, fontWeight: "600", fontSize: 12 }}>{inr(d.expenses)}</Text>
-                      <Text style={{ color: d.income - d.expenses >= 0 ? "#3E6FB0" : "#95530F", fontWeight: "700", fontSize: 12 }}>
+                      <Text style={{ color: colors.primary, fontWeight: "600", fontSize: 14 }}>{inr(d.income)}</Text>
+                      <Text style={{ color: colors.danger, fontWeight: "600", fontSize: 14 }}>{inr(d.expenses)}</Text>
+                      <Text style={{ color: d.income - d.expenses >= 0 ? "#3E6FB0" : "#95530F", fontWeight: "700", fontSize: 14 }}>
                         {inr(d.income - d.expenses)}
                       </Text>
                     </View>
@@ -249,29 +249,29 @@ const styles = StyleSheet.create({
   tabs: { flexDirection: "row", backgroundColor: colors.muted, borderRadius: radius.sm, padding: 4, gap: 2 },
   tab: { flex: 1, paddingVertical: spacing.sm - 2, borderRadius: radius.sm - 2, alignItems: "center" },
   tabActive: { backgroundColor: "#fff" },
-  tabText: { fontSize: 11.5, fontWeight: "600", color: colors.textMuted },
+  tabText: { fontSize: 13.5, fontWeight: "600", color: colors.textMuted },
   tabTextActive: { color: colors.primary },
 
-  filterLabel: { fontSize: 11.5, color: colors.textMuted, marginBottom: spacing.sm },
-  filterSubLabel: { fontSize: 10.5, color: colors.textMuted, marginBottom: 2 },
-  dateInput: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs + 2, fontSize: 13, color: colors.text },
+  filterLabel: { fontSize: 13.5, color: colors.textMuted, marginBottom: spacing.sm },
+  filterSubLabel: { fontSize: 12.5, color: colors.textMuted, marginBottom: 2 },
+  dateInput: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs + 2, fontSize: 14.5, color: colors.text },
 
   statBox: { flex: 1, borderWidth: 1, borderRadius: radius.md, padding: spacing.sm + 2 },
-  statLabel: { fontSize: 10.5, fontWeight: "600" },
-  statValue: { fontSize: 14, fontWeight: "700", marginTop: 2 },
+  statLabel: { fontSize: 12.5, fontWeight: "600" },
+  statValue: { fontSize: 15.5, fontWeight: "700", marginTop: 2 },
 
-  blockTitle: { fontSize: 13.5, fontWeight: "700", color: colors.text, marginBottom: spacing.sm },
+  blockTitle: { fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: spacing.sm },
   bar: { width: 10, borderRadius: 3 },
-  barLabel: { fontSize: 9.5, color: colors.textMuted, textAlign: "center" },
+  barLabel: { fontSize: 11.5, color: colors.textMuted, textAlign: "center" },
 
   pieRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   pieDot: { width: 10, height: 10, borderRadius: 5 },
-  pieAmount: { fontSize: 12.5, fontWeight: "700", color: colors.text },
-  piePercent: { fontSize: 10.5, color: colors.textMuted, width: 40, textAlign: "right" },
+  pieAmount: { fontSize: 14.5, fontWeight: "700", color: colors.text },
+  piePercent: { fontSize: 12.5, color: colors.textMuted, width: 40, textAlign: "right" },
 
   weekNav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  weekLabel: { fontSize: 13, fontWeight: "600", color: colors.text },
+  weekLabel: { fontSize: 14.5, fontWeight: "600", color: colors.text },
 
   dayRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  dayLabel: { fontSize: 13, color: colors.text, width: 90 },
+  dayLabel: { fontSize: 14.5, color: colors.text, width: 90 },
 });

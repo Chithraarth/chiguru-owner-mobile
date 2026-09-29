@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { FlatList, Pressable, RefreshControl, StyleSheet, View } from "react-native";
 import { Text } from "../../../../components/Text";
+import { Plus } from "lucide-react-native";
 import { Card } from "../../../../components/Card";
 import { Button } from "../../../../components/Button";
 import { EmptyState, LoadingView } from "../../../../components/StateViews";
@@ -25,7 +26,7 @@ export function AttendanceGroupsScreen({ navigation }: { navigation: any }) {
       <FlatList
         data={data ?? []}
         keyExtractor={(g) => String(g.id)}
-        contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+        contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: spacing.xl }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
           <EmptyState title="No work groups yet" subtitle="Create a group to start marking attendance." />
@@ -47,7 +48,7 @@ export function AttendanceGroupsScreen({ navigation }: { navigation: any }) {
         )}
       />
       <View style={styles.footer}>
-        <Button title="+ Create group" onPress={() => navigation.navigate("CreateWorkGroup")} />
+        <Button title="Create group" icon={Plus} onPress={() => navigation.navigate("CreateWorkGroup")} />
       </View>
     </View>
   );

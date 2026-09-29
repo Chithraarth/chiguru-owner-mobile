@@ -44,7 +44,7 @@ export function LoanFormScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: spacing.xl }}>
       {workers.length > 0 ? (
         <ChipSelect
           label="Worker *"

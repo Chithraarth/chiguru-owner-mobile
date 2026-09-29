@@ -109,7 +109,7 @@ export function WalletScreen() {
   const transactions = data?.transactions ?? [];
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       <View style={styles.balanceCard}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
           <WalletIcon size={18} color="#fff" />
@@ -121,7 +121,7 @@ export function WalletScreen() {
 
       {verifying ? (
         <Card style={{ backgroundColor: "#FFF8E6", borderColor: "#F0DFA6" }}>
-          <Text style={{ color: "#8A6D1D", fontSize: 12.5 }}>Payment received. Verifying your recharge...</Text>
+          <Text style={{ color: "#8A6D1D", fontSize: 14.5 }}>Payment received. Verifying your recharge...</Text>
         </Card>
       ) : null}
 
@@ -210,23 +210,23 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
   balanceCard: { backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md },
-  balanceTitle: { color: "#fff", fontSize: 15, fontWeight: "700" },
+  balanceTitle: { color: "#fff", fontSize: 16.5, fontWeight: "700" },
   balanceValue: { color: "#fff", fontSize: 30, fontWeight: "700", marginTop: spacing.sm },
-  balanceDesc: { color: "rgba(255,255,255,0.85)", fontSize: 12.5, marginTop: spacing.xs, lineHeight: 17 },
+  balanceDesc: { color: "rgba(255,255,255,0.85)", fontSize: 14.5, marginTop: spacing.xs, lineHeight: 17 },
 
-  sectionTitle: { fontSize: 14.5, fontWeight: "700", color: colors.text },
-  minRechargeNote: { fontSize: 11, color: colors.textMuted, marginTop: spacing.xs },
+  sectionTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
+  minRechargeNote: { fontSize: 13, color: colors.textMuted, marginTop: spacing.xs },
 
   priceRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: spacing.xs },
   priceRowBorder: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.sm },
-  priceLabel: { fontSize: 13, color: colors.text, flex: 1 },
-  priceValue: { fontSize: 13, fontWeight: "700", color: colors.text },
+  priceLabel: { fontSize: 14.5, color: colors.text, flex: 1 },
+  priceValue: { fontSize: 14.5, fontWeight: "700", color: colors.text },
 
-  emptyText: { fontSize: 13, color: colors.textMuted },
+  emptyText: { fontSize: 14.5, color: colors.textMuted },
   txnIconWrap: { width: 30, height: 30, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
   txnIconCredit: { backgroundColor: "#E5F7EC" },
   txnIconDebit: { backgroundColor: "#FBEAEE" },
-  txnLabel: { fontSize: 13, fontWeight: "600", color: colors.text, textTransform: "capitalize" },
-  txnDate: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
-  txnAmount: { fontSize: 14, fontWeight: "700" },
+  txnLabel: { fontSize: 14.5, fontWeight: "600", color: colors.text, textTransform: "capitalize" },
+  txnDate: { fontSize: 13, color: colors.textMuted, marginTop: 1 },
+  txnAmount: { fontSize: 15.5, fontWeight: "700" },
 });

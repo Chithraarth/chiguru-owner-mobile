@@ -3,7 +3,7 @@ import { Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, View
 import { Text } from "../../../components/Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
-import { MessageCircle, Phone, Tag, Tractor } from "lucide-react-native";
+import { MessageCircle, Phone, Tag, Tractor, Plus } from "lucide-react-native";
 import { Button } from "../../../components/Button";
 import { Card } from "../../../components/Card";
 import { LoadingView } from "../../../components/StateViews";
@@ -43,7 +43,7 @@ export function EquipmentScreen({ navigation }: { navigation: any }) {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.md }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         <View style={styles.hero}>
           <View style={styles.heroIconWrap}><Tractor size={22} color="#fff" /></View>
           <View style={{ flex: 1 }}>
@@ -129,7 +129,7 @@ export function EquipmentScreen({ navigation }: { navigation: any }) {
         )}
       </ScrollView>
       <View style={[styles.footer, { paddingBottom: spacing.md + insets.bottom }]}>
-        <Button title="+ List equipment" onPress={() => navigation.navigate("EquipmentForm")} />
+        <Button title="List equipment" icon={Plus} onPress={() => navigation.navigate("EquipmentForm")} />
       </View>
     </View>
   );
@@ -139,30 +139,30 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   hero: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md },
   heroIconWrap: { width: 44, height: 44, borderRadius: radius.sm, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
-  heroTitle: { color: "#fff", fontSize: 15, fontWeight: "700" },
-  heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 11.5, marginTop: 2 },
+  heroTitle: { color: "#fff", fontSize: 16.5, fontWeight: "700" },
+  heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 13.5, marginTop: 2 },
 
   chip: { paddingVertical: spacing.xs + 2, paddingHorizontal: spacing.sm + 4, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: "#fff" },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { fontSize: 12.5, color: colors.textMuted, fontWeight: "500" },
+  chipText: { fontSize: 14.5, color: colors.textMuted, fontWeight: "500" },
   chipTextActive: { color: "#fff", fontWeight: "700" },
 
-  emptyTitle: { fontSize: 13.5, fontWeight: "600", color: colors.text, marginTop: spacing.sm },
-  emptySubtitle: { fontSize: 11.5, color: colors.textMuted, marginTop: 2 },
+  emptyTitle: { fontSize: 15, fontWeight: "600", color: colors.text, marginTop: spacing.sm },
+  emptySubtitle: { fontSize: 13.5, color: colors.textMuted, marginTop: 2 },
 
   thumbWrap: { width: 76, height: 76, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center" },
   thumb: { width: "100%", height: "100%" },
-  title: { fontSize: 14, fontWeight: "700", color: colors.text, flexShrink: 1 },
-  catLabel: { fontSize: 10.5, color: colors.textMuted },
-  price: { fontSize: 14, fontWeight: "700", color: colors.primary },
+  title: { fontSize: 15.5, fontWeight: "700", color: colors.text, flexShrink: 1 },
+  catLabel: { fontSize: 12.5, color: colors.textMuted },
+  price: { fontSize: 15.5, fontWeight: "700", color: colors.primary },
   condBadge: { backgroundColor: colors.muted, borderRadius: radius.pill, paddingHorizontal: 6, paddingVertical: 1, marginTop: 2 },
-  condBadgeText: { fontSize: 9.5, fontWeight: "600", color: colors.textMuted },
-  sellerText: { fontSize: 11, color: colors.textMuted, marginTop: 4 },
-  description: { fontSize: 11.5, color: colors.textMuted, paddingHorizontal: spacing.sm + 4, paddingTop: 2 },
+  condBadgeText: { fontSize: 11.5, fontWeight: "600", color: colors.textMuted },
+  sellerText: { fontSize: 13, color: colors.textMuted, marginTop: 4 },
+  description: { fontSize: 13.5, color: colors.textMuted, paddingHorizontal: spacing.sm + 4, paddingTop: 2 },
 
   actionsRow: { flexDirection: "row", gap: spacing.sm, padding: spacing.sm + 4, paddingTop: spacing.sm },
   callBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: colors.primary, borderRadius: radius.sm, paddingVertical: spacing.sm },
-  callBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  callBtnText: { color: "#fff", fontWeight: "700", fontSize: 14.5 },
   waBtn: { width: 40, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm },
 
   footer: { padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.bg },

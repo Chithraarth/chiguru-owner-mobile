@@ -5,7 +5,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import * as FileSystem from "expo-file-system/legacy";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Video as VideoIcon } from "lucide-react-native";
+import { Video as VideoIcon, Camera, Video } from "lucide-react-native";
 import { Button } from "../../../../components/Button";
 import { TextField } from "../../../../components/TextField";
 import { colors, radius, spacing } from "../../../../components/theme";
@@ -155,7 +155,7 @@ export function WorkUpdateScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: spacing.xl }}>
       {photoUri ? (
         <View>
           <Image source={{ uri: photoUri }} style={styles.preview} />
@@ -170,10 +170,10 @@ export function WorkUpdateScreen({ navigation }: { navigation: any }) {
       ) : (
         <View style={{ flexDirection: "row", gap: spacing.sm }}>
           <View style={{ flex: 1 }}>
-            <Button title="📷 Take a photo" variant="secondary" onPress={takePhoto} />
+            <Button title="Take a photo" icon={Camera} variant="light" onPress={takePhoto} />
           </View>
           <View style={{ flex: 1 }}>
-            <Button title="🎥 Record video" variant="secondary" onPress={recordVideo} loading={recordingVideo} />
+            <Button title="Record video" icon={Video} variant="light" onPress={recordVideo} loading={recordingVideo} />
           </View>
         </View>
       )}

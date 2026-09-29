@@ -45,7 +45,7 @@ export function BackupRestoreScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: spacing.xl }}>
       <Card style={{ marginBottom: spacing.lg }}>
         <Text style={styles.label}>Your farm's recovery code</Text>
         <Text style={styles.code}>{backupQuery.data?.recoveryCode ?? "..."}</Text>
@@ -68,8 +68,8 @@ export function BackupRestoreScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  label: { color: colors.textMuted, fontSize: 13, marginBottom: spacing.xs },
+  label: { color: colors.textMuted, fontSize: 14.5, marginBottom: spacing.xs },
   code: { fontSize: 20, fontWeight: "700", color: colors.primaryDark, marginBottom: spacing.md },
-  sectionTitle: { fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: spacing.sm },
+  sectionTitle: { fontSize: 17, fontWeight: "600", color: colors.text, marginBottom: spacing.sm },
   message: { color: colors.primary, marginBottom: spacing.md },
 });

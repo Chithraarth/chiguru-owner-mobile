@@ -3,7 +3,7 @@ import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, View } from "re
 import { Text } from "../../../../components/Text";
 import { useQuery } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
-import { ChevronDown, ChevronUp, Minus, Plus } from "lucide-react-native";
+import { ChevronDown, ChevronUp, Minus, Plus, Camera } from "lucide-react-native";
 import { Card } from "../../../../components/Card";
 import { Button } from "../../../../components/Button";
 import { TextField } from "../../../../components/TextField";
@@ -150,7 +150,7 @@ export function AttendanceWorkersScreen({ route }: { route: any }) {
       <FlatList
         data={eligibleWorkers}
         keyExtractor={(w) => String(w.id)}
-        contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+        contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: spacing.xl }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListHeaderComponent={
           <View style={{ gap: spacing.sm, marginBottom: spacing.sm }}>
@@ -175,7 +175,7 @@ export function AttendanceWorkersScreen({ route }: { route: any }) {
                 ) : null}
               </Card>
             ) : null}
-            <Button title="📷 Scan group photo to select workers" variant="secondary" onPress={scanGroupPhoto} loading={scanning} />
+            <Button title="Scan group photo to select workers" icon={Camera} variant="light" onPress={scanGroupPhoto} loading={scanning} />
           </View>
         }
         ListEmptyComponent={

@@ -12,7 +12,7 @@ import type { EquipmentListing, HireListing, ProduceListing } from "../../../typ
 
 function getPostOptions(t: (key: string) => string) {
   return [
-    { emoji: "🚛", label: t("myAds.postMachine"), screen: "HireForm", params: { listingType: "rental" }, bg: "#EAE8EF" },
+    { emoji: "🚛", label: t("myAds.postMachine"), screen: "HireForm", params: { listingType: "rental" }, bg: "#FBF2D9" },
     { emoji: "👷", label: t("myAds.postWorker"), screen: "HireForm", params: { listingType: "job" }, bg: "#FFEBD6" },
     { emoji: "🧺", label: t("myAds.sellProduce"), screen: "MarketplaceForm", params: undefined, bg: "#FFF0C2" },
     { emoji: "🚜", label: t("myAds.sellEquipment"), screen: "EquipmentForm", params: undefined, bg: colors.secondary },
@@ -126,7 +126,7 @@ export function MyAdsScreen({ navigation }: { navigation: any }) {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}
+      contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       <View style={styles.hero}>
@@ -156,7 +156,7 @@ export function MyAdsScreen({ navigation }: { navigation: any }) {
       {isLoading ? null : total === 0 ? (
         <View style={{ alignItems: "center", paddingVertical: spacing.xl }}>
           <Megaphone size={36} color={colors.border} />
-          <Text style={{ color: colors.textMuted, marginTop: spacing.sm, fontSize: 13 }}>{t("myAds.empty")}</Text>
+          <Text style={{ color: colors.textMuted, marginTop: spacing.sm, fontSize: 14.5 }}>{t("myAds.empty")}</Text>
         </View>
       ) : (
         <View style={{ gap: spacing.lg }}>
@@ -229,19 +229,19 @@ const styles = StyleSheet.create({
 
   hero: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md },
   heroIconWrap: { width: 44, height: 44, borderRadius: radius.sm, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
-  heroTitle: { color: "#fff", fontSize: 16, fontWeight: "700" },
-  heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 12, marginTop: 2 },
+  heroTitle: { color: "#fff", fontSize: 17, fontWeight: "700" },
+  heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 14, marginTop: 2 },
 
-  chooseLabel: { fontSize: 13, fontWeight: "700", color: colors.text, textAlign: "center" },
+  chooseLabel: { fontSize: 14.5, fontWeight: "700", color: colors.text, textAlign: "center" },
   postOption: { flex: 1, borderRadius: radius.md, alignItems: "center", paddingVertical: spacing.sm + 4, paddingHorizontal: 3, gap: 4 },
-  postOptionText: { fontSize: 9.5, fontWeight: "600", color: colors.text, textAlign: "center", lineHeight: 12 },
+  postOptionText: { fontSize: 11.5, fontWeight: "600", color: colors.text, textAlign: "center", lineHeight: 12 },
 
-  sectionTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
+  sectionTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text },
   adCard: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm + 4 },
   adPhoto: { width: 52, height: 52, borderRadius: radius.sm },
   adPhotoPlaceholder: { width: 52, height: 52, borderRadius: radius.sm, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" },
-  adTitle: { fontSize: 13.5, fontWeight: "700", color: colors.text },
-  adSubtitle: { fontSize: 12, color: colors.primary, fontWeight: "600", marginTop: 1 },
-  adLocation: { fontSize: 11, color: colors.textMuted },
+  adTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
+  adSubtitle: { fontSize: 14, color: colors.primary, fontWeight: "600", marginTop: 1 },
+  adLocation: { fontSize: 13, color: colors.textMuted },
   iconBtn: { width: 32, height: 32, borderRadius: radius.pill, backgroundColor: "#FFF0C2", alignItems: "center", justifyContent: "center" },
 });

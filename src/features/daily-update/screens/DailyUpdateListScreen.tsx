@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useLayoutEffect, useState } from "react";
 import { Alert, FlatList, Image, Pressable, RefreshControl, StyleSheet, View } from "react-native";
 import { Text } from "../../../components/Text";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Camera, Trash2 } from "lucide-react-native";
+import { HeaderAddButton, IconChip, Pill } from "../../../components/harvest";
+import { Enter } from "../../../components/motion";
 import { Card } from "../../../components/Card";
-import { Button } from "../../../components/Button";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
 import { NoEstateNotice } from "../../../components/NoEstateNotice";
 import { colors, spacing } from "../../../components/theme";
@@ -17,8 +18,13 @@ export function DailyUpdateListScreen({ navigation }: { navigation: any }) {
   const { data, isLoading, refetch, deleteUpdate } = useEstateUpdates();
   const [refreshing, setRefreshing] = useState(false);
   const pendingCount = useSyncStore((s) => s.pendingCount);
-  const insets = useSafeAreaInsets();
   const { t } = useT();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => <HeaderAddButton label="Post work update" onPress={() => navigation.navigate("DailyUpdateForm")} />,
+    });
+  }, [navigation]);
 
   if (activeEstateId == null) return <NoEstateNotice />;
 
@@ -47,32 +53,45 @@ export function DailyUpdateListScreen({ navigation }: { navigation: any }) {
       <FlatList
         data={data ?? []}
         keyExtractor={(u) => String(u.id)}
-        contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+        contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
-          <EmptyState title="No updates today" subtitle="Post a photo of today's work to keep a record." />
+          <EmptyState
+            title="No updates today"
+            subtitle="Post a photo of today's work to keep a record."
+            actionLabel="Post work update"
+            onAction={() => navigation.navigate("DailyUpdateForm")}
+          />
         }
-        renderItem={({ item }) => (
-          <Card style={styles.row}>
-            {item.photoUrl ? (
-              <Image source={{ uri: item.photoUrl }} style={styles.thumb} />
-            ) : null}
-            <View style={{ flex: 1 }}>
-              <Text style={styles.desc}>{item.description}</Text>
-              {item.blockName ? <Text style={styles.meta}>{item.blockName}</Text> : null}
-              {item.attendanceCount != null ? (
-                <Text style={styles.meta}>{item.attendanceCount} workers</Text>
+        renderItem={({ item, index }) => (
+          <Enter delay={Math.min(index, 6) * 80}>
+            <Card style={styles.card}>
+              {item.photoUrl ? (
+                <View>
+                  <Image source={{ uri: item.photoUrl }} style={styles.photo} />
+                  {item.attendanceCount != null ? (
+                    <Pill text={`${item.attendanceCount} workers counted`} tone="on" style={styles.photoBadge} />
+                  ) : null}
+                </View>
               ) : null}
-            </View>
-            <Pressable onPress={() => confirmDelete(item.id)} hitSlop={10}>
-              <Text style={styles.delete}>Delete</Text>
-            </Pressable>
-          </Card>
+              <View style={styles.row}>
+                {item.photoUrl ? null : <IconChip icon={Camera} index={index} size={44} />}
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.desc}>{item.description}</Text>
+                  <Text style={styles.meta}>
+                    {[item.blockName, item.date, !item.photoUrl && item.attendanceCount != null ? `${item.attendanceCount} workers` : null]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </Text>
+                </View>
+                <Pressable onPress={() => confirmDelete(item.id)} hitSlop={10} accessibilityLabel="Delete update">
+                  <Trash2 size={18} color={colors.danger} />
+                </Pressable>
+              </View>
+            </Card>
+          </Enter>
         )}
       />
-      <View style={[styles.footer, { paddingBottom: spacing.md + insets.bottom }]}>
-        <Button title="+ Post work update" onPress={() => navigation.navigate("DailyUpdateForm")} />
-      </View>
     </View>
   );
 }
@@ -80,11 +99,11 @@ export function DailyUpdateListScreen({ navigation }: { navigation: any }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   pendingBanner: { backgroundColor: colors.amberBg, padding: spacing.sm },
-  pendingText: { color: colors.warning, textAlign: "center", fontSize: 12 },
-  row: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  thumb: { width: 56, height: 56, borderRadius: 8 },
-  desc: { fontSize: 14, color: colors.text },
-  meta: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
-  delete: { color: colors.danger, fontSize: 13 },
-  footer: { padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
+  pendingText: { color: colors.warning, textAlign: "center", fontSize: 14, fontWeight: "700" },
+  card: { gap: 12, padding: 12 },
+  row: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 4 },
+  photo: { width: "100%", height: 170, borderRadius: 22, backgroundColor: colors.muted },
+  photoBadge: { position: "absolute", left: 10, bottom: 10 },
+  desc: { fontSize: 17, fontWeight: "800", color: colors.text },
+  meta: { fontSize: 14, color: colors.textMuted, marginTop: 2 },
 });

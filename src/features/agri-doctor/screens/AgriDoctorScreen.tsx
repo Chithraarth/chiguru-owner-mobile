@@ -56,7 +56,7 @@ export function AgriDoctorScreen({ navigation }: { navigation: any }) {
 
   if (locked) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+      <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
         <View style={styles.hero}>
           <View style={styles.heroIconWrap}><Stethoscope size={20} color="#fff" /></View>
           <View style={{ flex: 1 }}>
@@ -75,7 +75,7 @@ export function AgriDoctorScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       <View style={styles.hero}>
         <View style={styles.heroIconWrap}><Stethoscope size={20} color="#fff" /></View>
         <View style={{ flex: 1 }}>
@@ -154,43 +154,43 @@ const styles = StyleSheet.create({
 
   hero: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md },
   heroIconWrap: { width: 40, height: 40, borderRadius: radius.sm, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
-  heroTitle: { color: "#fff", fontSize: 15, fontWeight: "700" },
-  heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 11.5, marginTop: 2 },
+  heroTitle: { color: "#fff", fontSize: 16.5, fontWeight: "700" },
+  heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 13.5, marginTop: 2 },
 
   lockCard: { backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", borderRadius: radius.md, padding: spacing.lg, alignItems: "center", gap: spacing.sm },
   lockIconWrap: { width: 48, height: 48, borderRadius: radius.md, backgroundColor: "#FDE68A", alignItems: "center", justifyContent: "center" },
-  lockTitle: { fontSize: 15, fontWeight: "700", color: "#92600E" },
-  lockSubtitle: { fontSize: 12.5, color: "#92600E", textAlign: "center" },
+  lockTitle: { fontSize: 16.5, fontWeight: "700", color: "#92600E" },
+  lockSubtitle: { fontSize: 14.5, color: "#92600E", textAlign: "center" },
 
   walletRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   walletIconWrap: { width: 38, height: 38, borderRadius: radius.sm, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center" },
-  walletLabel: { fontSize: 11, color: colors.textMuted },
-  walletValue: { fontSize: 16, fontWeight: "700", color: colors.text },
+  walletLabel: { fontSize: 13, color: colors.textMuted },
+  walletValue: { fontSize: 17, fontWeight: "700", color: colors.text },
   addMoneyBtn: { flexDirection: "row", alignItems: "center", gap: 4, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs + 2 },
-  addMoneyText: { fontSize: 12.5, fontWeight: "600", color: colors.primary },
+  addMoneyText: { fontSize: 14.5, fontWeight: "600", color: colors.primary },
 
   expertBanner: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm + 4 },
   expertIconWrap: { width: 36, height: 36, borderRadius: radius.sm, backgroundColor: "#FBF2D9", alignItems: "center", justifyContent: "center" },
-  expertTitle: { fontSize: 13, fontWeight: "700", color: colors.primary },
-  expertSubtitle: { fontSize: 11, color: colors.primary },
+  expertTitle: { fontSize: 14.5, fontWeight: "700", color: colors.primary },
+  expertSubtitle: { fontSize: 13, color: colors.primary },
 
-  sectionLabel: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, marginBottom: spacing.sm },
+  sectionLabel: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, marginBottom: spacing.sm },
   doctorRow: { flexDirection: "row", gap: spacing.sm },
   doctorEmojiWrap: { width: 52, height: 52, borderRadius: radius.sm, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center" },
-  doctorName: { fontSize: 14.5, fontWeight: "700", color: colors.text, flexShrink: 1 },
-  ratingText: { fontSize: 11.5, fontWeight: "700", color: colors.text },
-  doctorSpeciality: { fontSize: 12, color: colors.primary, fontWeight: "600", marginTop: 1 },
-  doctorMeta: { fontSize: 10.5, color: colors.textMuted },
-  doctorRate: { fontSize: 12, fontWeight: "600", color: colors.text },
-  onlineText: { fontSize: 10.5, fontWeight: "600" },
+  doctorName: { fontSize: 16, fontWeight: "700", color: colors.text, flexShrink: 1 },
+  ratingText: { fontSize: 13.5, fontWeight: "700", color: colors.text },
+  doctorSpeciality: { fontSize: 14, color: colors.primary, fontWeight: "600", marginTop: 1 },
+  doctorMeta: { fontSize: 12.5, color: colors.textMuted },
+  doctorRate: { fontSize: 14, fontWeight: "600", color: colors.text },
+  onlineText: { fontSize: 12.5, fontWeight: "600" },
 
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
   topupSheet: { position: "absolute", left: 0, right: 0, bottom: 0, backgroundColor: colors.card, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg, gap: spacing.md },
   topupHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  topupTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
+  topupTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
   amountChip: { flex: 1, alignItems: "center", paddingVertical: spacing.sm + 2, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm },
   amountChipActive: { borderColor: colors.primary, backgroundColor: colors.bg },
-  amountChipText: { fontSize: 13, fontWeight: "600", color: colors.textMuted },
+  amountChipText: { fontSize: 14.5, fontWeight: "600", color: colors.textMuted },
   amountChipTextActive: { color: colors.primary },
-  topupNote: { fontSize: 10.5, color: colors.textMuted, textAlign: "center" },
+  topupNote: { fontSize: 12.5, color: colors.textMuted, textAlign: "center" },
 });
