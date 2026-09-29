@@ -106,7 +106,7 @@ function FarmCard({ estate, selected, onPress }: { estate: MyEstate; selected: b
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   subtitle: { fontSize: 16.5, color: colors.textMuted, lineHeight: 24 },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 12 },
   cell: { width: "48%" },
   card: {
     backgroundColor: colors.card,

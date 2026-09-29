@@ -1,7 +1,7 @@
 // Small building blocks of the Harvest Sun design, shared by every screen:
 // round header buttons, pastel icon circles, status pills, stat tiles, list
 // cards and the rolling-hills illustration used on the yellow bands.
-import React from "react";
+import React, { useState } from "react";
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 import { Text } from "./Text";
@@ -167,40 +167,47 @@ export const SPROUT_XS = [40, 80, 120, 280, 320, 360];
 
 export function HillsArt({
   height = 140,
-  width = 400,
   sun = true,
   sprouts: showSprouts = true,
 }: {
   height?: number;
-  width?: number;
   sun?: boolean;
   sprouts?: boolean;
 }) {
+  // Drawn at the real pixel width of the band (measured), not a stretched
+  // 400-wide picture - so the hills always reach both edges and the sun
+  // stays round on every phone.
+  const [w, setW] = useState(0);
   const h = height;
+  const k = w / 400; // design x-coordinates were laid out on a 400-wide band
   const sprouts = showSprouts ? SPROUT_XS : [];
   return (
-    <Svg
-      width="100%"
-      height={h}
-      viewBox={`0 0 ${width} ${h}`}
-      preserveAspectRatio="none"
-      style={{ position: "absolute", left: 0, right: 0, bottom: 0 }}
+    <View
       pointerEvents="none"
+      style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: h }}
+      onLayout={(e) => setW(Math.round(e.nativeEvent.layout.width))}
     >
-      {sun ? <Circle cx={width - 70} cy={Math.min(40, h * 0.3)} r={26} fill="#FFFFFF" opacity={0.55} /> : null}
-      <Path d={`M0 ${h - 60} Q100 ${h - 110} 200 ${h - 70} T${width} ${h - 80} L${width} ${h} L0 ${h} Z`} fill={colors.hill} />
-      <Path d={`M0 ${h - 30} Q120 ${h - 70} 240 ${h - 35} T${width} ${h - 45} L${width} ${h} L0 ${h} Z`} fill={colors.hillDark} />
-      {sprouts.map((x) => (
-        <Path
-          key={x}
-          d={`M${x} ${h - 12} v-18 M${x - 5} ${h - 24} q5 -8 5 -12 q0 4 5 12`}
-          stroke={colors.primary}
-          strokeWidth={2}
-          fill="none"
-          strokeLinecap="round"
-        />
-      ))}
-    </Svg>
+      {w > 0 ? (
+        <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+          {sun ? <Circle cx={w - 70} cy={Math.min(40, h * 0.3)} r={26} fill="#FFFFFF" opacity={0.55} /> : null}
+          <Path d={`M0 ${h - 60} Q${100 * k} ${h - 110} ${200 * k} ${h - 70} T${w} ${h - 80} L${w} ${h} L0 ${h} Z`} fill={colors.hill} />
+          <Path d={`M0 ${h - 30} Q${120 * k} ${h - 70} ${240 * k} ${h - 35} T${w} ${h - 45} L${w} ${h} L0 ${h} Z`} fill={colors.hillDark} />
+          {sprouts.map((x) => {
+            const sx = x * k;
+            return (
+              <Path
+                key={x}
+                d={`M${sx} ${h - 12} v-18 M${sx - 5} ${h - 24} q5 -8 5 -12 q0 4 5 12`}
+                stroke={colors.primary}
+                strokeWidth={2}
+                fill="none"
+                strokeLinecap="round"
+              />
+            );
+          })}
+        </Svg>
+      ) : null}
+    </View>
   );
 }
 
@@ -254,8 +261,13 @@ export function BigTiles({
   columns?: 2 | 3;
 }) {
   const three = columns === 3;
+  const gap = 12;
+  // Exact pixel widths from the measured row: percentage widths plus a gap
+  // overflow on Android and drop to one tile per row.
+  const [rowW, setRowW] = useState(0);
+  const tileW = rowW > 0 ? Math.floor((rowW - gap * (columns - 1)) / columns) : undefined;
   return (
-    <View style={tileStyles.tiles}>
+    <View style={tileStyles.tiles} onLayout={(e) => setRowW(e.nativeEvent.layout.width)}>
       {items.map((it, i) => {
         const c = chipColors[i % chipColors.length];
         const Icon = it.icon;
@@ -266,7 +278,7 @@ export function BigTiles({
             accessibilityRole="button"
             style={({ pressed }) => [
               tileStyles.tile,
-              { backgroundColor: c.bg, width: three ? "31.5%" : "48.3%" },
+              { backgroundColor: c.bg, width: tileW ?? (three ? "30%" : "46%") },
               three && tileStyles.tileSmall,
               pressed && { transform: [{ scale: 0.97 }] },
             ]}
