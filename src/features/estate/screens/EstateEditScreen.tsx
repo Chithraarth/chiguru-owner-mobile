@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { LoadingView } from "../../../components/StateViews";
+import { FormFooter } from "../../../components/harvest";
 import { colors, spacing } from "../../../components/theme";
 import { getFarmProfile, updateFarmProfile } from "../../../api/endpoints/estates";
 import { useEstates } from "../hooks/useEstates";
@@ -67,6 +68,7 @@ export function EstateEditScreen({ navigation, route }: { navigation: any; route
   if (!switched || profileQuery.isLoading) return <LoadingView label="Loading farm details..." />;
 
   return (
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
     <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.lg }}>
       <Text style={styles.title}>{t("estate.editEstate")}</Text>
       <Text style={styles.subtitle}>Update location, size, and other details for this farm.</Text>
@@ -82,10 +84,13 @@ export function EstateEditScreen({ navigation, route }: { navigation: any; route
       <Button title={t("estate.saveChanges")} onPress={() => mutation.mutate()} loading={mutation.isPending} disabled={!canSubmit} />
 
       <View style={{ height: spacing.md }} />
-      <Button title="Manage crops" variant="secondary" onPress={() => navigation.navigate("Crops")} />
-
-      <View style={{ height: spacing.xl }} />
     </ScrollView>
+    <FormFooter>
+      <Button title="Manage crops" variant="secondary" onPress={() => navigation.navigate("Crops")} />
+  
+        <View style={{ height: spacing.xl }} />
+    </FormFooter>
+    </View>
   );
 }
 

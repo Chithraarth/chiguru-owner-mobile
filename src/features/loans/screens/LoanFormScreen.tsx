@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { ScrollView, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { Text } from "../../../components/Text";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { ChipSelect } from "../../../components/ChipSelect";
+import { FormFooter } from "../../../components/harvest";
 import { colors, spacing } from "../../../components/theme";
 import { useLoans } from "../hooks/useLoans";
 
@@ -44,7 +45,8 @@ export function LoanFormScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: spacing.xl }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 110 }}>
       {workers.length > 0 ? (
         <ChipSelect
           label="Worker *"
@@ -59,8 +61,11 @@ export function LoanFormScreen({ navigation }: { navigation: any }) {
       <TextField label="Interest % (optional)" keyboardType="decimal-pad" value={interestPct} onChangeText={setInterestPct} />
       <TextField label="Notes" multiline numberOfLines={2} value={notes} onChangeText={setNotes} />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Button title="Issue loan" onPress={submit} loading={createLoan.isPending} disabled={workers.length === 0} />
     </ScrollView>
+    <FormFooter>
+      <Button title="Issue loan" onPress={submit} loading={createLoan.isPending} disabled={workers.length === 0} />
+    </FormFooter>
+    </View>
   );
 }
 

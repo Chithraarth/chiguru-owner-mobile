@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Alert, ScrollView, StyleSheet } from "react-native";
+import { Alert, ScrollView, StyleSheet, View } from "react-native";
 import { Text } from "../../../../components/Text";
 import { Camera } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -7,6 +7,7 @@ import { Button } from "../../../../components/Button";
 import { TextField } from "../../../../components/TextField";
 import { ChipSelect } from "../../../../components/ChipSelect";
 import { SelectOrType } from "../../../../components/SelectOrType";
+import { FormFooter } from "../../../../components/harvest";
 import { colors, spacing } from "../../../../components/theme";
 import { useWorkGroups } from "../hooks/useAttendance";
 import { countWorkersFromPhoto } from "../../api";
@@ -93,7 +94,8 @@ export function CreateWorkGroupScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: spacing.xl }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 110 }}>
       <TextField label="Work name *" value={name} onChangeText={setName} />
       <TextField label="Block / area" value={blockName} onChangeText={setBlockName} />
       <SelectOrType label="Category" options={CATEGORIES} value={category} onChange={setCategory} />
@@ -132,8 +134,11 @@ export function CreateWorkGroupScreen({ navigation }: { navigation: any }) {
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <Button title="Create work group" onPress={submit} loading={createWorkGroup.isPending} disabled={scanning} />
     </ScrollView>
+    <FormFooter>
+      <Button title="Create work group" onPress={submit} loading={createWorkGroup.isPending} disabled={scanning} />
+    </FormFooter>
+    </View>
   );
 }
 

@@ -335,3 +335,20 @@ export function ProgressBar({ value }: { value: number }) {
     </View>
   );
 }
+
+/** Save / submit button pinned to the bottom of a form, over a cream fade. */
+export function FormFooter({ children }: { children: React.ReactNode }) {
+  return <View style={formFooterStyle}>{children}</View>;
+}
+
+const formFooterStyle = {
+  position: "absolute" as const,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  paddingHorizontal: 20,
+  paddingTop: 12,
+  paddingBottom: 20,
+  gap: 10,
+  backgroundColor: colors.bg,
+};

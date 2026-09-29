@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, ChevronUp } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
-import { Avatar } from "../../../components/harvest";
+import { Avatar, StatTiles } from "../../../components/harvest";
 import { colors, radius, spacing } from "../../../components/theme";
 import { getAllAttendance } from "../../../api/endpoints/attendance";
 import { useEstateStore } from "../../estate/store/estateStore";
@@ -67,6 +67,13 @@ export function EmployeeAttendanceScreen() {
       contentContainerStyle={{ padding: 20, gap: 12 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
+      <StatTiles
+        items={[
+          { label: "Workers", value: String(summaries.length), sub: "on record" },
+          { label: "Days", value: String(summaries.reduce((n, x) => n + x.daysWorked, 0)), sub: "worked" },
+          { label: "Hours", value: String(Math.round(summaries.reduce((n, x) => n + x.totalHours, 0))), sub: "total" },
+        ]}
+      />
       <Text style={styles.subtitle}>Attendance totals to date — no payment figures here.</Text>
       {summaries.length === 0 ? (
         <EmptyState title="No attendance yet" subtitle="Mark attendance from a work group to see totals here." />
@@ -75,7 +82,7 @@ export function EmployeeAttendanceScreen() {
           const expanded = expandedId === s.workerId;
           const roster = s.records.slice().sort((a, b) => (a.date < b.date ? 1 : -1));
           return (
-            <Card key={s.workerId}>
+            <Card key={s.workerId} style={{ gap: 4 }}>
               <Pressable
                 style={styles.row}
                 onPress={() => setExpandedId(expanded ? null : s.workerId)}

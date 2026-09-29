@@ -18,7 +18,7 @@ import {
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { LoadingView, EmptyState } from "../../../components/StateViews";
-import { Avatar } from "../../../components/harvest";
+import { Avatar, IconChip, ListCard, ListRow, Pill, SectionLabel, StatTiles, shortRupees } from "../../../components/harvest";
 import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { getAllAttendance, getAdvancePayments, getWorkerMoney } from "../../../api/endpoints/attendance";
 import {
@@ -297,35 +297,43 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   })();
 
   if (openFolder === null) {
+    const allWages = records.reduce((sum, r) => sum + (r.wageAmount != null && r.wageAmount !== "" ? Number(r.wageAmount) : 0), 0);
+    const workerCount = new Set(records.map((r) => r.workerId).filter((id) => id != null)).size;
     return (
       <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
-        <View>
-          <Text style={styles.sectionLabel}>YOUR WORK GROUPS</Text>
-          <View style={{ gap: spacing.sm }}>
-            {folders.map((f) => (
-              <Pressable key={f.id ?? "general"} onPress={() => { setView("weekly"); setOpenFolder({ id: f.id, name: f.name }); }}>
-                <Card style={styles.folderRow}>
-                  <View style={styles.folderIcon}>
-                    {f.id == null ? <ClipboardList size={22} color={colors.text} /> : <Users size={22} color={colors.text} />}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.folderName}>{f.name}</Text>
-                    <Text style={styles.folderSubtitle}>{f.subtitle}</Text>
-                  </View>
-                  {f.count > 0 ? (
-                    <View style={styles.countBadge}>
-                      <Text style={styles.countBadgeText}>{f.count}</Text>
-                    </View>
-                  ) : null}
-                </Card>
-              </Pressable>
-            ))}
-          </View>
-        </View>
+        <StatTiles
+          items={[
+            { label: "Workers", value: String(workerCount), sub: "on record" },
+            { label: "Wages", value: shortRupees(allWages), sub: "season" },
+            { label: "Groups", value: String(workGroups.length), sub: "active" },
+          ]}
+        />
+        <SectionLabel>Your work groups</SectionLabel>
+        <ListCard>
+          {folders.map((f, i) => (
+            <ListRow
+              key={f.id ?? "general"}
+              title={f.name}
+              subtitle={f.subtitle}
+              left={<IconChip icon={f.id == null ? ClipboardList : Users} index={i} size={46} />}
+              right={
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  {f.count > 0 ? <Pill text={String(f.count)} /> : null}
+                  <ChevronRight size={18} color={colors.textMuted} />
+                </View>
+              }
+              divider={i < folders.length - 1}
+              onPress={() => {
+                setView("weekly");
+                setOpenFolder({ id: f.id, name: f.name });
+              }}
+            />
+          ))}
+        </ListCard>
 
         {clearedGroups.length > 0 ? (
           <View>
-            <Text style={styles.sectionLabel}>ACCOUNTS HISTORY</Text>
+            <SectionLabel style={{ marginBottom: spacing.sm }}>Accounts history</SectionLabel>
             <View style={{ gap: spacing.sm }}>
               {clearedGroups.map((g) => (
                 <Pressable key={g.id} onPress={() => { setView("final"); setOpenFolder({ id: g.id, name: g.name }); }}>

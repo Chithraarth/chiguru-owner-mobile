@@ -14,10 +14,12 @@ import {
   Scissors,
   Wheat,
   Wrench,
+  Check,
 } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
+import { HeaderAddButton, IconChip } from "../../../components/harvest";
 import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { useYearPlan } from "../hooks/useYearPlan";
 import { ApiError, isSubscriptionRequired } from "../../../api/errors";
@@ -214,6 +216,10 @@ export function YearPlanScreen({ navigation }: { navigation: any }) {
     return id != null ? crops.find((c) => c.id === id)?.name : undefined;
   }
 
+  useEffect(() => {
+    navigation.setOptions({ headerRight: () => <HeaderAddButton label="Add task" onPress={openAdd} /> });
+  });
+
   function openAdd() {
     navigation.navigate("PlanTaskForm", { defaultMonth: selMonth, defaultDay: selDay });
   }
@@ -254,12 +260,41 @@ export function YearPlanScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xl }}>
-      <Text style={styles.subtitle}>Your 12-month farm work calendar.</Text>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
+      {/* Month chips, as on the canvas */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+        {shownMonths.map((m) => {
+          const on = m === selMonth;
+          return (
+            <Pressable
+              key={m}
+              onPress={() => {
+                setSelMonth(m);
+                setSelDay(null);
+              }}
+              style={[styles.monthChip, on && styles.monthChipOn]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
+            >
+              {on ? <Check size={16} color={colors.text} strokeWidth={2.6} /> : null}
+              <Text style={styles.monthChipText}>{monthLabel(m).split(" ")[0]}</Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
 
-      <Card style={{ marginBottom: spacing.md }}>
+      <Card style={{ gap: 10 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <IconChip icon={Sparkles} index={4} size={48} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.aiTitle}>{hasTasks ? "Rebuild my plan with AI" : "Plan my year with AI"}</Text>
+            <Text style={styles.aiSub}>Uses your crops, area and weather</Text>
+          </View>
+        </View>
         <Button
-          title={generate.isPending ? "Generating..." : hasTasks ? "Rebuild plan with AI" : "Build AI plan"}
+          title={generate.isPending ? "Generating..." : "Generate plan"}
+          variant="light"
+          icon={Sparkles}
           onPress={onGenerate}
           loading={generate.isPending}
           disabled={!hasCrops}
@@ -270,13 +305,8 @@ export function YearPlanScreen({ navigation }: { navigation: any }) {
             <Text style={styles.link} onPress={() => navigation.navigate("Crops")}>Go to Crops</Text>
           </Text>
         ) : hasTasks ? (
-          <>
-            <Text style={styles.hint}>Rebuilding replaces AI tasks not yet marked done. Your own tasks are kept.</Text>
-            <Text style={styles.hint}>AI suggestions — confirm doses with your local KVK before applying.</Text>
-          </>
-        ) : (
-          <Text style={styles.hint}>Generates the next 12 months of fertiliser, spray, irrigation and harvest tasks.</Text>
-        )}
+          <Text style={styles.hint}>Rebuilding replaces AI tasks not yet done — your own tasks are kept. Confirm doses with your local KVK.</Text>
+        ) : null}
       </Card>
 
       {isLoading ? (
@@ -344,6 +374,21 @@ const styles = StyleSheet.create({
   hint: { fontSize: 14, color: colors.textMuted, marginTop: spacing.sm },
   link: { color: colors.primary, fontWeight: "600" },
 
+  monthChip: {
+    minHeight: 48,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+    borderWidth: 2.5,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  monthChipOn: { borderColor: colors.primary, backgroundColor: colors.tint },
+  monthChipText: { fontSize: 16, fontWeight: "700", color: colors.text },
+  aiTitle: { fontSize: 17, fontWeight: "800", color: colors.text },
+  aiSub: { fontSize: 14, color: colors.textMuted },
   pagerRow: {
     flexDirection: "row",
     alignItems: "center",

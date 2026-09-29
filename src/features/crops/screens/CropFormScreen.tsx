@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { Alert, ScrollView, StyleSheet } from "react-native";
+import { Alert, ScrollView, StyleSheet, View } from "react-native";
 import { Text } from "../../../components/Text";
 import { Plus } from "lucide-react-native";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { ChipSelect } from "../../../components/ChipSelect";
 import { SelectOrType } from "../../../components/SelectOrType";
+import { FormFooter } from "../../../components/harvest";
 import { colors, spacing } from "../../../components/theme";
 import { useCrops } from "../hooks/useCrops";
 import { useT } from "../../../lib/i18n";
@@ -91,7 +92,8 @@ export function CropFormScreen({ navigation, route }: { navigation: any; route: 
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: spacing.xl }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 110 }}>
       <ChipSelect
         label={isEdit ? "Crop name *" : "Crop name(s) * — tap to select multiple"}
         options={CROP_NAMES}
@@ -121,12 +123,15 @@ export function CropFormScreen({ navigation, route }: { navigation: any; route: 
       <TextField label="Block / plot name" value={blockName} onChangeText={setBlockName} />
       <TextField label="Notes" multiline numberOfLines={2} value={notes} onChangeText={setNotes} />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Button
-        title={isEdit ? "Save changes" : multiNames.length > 1 ? `Add ${multiNames.length} crops` : "Add crop"}
-        onPress={submit}
-        loading={createCrop.isPending || updateCrop.isPending}
-      />
     </ScrollView>
+    <FormFooter>
+      <Button
+          title={isEdit ? "Save changes" : multiNames.length > 1 ? `Add ${multiNames.length} crops` : "Add crop"}
+          onPress={submit}
+          loading={createCrop.isPending || updateCrop.isPending}
+        />
+    </FormFooter>
+    </View>
   );
 }
 

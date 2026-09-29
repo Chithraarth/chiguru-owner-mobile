@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Pressable, StyleSheet } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { Text } from "../../../components/Text";
 import * as Location from "expo-location";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
@@ -8,6 +8,7 @@ import { MapPin } from "lucide-react-native";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { ChipSelect } from "../../../components/ChipSelect";
+import { FormFooter } from "../../../components/harvest";
 import { colors, spacing } from "../../../components/theme";
 import { useHire } from "../hooks/useHire";
 import type { HireListing } from "../../../types/api";
@@ -101,6 +102,7 @@ export function HireFormScreen({ navigation, route }: { navigation: any; route: 
   }
 
   return (
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
     <KeyboardAwareScrollView
       style={styles.container}
       contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.md + insets.bottom }}
@@ -140,12 +142,15 @@ export function HireFormScreen({ navigation, route }: { navigation: any; route: 
         numberOfLines={2}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Button
-        title={isEdit ? "Save changes" : isRental ? "Post for rent" : "Post requirement"}
-        onPress={submit}
-        loading={createListing.isPending || updateListing.isPending}
-      />
     </KeyboardAwareScrollView>
+    <FormFooter>
+      <Button
+          title={isEdit ? "Save changes" : isRental ? "Post for rent" : "Post requirement"}
+          onPress={submit}
+          loading={createListing.isPending || updateListing.isPending}
+        />
+    </FormFooter>
+    </View>
   );
 }
 

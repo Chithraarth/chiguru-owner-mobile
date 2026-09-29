@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { ScrollView, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { Text } from "../../../components/Text";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { ChipSelect } from "../../../components/ChipSelect";
 import { SelectOrType } from "../../../components/SelectOrType";
+import { FormFooter } from "../../../components/harvest";
 import { colors, spacing } from "../../../components/theme";
 import { useSprays } from "../hooks/useSprays";
 
@@ -105,7 +106,8 @@ export function SprayFormScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: spacing.xl }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 110 }}>
       <TextField label="Product name *" value={productName} onChangeText={setProductName} />
       <SelectOrType label="Product type" options={PRODUCT_TYPES} value={productType} onChange={setProductType} />
       <ChipSelect
@@ -127,12 +129,15 @@ export function SprayFormScreen({ navigation }: { navigation: any }) {
       <SelectOrType label="Weather" options={WEATHER} value={weatherCondition} onChange={setWeatherCondition} />
       <TextField label="Notes" multiline numberOfLines={2} value={notes} onChangeText={setNotes} />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Button
-        title="Save spray record"
-        onPress={submit}
-        loading={createSpray.isPending || createCrop.isPending}
-      />
     </ScrollView>
+    <FormFooter>
+      <Button
+          title="Save spray record"
+          onPress={submit}
+          loading={createSpray.isPending || createCrop.isPending}
+        />
+    </FormFooter>
+    </View>
   );
 }
 

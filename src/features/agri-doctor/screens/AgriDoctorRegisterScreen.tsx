@@ -7,6 +7,7 @@ import { CheckCircle2, FileText, Landmark, Upload } from "lucide-react-native";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { ChipSelect } from "../../../components/ChipSelect";
+import { FormFooter } from "../../../components/harvest";
 import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { registerAgronomist } from "../../../api/endpoints/agriDoctor";
 import { compressToDataUrl } from "../../../lib/imageCompression";
@@ -96,6 +97,7 @@ export function AgriDoctorRegisterScreen({ navigation }: { navigation: any }) {
   const canSubmit = name.trim() && speciality.trim() && hasCredentials && hasPayout;
 
   return (
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
     <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.xs }}>
       <Text style={styles.intro}>
         Agronomists, professors and crop doctors — add your details so farmers and planters can find and consult you.
@@ -158,8 +160,11 @@ export function AgriDoctorRegisterScreen({ navigation }: { navigation: any }) {
 
       {!hasCredentials ? <Text style={styles.hintText}>Add your qualification, experience and education certificate to publish your profile.</Text> : null}
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
-      <Button title="Publish my profile" onPress={() => create.mutate()} loading={create.isPending} disabled={!canSubmit} />
     </ScrollView>
+    <FormFooter>
+      <Button title="Publish my profile" onPress={() => create.mutate()} loading={create.isPending} disabled={!canSubmit} />
+    </FormFooter>
+    </View>
   );
 }
 

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useLayoutEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -10,7 +10,8 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import { Text } from "../../../components/Text";
+import { Text, TextInput } from "../../../components/Text";
+import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import {
@@ -24,6 +25,7 @@ import {
   CreditCard,
   FileText,
   ScanFace,
+  Search,
   Sparkles,
   UserMinus,
   Users,
@@ -38,7 +40,7 @@ import { ChipSelect } from "../../../components/ChipSelect";
 import { TextField } from "../../../components/TextField";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
 import { colors, radius, shadow, spacing } from "../../../components/theme";
-import { Avatar } from "../../../components/harvest";
+import { Avatar, Pill, RoundButton } from "../../../components/harvest";
 import { useAttendance } from "../hooks/useAttendance";
 import { useWorkGroups } from "../../work-groups/hooks/useWorkGroups";
 import { describeDevice } from "../../../lib/device";
@@ -131,6 +133,8 @@ export function AttendanceScreen({ route }: { route: any }) {
   const defaultOtRate = paymentType === "Per hour" ? rate : rate / 8;
 
   const [tab, setTab] = useState<Tab>("attendance");
+  const [search, setSearch] = useState("");
+  const navigation = useNavigation<any>();
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [otHours, setOtHours] = useState<Record<number, string>>({});
@@ -411,7 +415,21 @@ export function AttendanceScreen({ route }: { route: any }) {
     }
   }
 
+  // Face attendance (one worker at a time) sits on the header, next to the
+  // title, so the body matches the canvas: count-from-photo, All, search.
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      subtitle: [workGroup?.blockName, "Today"].filter(Boolean).join(" · "),
+      headerRight: () => <RoundButton icon={ScanFace} label="Face attendance" onPress={handleFaceAttendance} />,
+    });
+  });
+
   if (isLoading) return <LoadingView label="Loading attendance..." />;
+
+  const q = search.trim().toLowerCase();
+  const visibleWorkers = q ? eligibleWorkers.filter((w) => w.name.toLowerCase().includes(q)) : eligibleWorkers;
+  const presentCount = new Set([...selected, ...markedIds]).size;
+  const absentCount = Math.max(0, eligibleWorkers.length - presentCount);
 
   const totalDue = [...selected].reduce((sum, id) => {
     const base = isHarvestGroup ? Number(harvestKg[id] ?? 0) * rate : paymentType === "Per hour" ? rate * 8 : rate;
@@ -622,65 +640,42 @@ export function AttendanceScreen({ route }: { route: any }) {
 
       {tab === "attendance" ? (
         <FlatList
-          data={eligibleWorkers}
+          data={visibleWorkers}
           keyExtractor={(w) => String(w.id)}
-          contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: spacing.xl }}
+          contentContainerStyle={{ padding: 20, paddingBottom: 150 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           ListHeaderComponent={
-            <View style={{ gap: spacing.sm, marginBottom: spacing.sm }}>
-              {/* Two ways to mark attendance, side by side — mirrors web's
-                  grid-cols-2 layout (attendance.tsx:679-712). */}
-              <View style={{ flexDirection: "row", gap: spacing.sm }}>
-                {/* Single Person Face Attendance: one photo → AI face match →
-                    mark that one worker present. Mobile-only simplification of
-                    web's live face-api.js scanning (deliberately not ported —
-                    see handleFaceAttendance). */}
-                <Pressable
-                  style={[styles.faceCard, faceMatching && { opacity: 0.85 }]}
-                  onPress={handleFaceAttendance}
-                  disabled={faceMatching}
-                >
-                  <View style={styles.faceIconWrap}>
-                    {faceMatching ? <ActivityIndicator color={colors.accentInk} /> : <ScanFace size={22} color={colors.accentInk} />}
-                  </View>
-                  <View>
-                    <Text style={styles.faceCardTitle}>Single Person Face Attendance</Text>
-                    <Text style={styles.faceCardSubtitle}>
-                      {faceMatching ? "Matching face…" : "Regular workers — each face marks itself, one by one"}
-                    </Text>
-                  </View>
-                </Pressable>
-
-                {/* Group Attendance: AI headcount */}
-                <Pressable
-                  style={[styles.aiCard, (aiScanning || !!workSession) && { opacity: 0.85 }]}
+            <View style={{ gap: 12, marginBottom: 14 }}>
+              {/* Canvas layout: count-from-photo + select-all, then search. Face
+                  attendance lives on the header's scan button. */}
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <Button
+                  title={aiScanning ? "Counting…" : workSession ? (workSession.checkOutAt ? "Work done" : "Photo taken") : "Count from photo"}
+                  variant="light"
+                  icon={workSession ? CheckCircle2 : Camera}
                   onPress={handleGroupAttendanceScan}
-                  disabled={aiScanning || !!workSession}
-                >
-                  <View style={styles.aiIconWrap}>
-                    {aiScanning ? (
-                      <ActivityIndicator color="#fff" />
-                    ) : workSession ? (
-                      <CheckCircle2 size={20} color="#fff" />
-                    ) : (
-                      <Camera size={20} color="#fff" />
-                    )}
-                  </View>
-                  <View>
-                    <Text style={styles.aiCardTitle}>Group Attendance</Text>
-                    <Text style={styles.aiCardSubtitle}>
-                      {aiScanning
-                        ? "AI is counting heads…"
-                        : workSession
-                          ? workSession.checkOutAt
-                            ? "Work done for this day"
-                            : `Work started at ${fmtTime(workSession.checkInAt)}`
-                          : "Arrival photo — AI counts heads & time is noted"}
-                    </Text>
-                  </View>
-                </Pressable>
+                  loading={aiScanning}
+                  disabled={!!workSession}
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  title="All"
+                  variant="secondary"
+                  icon={Check}
+                  onPress={() => setSelected(new Set(eligibleWorkers.filter((w) => !markedIds.has(w.id)).map((w) => w.id)))}
+                />
               </View>
-
+              {faceMatching ? <Text style={styles.faceHint}>Matching face…</Text> : null}
+              <View style={styles.searchWrap}>
+                <Search size={20} color={colors.textMuted} style={styles.searchIcon} />
+                <TextInput
+                  value={search}
+                  onChangeText={setSearch}
+                  placeholder="Search workers"
+                  accessibilityLabel="Search workers"
+                  style={styles.searchInput}
+                />
+              </View>
               {aiResult ? (
                 <Card style={styles.aiResultCard}>
                   <View style={{ flexDirection: "row", gap: spacing.sm, alignItems: "center" }}>
@@ -700,6 +695,10 @@ export function AttendanceScreen({ route }: { route: any }) {
                 </Card>
               ) : null}
 
+            </View>
+          }
+          ListFooterComponent={
+            <View style={{ gap: 12, marginTop: 14 }}>
               {/* Work session card: arrival → work photos → leaving */}
               {workSession ? (
                 <Card style={{ gap: spacing.sm }}>
@@ -923,12 +922,22 @@ export function AttendanceScreen({ route }: { route: any }) {
           ListEmptyComponent={
             <EmptyState title="No workers yet" subtitle="Add workers before marking attendance." />
           }
-          renderItem={({ item }) => {
+          renderItem={({ item, index }) => {
             const marked = markedIds.has(item.id);
             const isSelected = selected.has(item.id);
             const expanded = expandedId === item.id;
+            const first = index === 0;
+            const last = index === visibleWorkers.length - 1;
             return (
-              <Card style={[styles.workerRow, isSelected && styles.workerRowSelected, marked && !isSelected && styles.workerRowMarked]}>
+              <View
+                style={[
+                  styles.workerRow,
+                  first && styles.workerRowFirst,
+                  last && styles.workerRowLast,
+                  !last && styles.workerRowDivider,
+                  marked && !isSelected && styles.workerRowMarked,
+                ]}
+              >
                 <View style={styles.workerRowMain}>
                   <Pressable onPress={() => toggle(item.id)} style={styles.workerRowMainPressable}>
                     <Avatar name={item.name} index={item.id} />
@@ -938,8 +947,13 @@ export function AttendanceScreen({ route }: { route: any }) {
                       </Text>
                       {marked ? (
                         <Text style={styles.markedLabel}>{isSelected ? "Editing entry…" : "Marked present · tap to edit"}</Text>
-                      ) : null}
+                      ) : (
+                        <Text style={styles.workerMeta}>
+                          {paymentType === "Per day" ? "Daily" : paymentType} · ₹{rate}
+                        </Text>
+                      )}
                     </View>
+                    {extraFor(item.id) > 0 ? <Pill text={`+₹${extraFor(item.id).toFixed(0)}`} tone="warn" /> : null}
                     {marked && !isSelected ? (
                       <CheckCircle2 size={26} color={colors.success} />
                     ) : (
@@ -1014,7 +1028,7 @@ export function AttendanceScreen({ route }: { route: any }) {
                     ) : null}
                   </>
                 ) : null}
-              </Card>
+              </View>
             );
           }}
         />
@@ -1480,13 +1494,22 @@ export function AttendanceScreen({ route }: { route: any }) {
         />
       ) : null}
 
-      {tab === "attendance" && selected.size > 0 ? (
-        <View style={[styles.footer, { paddingBottom: spacing.md + insets.bottom }]}>
-          <Button
-            title={`Mark ${selected.size} present · ₹${totalDue.toFixed(0)}`}
-            onPress={save}
-            loading={markAttendance.isPending}
-          />
+      {tab === "attendance" && eligibleWorkers.length > 0 ? (
+        <View style={[styles.bottomBar, { paddingBottom: 14 }]}>
+          <View>
+            <Text style={styles.bottomCount}>
+              {presentCount} present · {absentCount} absent
+            </Text>
+            <Text style={styles.bottomTotal}>₹{Math.round(totalDue).toLocaleString("en-IN")}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Button
+              title={selected.size > 0 ? `Save ${selected.size}` : "Save"}
+              onPress={save}
+              loading={markAttendance.isPending}
+              disabled={selected.size === 0}
+            />
+          </View>
         </View>
       ) : null}
 
@@ -1557,7 +1580,46 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 14.5, fontWeight: "600", color: colors.textMuted },
   tabTextActive: { color: colors.text, fontWeight: "800" },
 
-  workerRow: {},
+  workerRow: { backgroundColor: colors.card, paddingHorizontal: 16, paddingVertical: 12 },
+  workerRowFirst: { borderTopLeftRadius: 28, borderTopRightRadius: 28 },
+  workerRowLast: { borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },
+  workerRowDivider: { borderBottomWidth: 1, borderBottomColor: colors.border },
+  workerMeta: { fontSize: 14, color: colors.textMuted },
+  faceHint: { fontSize: 14.5, fontWeight: "700", color: colors.primary, textAlign: "center" },
+  searchWrap: { justifyContent: "center" },
+  searchIcon: { position: "absolute", left: 14, zIndex: 1 },
+  searchInput: {
+    minHeight: 54,
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: colors.card,
+    paddingLeft: 44,
+    paddingRight: 16,
+    fontSize: 17,
+    color: colors.text,
+  },
+  bottomBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.card,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingTop: 14,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    shadowColor: "#5A4600",
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: -6 },
+    elevation: 12,
+  },
+  bottomCount: { fontSize: 14, color: colors.textMuted },
+  bottomTotal: { fontSize: 26, fontWeight: "800", color: colors.text, lineHeight: 30 },
   workerRowMain: { flexDirection: "row", alignItems: "center" },
   workerRowMainPressable: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12 },
   removeWorkerBtn: { paddingLeft: spacing.sm, paddingVertical: spacing.xs },

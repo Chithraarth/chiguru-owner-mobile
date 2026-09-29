@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { Text } from "./Text";
 import { Check } from "lucide-react-native";
 import { colors, radius, spacing } from "./theme";
@@ -18,7 +18,7 @@ export function ChipSelect({
   return (
     <View style={{ marginBottom: spacing.md }}>
       <Text style={styles.label}>{label}</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+      <View>
         <View style={styles.row}>
           {options.map((opt) => {
             const selected = opt === value;
@@ -34,14 +34,14 @@ export function ChipSelect({
             );
           })}
         </View>
-      </ScrollView>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   label: { fontSize: 14, fontWeight: "600", color: colors.textMuted, marginBottom: 6 },
-  row: { flexDirection: "row", gap: 10 },
+  row: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   chip: {
     minHeight: 48,
     flexDirection: "row",

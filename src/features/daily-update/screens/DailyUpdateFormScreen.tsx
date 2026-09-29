@@ -7,6 +7,7 @@ import * as Location from "expo-location";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { ChipSelect } from "../../../components/ChipSelect";
+import { FormFooter } from "../../../components/harvest";
 import { colors, spacing } from "../../../components/theme";
 import { useEstateUpdates } from "../hooks/useEstateUpdates";
 import { useWorkGroups } from "../../work-groups/hooks/useWorkGroups";
@@ -91,7 +92,8 @@ export function DailyUpdateFormScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: spacing.xl }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 110 }}>
       {photoUri ? (
         <Image source={{ uri: photoUri }} style={styles.preview} />
       ) : (
@@ -134,8 +136,11 @@ export function DailyUpdateFormScreen({ navigation }: { navigation: any }) {
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <Button title="Post update" onPress={submit} loading={createUpdate.isPending} />
     </ScrollView>
+    <FormFooter>
+      <Button title="Post update" onPress={submit} loading={createUpdate.isPending} />
+    </FormFooter>
+    </View>
   );
 }
 

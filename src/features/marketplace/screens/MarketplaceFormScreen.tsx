@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { Image, ScrollView, StyleSheet } from "react-native";
+import { Image, ScrollView, StyleSheet, View } from "react-native";
 import { Text } from "../../../components/Text";
 import { Camera } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { ChipSelect } from "../../../components/ChipSelect";
+import { FormFooter } from "../../../components/harvest";
 import { colors, spacing } from "../../../components/theme";
 import { useMarketplace } from "../hooks/useMarketplace";
 import { compressToDataUrl } from "../../../lib/imageCompression";
@@ -67,7 +68,8 @@ export function MarketplaceFormScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: spacing.xl }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 110 }}>
       {photoUri ? <Image source={{ uri: photoUri }} style={styles.preview} /> : (
         <Button title="Add product photo" icon={Camera} variant="light" onPress={pickPhoto} />
       )}
@@ -82,8 +84,11 @@ export function MarketplaceFormScreen({ navigation }: { navigation: any }) {
       <TextField label="Location *" value={location} onChangeText={setLocation} placeholder="Village, District" />
       <TextField label="Description (optional)" value={description} onChangeText={setDescription} multiline numberOfLines={2} placeholder="Quality, harvest date, organic, etc." />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Button title="List for sale" onPress={submit} loading={createListing.isPending} />
     </ScrollView>
+    <FormFooter>
+      <Button title="List for sale" onPress={submit} loading={createListing.isPending} />
+    </FormFooter>
+    </View>
   );
 }
 
