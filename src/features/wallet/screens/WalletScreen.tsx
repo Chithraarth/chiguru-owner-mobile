@@ -1,13 +1,13 @@
 import React, { useState } from "react";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, View, Pressable } from "react-native";
 import { Text } from "../../../components/Text";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Wallet as WalletIcon, Sparkles, Zap } from "lucide-react-native";
+import { Wallet as WalletIcon, Sparkles, Zap, Check } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { LoadingView } from "../../../components/StateViews";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { createRechargeOrder, getWallet, verifyRecharge } from "../../../api/endpoints/wallet";
 import { RazorpayCheckoutModal } from "../components/RazorpayCheckoutModal";
 import { ApiError } from "../../../api/errors";
@@ -112,7 +112,7 @@ export function WalletScreen() {
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       <View style={styles.balanceCard}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
-          <WalletIcon size={18} color="#fff" />
+          <WalletIcon size={20} color={colors.textMuted} />
           <Text style={styles.balanceTitle}>Wallet balance</Text>
         </View>
         <Text style={styles.balanceValue}>{inr(balance)}</Text>
@@ -127,6 +127,17 @@ export function WalletScreen() {
 
       <View>
         <Text style={styles.sectionTitle}>Recharge wallet</Text>
+        <View style={styles.amountRow}>
+          {[100, 250, 500, 1000].filter((a) => a >= minRechargeAmount).map((a) => {
+            const on = rechargeInput === String(a);
+            return (
+              <Pressable key={a} onPress={() => setRechargeInput(String(a))} style={[styles.amountChip, on && styles.amountChipOn]} accessibilityRole="button">
+                {on ? <Check size={15} color={colors.text} strokeWidth={2.6} /> : null}
+                <Text style={styles.amountChipText}>{inr(a)}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
         <View style={{ flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm, alignItems: "flex-start" }}>
           <View style={{ flex: 1 }}>
             <TextField
@@ -209,12 +220,16 @@ export function WalletScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
-  balanceCard: { backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md },
-  balanceTitle: { color: "#fff", fontSize: 16.5, fontWeight: "700" },
-  balanceValue: { color: "#fff", fontSize: 30, fontWeight: "700", marginTop: spacing.sm },
-  balanceDesc: { color: "rgba(255,255,255,0.85)", fontSize: 14.5, marginTop: spacing.xs, lineHeight: 17 },
+  balanceCard: { backgroundColor: colors.card, borderRadius: 28, padding: 18, gap: 4, ...shadow },
+  balanceTitle: { color: colors.textMuted, fontSize: 16, fontWeight: "700" },
+  balanceValue: { color: colors.primary, fontSize: 44, fontWeight: "800", lineHeight: 52 },
+  balanceDesc: { color: colors.textMuted, fontSize: 14.5, lineHeight: 20 },
 
-  sectionTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
+  sectionTitle: { fontSize: 20, fontWeight: "800", color: colors.text },
+  amountRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: spacing.sm },
+  amountChip: { minHeight: 48, paddingHorizontal: 16, borderRadius: 999, borderWidth: 2.5, borderColor: colors.border, backgroundColor: colors.card, flexDirection: "row", alignItems: "center", gap: 6 },
+  amountChipOn: { borderColor: colors.primary, backgroundColor: colors.tint },
+  amountChipText: { fontSize: 16, fontWeight: "700", color: colors.text },
   minRechargeNote: { fontSize: 13, color: colors.textMuted, marginTop: spacing.xs },
 
   priceRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: spacing.xs },
@@ -223,7 +238,7 @@ const styles = StyleSheet.create({
   priceValue: { fontSize: 14.5, fontWeight: "700", color: colors.text },
 
   emptyText: { fontSize: 14.5, color: colors.textMuted },
-  txnIconWrap: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  txnIconWrap: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
   txnIconCredit: { backgroundColor: "#E5F7EC" },
   txnIconDebit: { backgroundColor: "#FBEAEE" },
   txnLabel: { fontSize: 14.5, fontWeight: "600", color: colors.text, textTransform: "capitalize" },

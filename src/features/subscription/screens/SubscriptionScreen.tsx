@@ -25,7 +25,7 @@ import {
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { LoadingView } from "../../../components/StateViews";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import {
   cancelSubscription,
   createManagerSeatAddonOrder,
@@ -272,7 +272,7 @@ export function SubscriptionScreen() {
       {isActive ? (
         <View style={styles.statusCard}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
-            <Crown size={18} color="#fff" />
+            <Crown size={18} color={colors.accentInk} />
             <Text style={styles.statusTitle}>{current!.plan?.name} plan active</Text>
           </View>
           <Text style={styles.statusDesc}>Your farm is fully active — everything is unlocked.</Text>
@@ -288,7 +288,7 @@ export function SubscriptionScreen() {
           ) : null}
           {subQuery.data ? (
             <View style={styles.seatRow}>
-              <Users size={14} color="#fff" />
+              <Users size={14} color={colors.accentInk} />
               <Text style={styles.seatText}>
                 {subQuery.data.entitlement.managersUsed}/{subQuery.data.entitlement.managerLimit} invitees used
                 {" · "}
@@ -310,7 +310,7 @@ export function SubscriptionScreen() {
       ) : (
         <View style={styles.statusCard}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
-            <Lock size={18} color="#fff" />
+            <Lock size={18} color={colors.accentInk} />
             <Text style={styles.statusTitle}>Subscribe to unlock</Text>
           </View>
           <Text style={styles.statusDesc}>Subscribe below to run your whole farm and add invitees.</Text>
@@ -417,26 +417,26 @@ export function SubscriptionScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
-  statusCard: { backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md },
-  statusTitle: { color: "#fff", fontSize: 16.5, fontWeight: "700" },
-  statusDesc: { color: "rgba(255,255,255,0.85)", fontSize: 14.5, marginTop: spacing.xs, lineHeight: 17 },
-  statusMeta: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginTop: spacing.sm },
-  seatRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs, marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.2)" },
-  seatText: { color: "#fff", fontSize: 14.5, flex: 1 },
+  statusCard: { backgroundColor: colors.accent, borderRadius: 28, padding: 18 },
+  statusTitle: { color: colors.accentInk, fontSize: 20, fontWeight: "800" },
+  statusDesc: { color: colors.accentInkSoft, fontSize: 15, marginTop: spacing.xs, lineHeight: 21 },
+  statusMeta: { color: colors.accentInkSoft, fontSize: 14, marginTop: spacing.sm },
+  seatRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs, marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: "rgba(58,42,0,0.15)" },
+  seatText: { color: colors.accentInk, fontSize: 15, fontWeight: "700", flex: 1 },
 
-  honestCard: { backgroundColor: "#FBF2D9", borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: "#DDD8EC", alignItems: "center" },
+  honestCard: { backgroundColor: colors.card, borderRadius: 28, padding: 18, alignItems: "center", ...shadow },
   honestTitle: { fontSize: 16, fontWeight: "700", color: colors.primary, textAlign: "center" },
   honestDesc: { fontSize: 14, color: colors.primary, opacity: 0.8, marginTop: spacing.xs, textAlign: "center", lineHeight: 16 },
 
   planCardCurrent: { borderColor: colors.primary, backgroundColor: "#FBF2D9" },
-  planIconWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" },
+  planIconWrap: { width: 50, height: 50, borderRadius: 25, backgroundColor: "#FFD166", alignItems: "center", justifyContent: "center" },
   planName: { fontSize: 16.5, fontWeight: "700", color: colors.text },
   planTagline: { fontSize: 13.5, color: colors.textMuted, marginTop: 1 },
   planPrice: { fontSize: 26, fontWeight: "700", color: colors.text, marginTop: spacing.sm },
   planPerMonth: { fontSize: 14, color: colors.textMuted },
   planFeature: { fontSize: 14, color: colors.text, flex: 1 },
 
-  sectionTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
+  sectionTitle: { fontSize: 20, fontWeight: "800", color: colors.text },
 
   whyTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
   whyText: { fontSize: 14, color: colors.text, lineHeight: 17 },

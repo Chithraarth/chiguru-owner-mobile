@@ -12,9 +12,12 @@ import {
   RefreshCw,
   ShieldCheck,
   Smartphone,
+  Check,
+  CalendarClock,
 } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
+import { IconChip, ListCard, ListRow, SectionLabel } from "../../../components/harvest";
 import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { useSettingsStore } from "../../../lib/settings";
 import { usePushStore } from "../../../lib/push";
@@ -65,122 +68,92 @@ export function SettingsScreen({ navigation }: { navigation: any }) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
-      <Card>
-        <View style={{ flexDirection: "row", alignItems: "flex-start", gap: spacing.sm }}>
-          <View style={[styles.iconWrap, { backgroundColor: "#FBF2D9" }]}>
-            <Languages size={18} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.cardTitle}>{t("onb.chooseLanguage")}</Text>
-            <Text style={styles.cardSubtitle}>{t("onb.chooseLanguageSub")}</Text>
-          </View>
-        </View>
-        <View style={styles.langRow}>
-          {TRANSLATED_LANGUAGES.map((l) => {
-            const selected = l.code === lang;
-            return (
-              <Pressable
-                key={l.code}
-                onPress={() => setLang(l.code)}
-                style={[styles.langChip, selected && styles.langChipSelected]}
-              >
-                <Text style={[styles.langChipText, selected && styles.langChipTextSelected]}>{l.native}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </Card>
-
-      <Card>
-        <View style={{ flexDirection: "row", alignItems: "flex-start", gap: spacing.sm }}>
-          <View style={[styles.iconWrap, { backgroundColor: "#FBEEDD" }]}>
-            <Bell size={18} color="#95530F" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.cardTitle}>Year Plan reminders</Text>
-            <Text style={styles.cardSubtitle}>Get a phone notification when tasks in your Year Plan are due this month.</Text>
-          </View>
-          <Switch value={pushEnabled} onValueChange={onTogglePush} disabled={pushLoading} trackColor={{ true: colors.primary }} />
-        </View>
-        {pushEnabled ? (
-          <View style={styles.pushSub}>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Text style={[styles.cardSubtitle, { flex: 1, marginTop: 0 }]}>Also nudge me mid-month if tasks are still pending</Text>
-              <Switch value={midmonthEnabled} onValueChange={setMidmonth} trackColor={{ true: colors.primary }} />
-            </View>
-            {lastSentAt ? (
-              <Text style={styles.pushLastSent}>Last reminder sent: {new Date(lastSentAt).toLocaleDateString()}</Text>
-            ) : null}
-          </View>
-        ) : null}
-      </Card>
-
-      <Card>
-        <View style={{ flexDirection: "row", alignItems: "flex-start", gap: spacing.sm }}>
-          <View style={[styles.iconWrap, { backgroundColor: "#FBF2D9" }]}>
-            <ImageDown size={18} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.cardTitle}>Data-saver photos</Text>
-            <Text style={styles.cardSubtitle}>Shrinks photos before uploading — faster and cheaper on slow internet.</Text>
-          </View>
-          <Switch value={lowSizePhoto} onValueChange={setLowSizePhoto} trackColor={{ true: colors.primary }} />
-        </View>
-      </Card>
-
-      <Card>
-        <View style={{ flexDirection: "row", alignItems: "flex-start", gap: spacing.sm }}>
-          <View style={[styles.iconWrap, { backgroundColor: "#E4EEFB" }]}>
-            <ShieldCheck size={18} color="#3E6FB0" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.cardTitle}>Backup & restore</Text>
-            <Text style={styles.cardSubtitle}>Your backup code and restore live in My Profile, together with Google sign-in backup.</Text>
-            <View style={{ marginTop: spacing.sm }}>
-              <Button title="Open My Profile" variant="secondary" onPress={() => navigation.navigate("Profile")} />
-            </View>
-          </View>
-        </View>
-      </Card>
-
-      <Card>
-        <View style={{ flexDirection: "row", alignItems: "flex-start", gap: spacing.sm }}>
-          <View style={[styles.iconWrap, { backgroundColor: "#FFEBD6" }]}>
-            <Smartphone size={18} color="#95530F" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.cardTitle}>Phone storage</Text>
-            <Text style={styles.cardSubtitle}>
-              Photos are compressed before upload and never kept longer than needed on this device. Your farm accounts
-              are never deleted, and nothing waiting to upload is ever removed — everything stays safe on the server.
-            </Text>
-          </View>
-        </View>
-      </Card>
-
-      <View style={{ gap: spacing.sm }}>
-        <LinkRow icon={<HelpCircle size={16} color={colors.primary} />} label="Help" onPress={() => navigation.navigate("Help")} />
-        <LinkRow icon={<Archive size={16} color={colors.primary} />} label={t("bin.title")} onPress={() => navigation.navigate("Bin")} />
-        <LinkRow icon={<RefreshCw size={16} color={colors.primary} />} label="Sync Log" onPress={() => navigation.navigate("SyncLog")} />
-        <LinkRow icon={<Smartphone size={16} color={colors.primary} />} label="Invitees" onPress={() => navigation.navigate("ManagerDevices")} />
-        <LinkRow icon={<CreditCard size={16} color={colors.primary} />} label={t("more.subscription")} onPress={() => navigation.navigate("Subscription")} />
+      <SectionLabel>{t("onb.chooseLanguage")}</SectionLabel>
+      <View style={styles.langRow}>
+        {TRANSLATED_LANGUAGES.map((l) => {
+          const selected = l.code === lang;
+          return (
+            <Pressable
+              key={l.code}
+              onPress={() => setLang(l.code)}
+              style={[styles.langChip, selected && styles.langChipSelected]}
+              accessibilityRole="radio"
+              accessibilityState={{ selected }}
+            >
+              {selected ? <Check size={16} color={colors.text} strokeWidth={2.6} /> : null}
+              <Text style={[styles.langChipText, selected && styles.langChipTextSelected]}>{l.native}</Text>
+            </Pressable>
+          );
+        })}
       </View>
+
+      <SectionLabel>Notifications</SectionLabel>
+      <ListCard>
+        <ListRow
+          title="Plan reminders"
+          subtitle="When Year Plan tasks are due this month"
+          left={<IconChip icon={Bell} index={0} size={42} />}
+          right={<Switch value={pushEnabled} onValueChange={onTogglePush} disabled={pushLoading} trackColor={{ true: colors.primary }} />}
+          divider={pushEnabled}
+        />
+        {pushEnabled ? (
+          <ListRow
+            title="Mid-month nudge"
+            subtitle={lastSentAt ? `Last reminder: ${new Date(lastSentAt).toLocaleDateString()}` : "If tasks are still pending"}
+            left={<IconChip icon={CalendarClock} index={1} size={42} />}
+            right={<Switch value={midmonthEnabled} onValueChange={setMidmonth} trackColor={{ true: colors.primary }} />}
+            divider={false}
+          />
+        ) : null}
+      </ListCard>
+
+      <SectionLabel>App</SectionLabel>
+      <ListCard>
+        <ListRow
+          title="Data-saver photos"
+          subtitle="Smaller uploads on slow internet"
+          left={<IconChip icon={ImageDown} index={3} size={42} />}
+          right={<Switch value={lowSizePhoto} onValueChange={setLowSizePhoto} trackColor={{ true: colors.primary }} />}
+        />
+        {[
+          { icon: ShieldCheck, label: "Backup & restore", sub: "Backup code and Google backup", screen: "Profile" },
+          { icon: CreditCard, label: t("more.subscription"), sub: "Plan and payments", screen: "Subscription" },
+          { icon: Smartphone, label: "Invitees", sub: "Helpers on your farm", screen: "ManagerDevices" },
+          { icon: RefreshCw, label: "Sync log", sub: "What's saved and uploaded", screen: "SyncLog" },
+          { icon: Archive, label: t("bin.title"), sub: "Restore deleted items", screen: "Bin" },
+          { icon: HelpCircle, label: "Help", sub: "Call, WhatsApp, questions", screen: "Help" },
+        ].map((r, i, all) => (
+          <ListRow
+            key={r.screen}
+            title={r.label}
+            subtitle={r.sub}
+            left={<IconChip icon={r.icon} index={i + 4} size={42} />}
+            right={<ChevronRight size={18} color={colors.textMuted} />}
+            divider={i < all.length - 1}
+            onPress={() => navigation.navigate(r.screen)}
+          />
+        ))}
+      </ListCard>
+      <Text style={styles.note}>
+        Photos are compressed before upload and never kept longer than needed on this phone. Nothing waiting to upload is ever removed.
+      </Text>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  note: { fontSize: 14, color: colors.textMuted, lineHeight: 20 },
   container: { flex: 1, backgroundColor: colors.bg },
   iconWrap: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
   cardTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text },
   cardSubtitle: { fontSize: 14, color: colors.textMuted, marginTop: 2, lineHeight: 16 },
   pushSub: { marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
   pushLastSent: { fontSize: 13, color: colors.textMuted, marginTop: spacing.xs },
-  langRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: spacing.sm },
-  langChip: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, ...shadow, backgroundColor: "#fff" },
-  langChipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  langChipText: { fontSize: 14.5, color: colors.text },
-  langChipTextSelected: { color: "#fff", fontWeight: "700" },
+  langRow: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  langChip: { minHeight: 48, paddingHorizontal: 16, borderRadius: 999, borderWidth: 2.5, borderColor: colors.border, backgroundColor: colors.card, flexDirection: "row", alignItems: "center", gap: 6 },
+  langChipSelected: { borderColor: colors.primary, backgroundColor: colors.tint },
+  langChipText: { fontSize: 16, fontWeight: "700", color: colors.text },
+  langChipTextSelected: { color: colors.text },
 
   linkRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, ...shadow, borderRadius: 22, padding: spacing.sm + 4 },
   linkIconWrap: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center" },

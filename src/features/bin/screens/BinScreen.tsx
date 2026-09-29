@@ -5,6 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
+import { IconChip } from "../../../components/harvest";
+import { RotateCcw, Trash2 } from "lucide-react-native";
 import { colors, spacing } from "../../../components/theme";
 import { getBin, permanentlyDelete, restoreFromBin } from "../../../api/endpoints/bin";
 import { useT } from "../../../lib/i18n";
@@ -44,16 +46,24 @@ export function BinScreen() {
           renderSectionHeader={({ section }) => <Text style={styles.sectionTitle}>{section.title}</Text>}
           renderItem={({ item, section }: any) => (
             <Card style={[styles.row, { marginBottom: spacing.sm }]}>
-              <Text style={styles.name}>{item.name ?? item.description}</Text>
-              <View style={{ flexDirection: "row", gap: spacing.sm }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                <IconChip icon={Trash2} index={2} size={42} />
+                <Text style={[styles.name, { flex: 1 }]} numberOfLines={2}>{item.name ?? item.description}</Text>
+              </View>
+              <View style={{ flexDirection: "row", gap: 10 }}>
                 <Button
                   title={t("bin.restore")}
-                  variant="secondary"
+                  variant="light"
+                  icon={RotateCcw}
+                  size="compact"
+                  style={{ flex: 1 }}
                   onPress={() => restoreMutation.mutate({ type: section.type, id: item.id })}
                 />
                 <Button
                   title={t("bin.deleteForever")}
-                  variant="danger"
+                  variant="secondary"
+                  size="compact"
+                  style={{ flex: 1 }}
                   onPress={() => deleteMutation.mutate({ type: section.type, id: item.id })}
                 />
               </View>
@@ -67,7 +77,7 @@ export function BinScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  sectionTitle: { fontSize: 16.5, fontWeight: "700", color: colors.text, marginTop: spacing.md, marginBottom: spacing.xs },
-  row: { gap: spacing.sm },
-  name: { fontSize: 15.5, color: colors.text },
+  sectionTitle: { fontSize: 20, fontWeight: "800", color: colors.text, marginBottom: spacing.sm },
+  row: { gap: 12 },
+  name: { fontSize: 16.5, fontWeight: "700", color: colors.text },
 });
