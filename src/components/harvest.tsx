@@ -167,7 +167,14 @@ export function HillsArt({ height = 140, width = 400 }: { height?: number; width
   const h = height;
   const sprouts = [40, 80, 120, 280, 320, 360];
   return (
-    <Svg width="100%" height={h} viewBox={`0 0 ${width} ${h}`} preserveAspectRatio="none" style={StyleSheet.absoluteFillObject as any} pointerEvents="none">
+    <Svg
+      width="100%"
+      height={h}
+      viewBox={`0 0 ${width} ${h}`}
+      preserveAspectRatio="none"
+      style={{ position: "absolute", left: 0, right: 0, bottom: 0 }}
+      pointerEvents="none"
+    >
       <Circle cx={width - 70} cy={Math.min(40, h * 0.3)} r={26} fill="#FFFFFF" opacity={0.55} />
       <Path d={`M0 ${h - 60} Q100 ${h - 110} 200 ${h - 70} T${width} ${h - 80} L${width} ${h} L0 ${h} Z`} fill={colors.hill} />
       <Path d={`M0 ${h - 30} Q120 ${h - 70} 240 ${h - 35} T${width} ${h - 45} L${width} ${h} L0 ${h} Z`} fill={colors.hillDark} />
@@ -224,4 +231,72 @@ const styles = StyleSheet.create({
   rowDivider: { borderBottomWidth: 1, borderBottomColor: colors.border },
   rowTitle: { fontSize: 16.5, fontWeight: "700", color: colors.text },
   rowSub: { fontSize: 14, color: colors.textMuted, marginTop: 1 },
+});
+
+/** 2-column grid of big pastel tiles: white icon circle, bold title, muted hint. */
+export function BigTiles({
+  items,
+  columns = 2,
+}: {
+  items: { icon: IconType; title: string; sub?: string; onPress: () => void }[];
+  columns?: 2 | 3;
+}) {
+  const three = columns === 3;
+  return (
+    <View style={tileStyles.tiles}>
+      {items.map((it, i) => {
+        const c = chipColors[i % chipColors.length];
+        const Icon = it.icon;
+        return (
+          <Pressable
+            key={it.title}
+            onPress={it.onPress}
+            accessibilityRole="button"
+            style={({ pressed }) => [
+              tileStyles.tile,
+              { backgroundColor: c.bg, width: three ? "31.5%" : "48.3%" },
+              three && tileStyles.tileSmall,
+              pressed && { transform: [{ scale: 0.97 }] },
+            ]}
+          >
+            <View style={[tileStyles.tileIcon, three && { width: 44, height: 44, borderRadius: 22 }]}>
+              <Icon size={three ? 22 : 30} color={c.fg} strokeWidth={2} />
+            </View>
+            <Text style={[tileStyles.tileTitle, three && { fontSize: 14 }]} numberOfLines={2}>
+              {it.title}
+            </Text>
+            {it.sub && !three ? (
+              <Text style={tileStyles.tileSub} numberOfLines={2}>
+                {it.sub}
+              </Text>
+            ) : null}
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+/** ₹14k / ₹1.2L / ₹850 - the compact money style used on stat tiles. */
+export function shortRupees(n: number | null | undefined): string {
+  const v = Math.round(Number(n) || 0);
+  const abs = Math.abs(v);
+  const sign = v < 0 ? "−" : "";
+  if (abs >= 10000000) return `${sign}₹${trim(abs / 10000000)}Cr`;
+  if (abs >= 100000) return `${sign}₹${trim(abs / 100000)}L`;
+  if (abs >= 1000) return `${sign}₹${trim(abs / 1000)}k`;
+  return `${sign}₹${abs}`;
+}
+
+function trim(x: number) {
+  return x >= 100 ? String(Math.round(x)) : x.toFixed(1).replace(/\.0$/, "");
+}
+
+const tileStyles = StyleSheet.create({
+  tiles: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  tile: { borderRadius: 26, paddingVertical: 16, paddingHorizontal: 12, alignItems: "center", gap: 8 },
+  tileSmall: { borderRadius: 22, paddingVertical: 12, paddingHorizontal: 6, gap: 6 },
+  tileIcon: { width: 60, height: 60, borderRadius: 30, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
+  tileTitle: { fontSize: 17, fontWeight: "800", color: colors.text, textAlign: "center", lineHeight: 20 },
+  tileSub: { fontSize: 13.5, color: colors.textMuted, textAlign: "center", lineHeight: 17 },
 });

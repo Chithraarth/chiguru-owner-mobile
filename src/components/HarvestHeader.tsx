@@ -50,7 +50,11 @@ export function HarvestHeader({ navigation, options, route, back }: NativeStackH
             navigation={navigation}
             onSwitchFarm={() => setSwitcherOpen(true)}
           />
-          <EstateSwitcherModal visible={switcherOpen} onClose={() => setSwitcherOpen(false)} />
+          <EstateSwitcherModal
+            visible={switcherOpen}
+            onClose={() => setSwitcherOpen(false)}
+            onAddFarm={() => navigation.navigate("DashboardTab", { screen: "Onboarding", initial: false })}
+          />
         </>
       )}
     </View>

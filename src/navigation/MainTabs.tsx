@@ -63,9 +63,8 @@ import { EstateEditScreen } from "../features/estate/screens/EstateEditScreen";
 import { ProfileScreen } from "../features/profile/screens/ProfileScreen";
 import { BackupRestoreScreen } from "../features/profile/screens/BackupRestoreScreen";
 import { EstateSwitcherModal } from "../features/estate/components/EstateSwitcherModal";
-import { AppHeader } from "../components/AppHeader";
 import { harvestHeaderOptions } from "../components/HarvestHeader";
-import { FloatingTabBar } from "../components/FloatingTabBar";
+import { HarvestTabBar } from "../components/HarvestTabBar";
 import { colors, radius } from "../components/theme";
 
 const Tab = createBottomTabNavigator();
@@ -187,7 +186,7 @@ function DashboardStack() {
       <DashboardStackNav.Screen
         name="Dashboard"
         component={DashboardScreen}
-        options={({ navigation }) => ({ header: () => <AppHeader navigation={navigation} /> })}
+        options={{ headerShown: false }}
       />
       <DashboardStackNav.Screen name="More" component={MoreScreen} options={{ title: "More" }} />
       {registerSharedScreens(DashboardStackNav)}
@@ -242,7 +241,7 @@ function SyncStack() {
   );
 }
 
-const TAB_ICONS: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
+const TAB_ICONS: Record<string, React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>> = {
   DashboardTab: Home,
   WorkTab: UserCheck,
   UpdatesTab: Camera,
@@ -253,12 +252,12 @@ const TAB_ICONS: Record<string, React.ComponentType<{ size?: number; color?: str
 export function MainTabs() {
   return (
     <Tab.Navigator
-      tabBar={(props) => <FloatingTabBar {...props} />}
+      tabBar={(props) => <HarvestTabBar {...props} />}
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarIcon: ({ color, size }) => {
+        tabBarIcon: ({ color, size, focused }) => {
           const Icon = TAB_ICONS[route.name];
-          return <Icon color={color} size={size ?? 20} />;
+          return <Icon color={color} size={size ?? 24} strokeWidth={focused ? 2.2 : 1.9} />;
         },
       })}
     >
