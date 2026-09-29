@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
   honestDesc: { fontSize: 14, color: colors.primary, opacity: 0.8, marginTop: spacing.xs, textAlign: "center", lineHeight: 16 },
 
   planCardCurrent: { borderColor: colors.primary, backgroundColor: "#FBF2D9" },
-  planIconWrap: { width: 36, height: 36, borderRadius: radius.sm, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" },
+  planIconWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" },
   planName: { fontSize: 16.5, fontWeight: "700", color: colors.text },
   planTagline: { fontSize: 13.5, color: colors.textMuted, marginTop: 1 },
   planPrice: { fontSize: 26, fontWeight: "700", color: colors.text, marginTop: spacing.sm },

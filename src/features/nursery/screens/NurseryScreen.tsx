@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
   vendorCard: { width: 148, backgroundColor: colors.card, ...shadow, borderRadius: 22, padding: spacing.sm + 4 },
   topBadge: { position: "absolute", top: 8, right: 8, flexDirection: "row", alignItems: "center", gap: 2, backgroundColor: "#FEF3C7", borderRadius: radius.pill, paddingHorizontal: 6, paddingVertical: 2 },
   topBadgeText: { fontSize: 10, fontWeight: "700", color: "#B45309" },
-  vendorCardIcon: { width: 40, height: 40, borderRadius: radius.sm, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center", overflow: "hidden", marginBottom: spacing.xs },
+  vendorCardIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center", overflow: "hidden", marginBottom: spacing.xs },
   vendorCardImg: { width: "100%", height: "100%" },
   vendorCardName: { fontSize: 14, fontWeight: "700", color: colors.text },
   vendorCardRatingCount: { fontSize: 11, color: colors.textMuted },
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
 
   backText: { fontSize: 15, fontWeight: "700", color: colors.primary },
   vendorHero: { backgroundColor: colors.primary, borderRadius: radius.lg, padding: spacing.md },
-  vendorHeroIcon: { width: 56, height: 56, borderRadius: radius.sm, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  vendorHeroIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center", overflow: "hidden" },
   vendorHeroImg: { width: "100%", height: "100%" },
   vendorHeroName: { color: "#fff", fontSize: 18, fontWeight: "700" },
   vendorHeroSub: { color: "rgba(255,255,255,0.8)", fontSize: 13.5, marginTop: 1 },

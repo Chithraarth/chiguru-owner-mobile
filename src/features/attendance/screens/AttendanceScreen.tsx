@@ -1698,7 +1698,7 @@ const styles = StyleSheet.create({
   seasonIconWrap: {
     width: 30,
     height: 30,
-    borderRadius: radius.sm,
+    borderRadius: 15,
     backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",

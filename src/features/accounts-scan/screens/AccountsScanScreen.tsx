@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
   instructionsCard: { backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", borderRadius: radius.md, padding: spacing.md, gap: spacing.sm },
   instructionsTitle: { fontSize: 16, fontWeight: "700", color: "#92600E" },
   tipRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  tipIconWrap: { width: 26, height: 26, borderRadius: radius.sm, backgroundColor: "#FDE68A", alignItems: "center", justifyContent: "center" },
+  tipIconWrap: { width: 26, height: 26, borderRadius: 13, backgroundColor: "#FDE68A", alignItems: "center", justifyContent: "center" },
   tipText: { fontSize: 14.5, color: "#92600E", flex: 1 },
 
   readBtn: { backgroundColor: "#D9861F", borderRadius: radius.md, padding: spacing.lg, alignItems: "center", gap: spacing.xs },

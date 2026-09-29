@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
   navIconWrap: {
     width: 44,
     height: 44,
-    borderRadius: radius.sm,
+    borderRadius: 22,
     backgroundColor: colors.secondary,
     alignItems: "center",
     justifyContent: "center",

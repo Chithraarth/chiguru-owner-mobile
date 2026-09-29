@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
 
   sectionLabel: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5 },
   folderRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  folderIcon: { width: 44, height: 44, borderRadius: radius.sm, backgroundColor: "#FDEAEA", alignItems: "center", justifyContent: "center" },
+  folderIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#FDEAEA", alignItems: "center", justifyContent: "center" },
   folderName: { fontSize: 16.5, fontWeight: "700", color: colors.text },
   folderSubtitle: { fontSize: 14, color: colors.textMuted, marginTop: 2 },
   countBadge: { backgroundColor: "#FFF0C2", borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },

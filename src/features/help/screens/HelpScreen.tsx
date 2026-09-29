@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
   intro: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm, backgroundColor: colors.primary + "0D", borderWidth: 1, borderColor: colors.primary + "1A", borderRadius: radius.lg, padding: spacing.md },
-  introIconWrap: { width: 36, height: 36, borderRadius: radius.sm, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+  introIconWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
   introTitle: { fontSize: 16, fontWeight: "700", color: colors.primary },
   introSubtitle: { fontSize: 14, color: colors.primary, opacity: 0.8, marginTop: 3, lineHeight: 17 },
 

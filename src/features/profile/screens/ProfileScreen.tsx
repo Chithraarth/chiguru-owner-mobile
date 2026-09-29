@@ -7,6 +7,7 @@ import { Check, CloudOff, CloudUpload, Copy, LogOut, Phone, RotateCcw, ShieldChe
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
+import { Avatar } from "../../../components/harvest";
 import { colors, radius, spacing } from "../../../components/theme";
 import { useSessionStore } from "../../../store/sessionStore";
 import { signOutUser } from "../../../lib/firebase";
@@ -118,7 +119,7 @@ export function ProfileScreen({ navigation }: { navigation: any }) {
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       <Card>
         <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
-          <UserCircle2 size={48} color={colors.border} />
+          <Avatar name={user?.displayName || user?.phoneNumber || "Farmer"} index={1} size={56} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={styles.userName} numberOfLines={1}>{user?.displayName || user?.phoneNumber || "—"}</Text>
             {user?.email ? <Text style={styles.userEmail} numberOfLines={1}>{user.email}</Text> : null}
@@ -248,7 +249,7 @@ const styles = StyleSheet.create({
   signOutBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderWidth: 1, borderColor: "#F5C6C6", borderRadius: radius.sm, paddingVertical: spacing.sm + 2, marginTop: spacing.md },
   signOutText: { color: colors.danger, fontWeight: "600", fontSize: 15 },
 
-  iconWrap: { width: 38, height: 38, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
+  iconWrap: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
   cardTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text },
   cardSubtitle: { fontSize: 14, color: colors.textMuted, marginTop: 2, lineHeight: 16 },
   sectionLabel: { fontSize: 12.5, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, marginBottom: spacing.xs },

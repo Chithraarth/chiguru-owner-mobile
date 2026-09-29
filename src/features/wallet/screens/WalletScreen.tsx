@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   priceValue: { fontSize: 14.5, fontWeight: "700", color: colors.text },
 
   emptyText: { fontSize: 14.5, color: colors.textMuted },
-  txnIconWrap: { width: 30, height: 30, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
+  txnIconWrap: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
   txnIconCredit: { backgroundColor: "#E5F7EC" },
   txnIconDebit: { backgroundColor: "#FBEAEE" },
   txnLabel: { fontSize: 14.5, fontWeight: "600", color: colors.text, textTransform: "capitalize" },

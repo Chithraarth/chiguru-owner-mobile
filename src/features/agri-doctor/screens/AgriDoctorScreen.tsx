@@ -154,24 +154,24 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
   hero: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md },
-  heroIconWrap: { width: 40, height: 40, borderRadius: radius.sm, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
+  heroIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
   heroTitle: { color: "#fff", fontSize: 16.5, fontWeight: "700" },
   heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 13.5, marginTop: 2 },
 
   lockCard: { backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", borderRadius: radius.md, padding: spacing.lg, alignItems: "center", gap: spacing.sm },
-  lockIconWrap: { width: 48, height: 48, borderRadius: radius.md, backgroundColor: "#FDE68A", alignItems: "center", justifyContent: "center" },
+  lockIconWrap: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#FDE68A", alignItems: "center", justifyContent: "center" },
   lockTitle: { fontSize: 16.5, fontWeight: "700", color: "#92600E" },
   lockSubtitle: { fontSize: 14.5, color: "#92600E", textAlign: "center" },
 
   walletRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  walletIconWrap: { width: 38, height: 38, borderRadius: radius.sm, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center" },
+  walletIconWrap: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center" },
   walletLabel: { fontSize: 13, color: colors.textMuted },
   walletValue: { fontSize: 17, fontWeight: "700", color: colors.text },
   addMoneyBtn: { flexDirection: "row", alignItems: "center", gap: 4, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs + 2 },
   addMoneyText: { fontSize: 14.5, fontWeight: "600", color: colors.primary },
 
   expertBanner: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm + 4 },
-  expertIconWrap: { width: 36, height: 36, borderRadius: radius.sm, backgroundColor: "#FBF2D9", alignItems: "center", justifyContent: "center" },
+  expertIconWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#FBF2D9", alignItems: "center", justifyContent: "center" },
   expertTitle: { fontSize: 14.5, fontWeight: "700", color: colors.primary },
   expertSubtitle: { fontSize: 13, color: colors.primary },
 

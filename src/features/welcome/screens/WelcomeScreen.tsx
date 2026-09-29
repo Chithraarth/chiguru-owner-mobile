@@ -232,13 +232,13 @@ const styles = StyleSheet.create({
   videoDesc: { fontSize: 14.5, color: colors.textMuted, marginTop: 2, lineHeight: 17 },
 
   featureCard: { flexDirection: "row", gap: spacing.sm },
-  featureIconWrap: { width: 42, height: 42, borderRadius: radius.sm, backgroundColor: colors.primary + "1A", alignItems: "center", justifyContent: "center" },
+  featureIconWrap: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.primary + "1A", alignItems: "center", justifyContent: "center" },
   featureTitleRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs, flexWrap: "wrap" },
   featureTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
   featureDesc: { fontSize: 14.5, color: colors.textMuted, marginTop: 2, lineHeight: 17 },
 
   sellCard: { alignItems: "center" },
-  sellIconWrap: { width: 46, height: 46, borderRadius: radius.sm, backgroundColor: "#E3F5EA", alignItems: "center", justifyContent: "center", marginBottom: spacing.xs },
+  sellIconWrap: { width: 46, height: 46, borderRadius: 23, backgroundColor: "#E3F5EA", alignItems: "center", justifyContent: "center", marginBottom: spacing.xs },
   sellTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
   sellDesc: { fontSize: 14.5, color: colors.textMuted, marginTop: 2, textAlign: "center", lineHeight: 17 },
 

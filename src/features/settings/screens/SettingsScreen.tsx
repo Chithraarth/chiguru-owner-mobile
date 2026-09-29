@@ -171,7 +171,7 @@ export function SettingsScreen({ navigation }: { navigation: any }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  iconWrap: { width: 38, height: 38, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
+  iconWrap: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
   cardTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text },
   cardSubtitle: { fontSize: 14, color: colors.textMuted, marginTop: 2, lineHeight: 16 },
   pushSub: { marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
@@ -183,6 +183,6 @@ const styles = StyleSheet.create({
   langChipTextSelected: { color: "#fff", fontWeight: "700" },
 
   linkRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, ...shadow, borderRadius: 22, padding: spacing.sm + 4 },
-  linkIconWrap: { width: 32, height: 32, borderRadius: radius.sm, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center" },
+  linkIconWrap: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center" },
   linkLabel: { flex: 1, fontSize: 15.5, fontWeight: "600", color: colors.text },
 });

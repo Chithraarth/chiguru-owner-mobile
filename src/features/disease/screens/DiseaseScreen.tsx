@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
   hero: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md },
-  heroIconWrap: { width: 44, height: 44, borderRadius: radius.sm, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
+  heroIconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
   heroTitle: { color: "#fff", fontSize: 16.5, fontWeight: "700" },
   heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 13.5, marginTop: 2 },
 
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
   disclaimerText: { flex: 1, fontSize: 13, color: "#92600E", lineHeight: 15 },
 
   doctorCta: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: "#FFF0C2", borderWidth: 1, borderColor: "#F0E4C2", borderRadius: radius.md, padding: spacing.sm + 4 },
-  doctorIconWrap: { width: 36, height: 36, borderRadius: radius.sm, backgroundColor: "#FFF0C2", alignItems: "center", justifyContent: "center" },
+  doctorIconWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#FFF0C2", alignItems: "center", justifyContent: "center" },
   doctorCtaTitle: { fontSize: 14.5, fontWeight: "700", color: colors.primary },
   doctorCtaSubtitle: { fontSize: 13, color: colors.primary },
 

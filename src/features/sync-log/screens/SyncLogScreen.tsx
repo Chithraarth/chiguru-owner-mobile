@@ -66,7 +66,7 @@ export function SyncLogScreen() {
 
         {isOnline ? (
           <View style={{ marginTop: spacing.sm }}>
-            <Button title="Sync now" variant="secondary" onPress={() => runSync({ manual: true })} loading={isSyncing} />
+            <Button title="Sync now" icon={RefreshCw} onPress={() => runSync({ manual: true })} loading={isSyncing} />
           </View>
         ) : null}
       </Card>
@@ -137,8 +137,8 @@ export function SyncLogScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  statusIconWrap: { width: 36, height: 36, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
-  statusTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
+  statusIconWrap: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center" },
+  statusTitle: { fontSize: 20, fontWeight: "800", color: colors.text },
   statusSubtitle: { fontSize: 13.5, color: colors.textMuted, marginTop: 2 },
   pendingBox: { backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", borderRadius: radius.sm, padding: spacing.sm + 2, marginTop: spacing.sm },
   pendingText: { fontSize: 13.5, color: "#92600E", lineHeight: 16 },

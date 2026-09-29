@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
   heroTitle: { color: "#fff", fontSize: 18, fontWeight: "700" },
   heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 14.5, marginTop: spacing.xs, lineHeight: 17 },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, ...shadow, borderRadius: 22, padding: spacing.md },
-  iconWrap: { width: 40, height: 40, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
+  iconWrap: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
   rowTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text },
   rowSubtitle: { fontSize: 13.5, color: colors.textMuted, marginTop: 1 },
 });

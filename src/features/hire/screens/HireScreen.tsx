@@ -365,12 +365,12 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
   hero: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md },
-  heroIconWrap: { width: 40, height: 40, borderRadius: radius.sm, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
+  heroIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
   heroTitle: { color: "#fff", fontSize: 17, fontWeight: "700" },
   heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 14, marginTop: 2 },
 
   landingTile: { flex: 1, borderRadius: radius.md, padding: spacing.md, alignItems: "center", gap: spacing.xs },
-  landingIconWrap: { width: 56, height: 56, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
+  landingIconWrap: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center" },
   landingTitle: { fontSize: 15.5, fontWeight: "700", textAlign: "center" },
   landingSubtitle: { fontSize: 12.5, textAlign: "center", opacity: 0.85 },
 
