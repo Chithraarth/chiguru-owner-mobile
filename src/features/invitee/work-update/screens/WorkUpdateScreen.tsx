@@ -236,7 +236,7 @@ export function WorkUpdateScreen({ navigation }: { navigation: any }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  preview: { width: "100%", height: 220, borderRadius: 12, marginBottom: spacing.sm },
+  preview: { width: "100%", height: 200, borderRadius: 24, marginBottom: spacing.sm },
   videoPreview: {
     flexDirection: "row",
     alignItems: "center",
@@ -247,19 +247,20 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   videoPreviewText: { flex: 1, color: colors.text, fontWeight: "600" },
-  aiHint: { color: colors.primary, fontSize: 14.5, marginTop: spacing.xs },
-  fieldLabel: { fontSize: 15.5, fontWeight: "500", color: colors.text, marginBottom: spacing.xs },
+  aiHint: { color: colors.primary, fontSize: 15, fontWeight: "800", marginTop: spacing.xs },
+  fieldLabel: { fontSize: 14, fontWeight: "600", color: colors.textMuted, marginBottom: 6 },
   chip: {
-    paddingVertical: spacing.sm,
+    minHeight: 48,
+    justifyContent: "center",
     paddingHorizontal: spacing.md,
-    borderRadius: radius.lg,
-    borderWidth: 1,
+    borderRadius: radius.pill,
+    borderWidth: 2.5,
     borderColor: colors.border,
     backgroundColor: "#fff",
   },
-  chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { color: colors.text, fontSize: 14.5 },
-  chipTextSelected: { color: "#fff", fontWeight: "600" },
+  chipSelected: { backgroundColor: colors.tint, borderColor: colors.primary },
+  chipText: { color: colors.text, fontSize: 16, fontWeight: "700" },
+  chipTextSelected: { color: colors.text, fontWeight: "800" },
   locationStatus: { color: colors.textMuted, fontSize: 14, marginBottom: spacing.md },
   error: { color: colors.danger, marginBottom: spacing.md },
 });

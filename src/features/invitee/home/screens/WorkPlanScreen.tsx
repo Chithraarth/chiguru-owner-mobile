@@ -115,7 +115,7 @@ export function WorkPlanScreen() {
             </Pressable>
           </Card>
 
-          <Text style={styles.sectionLabel}>PENDING</Text>
+          <Text style={styles.sectionLabel}>Pending</Text>
           {pending.length === 0 && overdue.length === 0 ? (
             <Text style={styles.muted}>Nothing pending this month.</Text>
           ) : (
@@ -146,16 +146,19 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: spacing.md,
   },
-  pagerMonth: { fontSize: 18, fontWeight: "700", color: colors.text },
+  pagerMonth: { fontSize: 22, fontWeight: "800", color: colors.text },
   pagerSub: { fontSize: 14, color: colors.primary, fontWeight: "600", marginTop: 2 },
-  sectionLabel: { fontSize: 13, fontWeight: "700", color: colors.primary, letterSpacing: 0.6, marginBottom: spacing.sm },
+  sectionLabel: { fontSize: 20, fontWeight: "800", color: colors.text, marginBottom: spacing.sm },
   muted: { color: colors.textMuted, fontSize: 14.5, paddingVertical: spacing.sm },
   taskCard: {
     backgroundColor: colors.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderRadius: 22,
     padding: spacing.md,
+    shadowColor: "#5A4600",
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
   },
   overdueTag: {
     fontSize: 13,
@@ -168,7 +171,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     marginBottom: 4,
   },
-  taskTitle: { fontSize: 16.5, fontWeight: "600", color: colors.text },
+  taskTitle: { fontSize: 17, fontWeight: "800", color: colors.text },
   taskDetails: { fontSize: 14.5, color: colors.textMuted, marginTop: 2 },
-  taskMeta: { fontSize: 13.5, color: colors.textMuted, marginTop: spacing.xs, textTransform: "uppercase", letterSpacing: 0.3 },
+  taskMeta: { fontSize: 14, color: colors.textMuted, marginTop: spacing.xs },
 });

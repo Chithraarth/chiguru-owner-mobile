@@ -3,11 +3,12 @@ import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, View } from "re
 import { Text } from "../../../../components/Text";
 import { useQuery } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
-import { ChevronDown, ChevronUp, Minus, Plus, Camera } from "lucide-react-native";
+import { ChevronDown, ChevronUp, Minus, Plus, Camera, Check, CheckCircle2 } from "lucide-react-native";
 import { Card } from "../../../../components/Card";
 import { Button } from "../../../../components/Button";
 import { TextField } from "../../../../components/TextField";
 import { EmptyState, LoadingView } from "../../../../components/StateViews";
+import { Avatar } from "../../../../components/harvest";
 import { colors, spacing } from "../../../../components/theme";
 import { useAttendance, useAdvancePayments, useWorkGroups } from "../hooks/useAttendance";
 import { getAttendanceByGroup } from "../../api";
@@ -150,7 +151,7 @@ export function AttendanceWorkersScreen({ route }: { route: any }) {
       <FlatList
         data={eligibleWorkers}
         keyExtractor={(w) => String(w.id)}
-        contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: spacing.xl }}
+        contentContainerStyle={{ padding: 20, paddingBottom: 150 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListHeaderComponent={
           <View style={{ gap: spacing.sm, marginBottom: spacing.sm }}>
@@ -181,18 +182,33 @@ export function AttendanceWorkersScreen({ route }: { route: any }) {
         ListEmptyComponent={
           <EmptyState title="No workers yet" subtitle="Ask the owner to add workers before marking attendance." />
         }
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
           const marked = markedIds.has(item.id);
           const isSelected = selected.has(item.id);
           const expanded = expandedId === item.id;
+          const total = eligibleWorkers.length;
           return (
-            <Card style={[styles.workerRow, isSelected && styles.workerRowSelected, marked && styles.workerRowMarked]}>
+            <View
+              style={[
+                styles.workerRow,
+                index === 0 && styles.workerRowFirst,
+                index === total - 1 && styles.workerRowLast,
+                index < total - 1 && styles.workerRowDivider,
+                marked && styles.workerRowMarked,
+              ]}
+            >
               <Pressable disabled={marked} onPress={() => toggle(item.id)} style={styles.workerRowMain}>
-                <Text style={styles.workerName}>{item.name}</Text>
+                <Avatar name={item.name} index={index} />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.workerName} numberOfLines={1}>{item.name}</Text>
+                  <Text style={styles.markedLabel}>{marked ? "Marked present" : `${paymentType === "Per day" ? "Daily" : paymentType} · ${fmtMoney(rate)}`}</Text>
+                </View>
                 {marked ? (
-                  <Text style={styles.markedLabel}>Marked present ✓</Text>
+                  <CheckCircle2 size={26} color={colors.success} />
                 ) : (
-                  <View style={[styles.checkbox, isSelected && styles.checkboxSelected]} />
+                  <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                    {isSelected ? <Check size={18} color="#FFFFFF" strokeWidth={3} /> : null}
+                  </View>
                 )}
               </Pressable>
 
@@ -263,17 +279,21 @@ export function AttendanceWorkersScreen({ route }: { route: any }) {
                   ) : null}
                 </>
               ) : null}
-            </Card>
+            </View>
           );
         }}
       />
-      {selected.size > 0 ? (
-        <View style={styles.footer}>
-          <Button
-            title={`Mark ${selected.size} present · ${fmtMoney(totalDue)}`}
-            onPress={save}
-            loading={markAttendance.isPending}
-          />
+      {eligibleWorkers.length > 0 ? (
+        <View style={styles.bottomBar}>
+          <View>
+            <Text style={styles.bottomCount}>
+              {new Set([...selected, ...markedIds]).size} present · {Math.max(0, eligibleWorkers.length - new Set([...selected, ...markedIds]).size)} absent
+            </Text>
+            <Text style={styles.bottomTotal}>{fmtMoney(totalDue)}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Button title={selected.size > 0 ? `Save ${selected.size}` : "Save"} onPress={save} loading={markAttendance.isPending} disabled={selected.size === 0} />
+          </View>
         </View>
       ) : null}
     </View>
@@ -284,13 +304,38 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   offlineBanner: { backgroundColor: colors.amberBg, padding: spacing.sm },
   offlineText: { color: colors.warning, textAlign: "center", fontSize: 14 },
-  workerRow: {},
-  workerRowMain: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  workerRow: { backgroundColor: colors.card, paddingHorizontal: 16, paddingVertical: 12 },
+  workerRowFirst: { borderTopLeftRadius: 28, borderTopRightRadius: 28 },
+  workerRowLast: { borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },
+  workerRowDivider: { borderBottomWidth: 1, borderBottomColor: colors.border },
+  bottomBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.card,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingTop: 14,
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    shadowColor: "#5A4600",
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: -6 },
+    elevation: 12,
+  },
+  bottomCount: { fontSize: 14, color: colors.textMuted },
+  bottomTotal: { fontSize: 26, fontWeight: "800", color: colors.text, lineHeight: 30 },
+  workerRowMain: { flexDirection: "row", alignItems: "center", gap: 12 },
   workerRowSelected: { borderColor: colors.primary, borderWidth: 2 },
   workerRowMarked: { opacity: 0.6 },
-  workerName: { fontSize: 16.5, color: colors.text, fontWeight: "500" },
-  markedLabel: { fontSize: 14, color: colors.primary },
-  checkbox: { width: 22, height: 22, borderRadius: 4, borderWidth: 2, borderColor: colors.border },
+  workerName: { fontSize: 16.5, color: colors.text, fontWeight: "700" },
+  markedLabel: { fontSize: 14, color: colors.textMuted },
+  checkbox: { width: 28, height: 28, borderRadius: 8, borderWidth: 2.5, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
   checkboxSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   hoursRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: spacing.sm },
   hoursLabel: { fontSize: 14.5, color: colors.textMuted },

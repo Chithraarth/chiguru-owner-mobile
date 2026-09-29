@@ -2,10 +2,11 @@ import React, { useMemo, useState } from "react";
 import { FlatList, Image, Modal, Pressable, RefreshControl, StyleSheet, View } from "react-native";
 import { Text } from "../../../../components/Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { X, Plus } from "lucide-react-native";
+import { X, Plus, Receipt } from "lucide-react-native";
 import { Card } from "../../../../components/Card";
 import { Button } from "../../../../components/Button";
 import { EmptyState, LoadingView } from "../../../../components/StateViews";
+import { FormFooter, IconChip } from "../../../../components/harvest";
 import { colors, radius, spacing } from "../../../../components/theme";
 import { useExpenses } from "../hooks/useExpenses";
 import { getExpenseReceipt } from "../../api";
@@ -66,7 +67,7 @@ export function ExpenseListScreen({ navigation }: { navigation: any }) {
       <FlatList
         data={groups}
         keyExtractor={([key]) => key}
-        contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}
+        contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 110 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={<EmptyState title="No expenses yet" subtitle="Add your first expense with a receipt photo." />}
         renderItem={({ item: [key, entries] }) => {
@@ -78,9 +79,10 @@ export function ExpenseListScreen({ navigation }: { navigation: any }) {
                 <Text style={styles.monthTotal}>{fmtMoney(subtotal)}</Text>
               </View>
               <View style={{ gap: spacing.sm }}>
-                {entries.map((e) => (
+                {entries.map((e, i) => (
                   <Pressable key={e.id} onPress={() => viewReceipt(e)} disabled={!e.hasReceipt}>
                     <Card style={styles.row}>
+                      <IconChip icon={Receipt} index={i} size={44} />
                       <View style={{ flex: 1 }}>
                         <Text style={styles.category}>{e.category}</Text>
                         <Text style={styles.meta}>
@@ -99,9 +101,9 @@ export function ExpenseListScreen({ navigation }: { navigation: any }) {
           );
         }}
       />
-      <View style={[styles.footer, { paddingBottom: spacing.md + insets.bottom }]}>
+      <FormFooter>
         <Button title="Add expense" icon={Plus} onPress={() => navigation.navigate("ExpenseForm")} />
-      </View>
+      </FormFooter>
 
       <Modal visible={!!receiptUrl || loadingReceiptId != null} transparent animationType="fade" onRequestClose={() => setReceiptUrl(null)}>
         <View style={styles.receiptBackdrop}>
@@ -121,16 +123,16 @@ export function ExpenseListScreen({ navigation }: { navigation: any }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  totalCard: { margin: spacing.md, alignItems: "center" },
-  totalLabel: { color: colors.textMuted, fontSize: 14.5 },
-  totalValue: { fontSize: 24, fontWeight: "700", color: colors.primaryDark, marginTop: spacing.xs },
+  totalCard: { marginHorizontal: 20, marginTop: spacing.md, alignItems: "center", padding: 18 },
+  totalLabel: { color: colors.textMuted, fontSize: 16, fontWeight: "700" },
+  totalValue: { fontSize: 34, fontWeight: "800", color: colors.primary, marginTop: 2 },
   monthHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: spacing.sm },
-  monthLabel: { fontSize: 14, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, textTransform: "uppercase" },
+  monthLabel: { fontSize: 20, fontWeight: "800", color: colors.text },
   monthTotal: { fontSize: 14, fontWeight: "700", color: colors.text },
-  row: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  category: { fontSize: 15.5, fontWeight: "600", color: colors.text },
+  row: { flexDirection: "row", alignItems: "center", gap: 12 },
+  category: { fontSize: 16.5, fontWeight: "800", color: colors.text },
   meta: { fontSize: 14, color: colors.textMuted, marginTop: 2 },
-  amount: { fontSize: 16.5, fontWeight: "700", color: colors.text },
+  amount: { fontSize: 18, fontWeight: "800", color: colors.text },
   footer: { padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
   receiptBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.9)", alignItems: "center", justifyContent: "center" },
   receiptClose: { position: "absolute", top: 50, right: 20, zIndex: 1 },
