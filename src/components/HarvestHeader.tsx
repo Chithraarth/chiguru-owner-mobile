@@ -61,6 +61,40 @@ export function HarvestHeader({ navigation, options, route, back }: NativeStackH
   );
 }
 
+/**
+ * The same yellow band for screens that live outside a stack navigator
+ * (Choose farm, invites, device limit): optional back, subtitle, title, right.
+ */
+export function HeaderBand({
+  title,
+  subtitle,
+  onBack,
+  right,
+}: {
+  title: string;
+  subtitle?: string;
+  onBack?: () => void;
+  right?: React.ReactNode;
+}) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={[styles.band, { paddingTop: insets.top + (onBack ? 12 : 20) }]}>
+      {onBack ? <RoundButton icon={ChevronLeft} label="Back" onPress={onBack} /> : null}
+      <View style={styles.titleWrap}>
+        {subtitle ? (
+          <Text style={styles.subtitle} numberOfLines={1}>
+            {subtitle}
+          </Text>
+        ) : null}
+        <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+          {title}
+        </Text>
+      </View>
+      {right ? <View style={styles.right}>{right}</View> : null}
+    </View>
+  );
+}
+
 export const harvestHeaderOptions = {
   header: (props: NativeStackHeaderProps) => <HarvestHeader {...props} />,
   contentStyle: { backgroundColor: colors.bg },

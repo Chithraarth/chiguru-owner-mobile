@@ -2,13 +2,25 @@ import React, { useEffect } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { Text } from "../../../components/Text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Users } from "lucide-react-native";
+import { Check, Users } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
-import { LoadingView } from "../../../components/StateViews";
-import { colors, radius, spacing } from "../../../components/theme";
+import { HeaderBand } from "../../../components/HarvestHeader";
+import { IconChip } from "../../../components/harvest";
+import { Enter } from "../../../components/motion";
+import { SplashView } from "../../intro/SplashView";
+import { colors, spacing } from "../../../components/theme";
 import { getMyInvites, acceptInvite, declineInvite } from "../../../api/endpoints/managers";
 import type { PendingInvite } from "../../../types/api";
+
+// What an invitee can do on someone else's farm - the old Manager app's
+// features (see chiguru-backend's middlewares/inviteeAccess.ts).
+const CAN_DO = [
+  "Mark attendance & work groups",
+  "Post work updates with photos",
+  "Add expenses with receipts",
+  "See the owner’s work plan",
+];
 
 // ── Pending Invites ───────────────────────────────────────────────────────
 // Shown right after sign-in, before Choose Estate, whenever this person has
@@ -38,35 +50,39 @@ export function PendingInvitesScreen({ onDone }: { onDone: () => void }) {
     if (allHandled) onDone();
   }, [allHandled, onDone]);
 
-  if (query.isLoading) return <LoadingView label="Checking invites..." />;
-  if (allHandled) return <LoadingView label="Loading..." />;
+  if (query.isLoading) return <SplashView label="Checking invites…" />;
+  if (allHandled) return <SplashView />;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
-      <Text style={styles.title}>You've been invited</Text>
-      <Text style={styles.subtitle}>Accept to help manage their farm, or decline if this isn't for you.</Text>
-
-      <View style={{ gap: spacing.sm }}>
-        {invites.map((invite) => (
-          <InviteCard
-            key={invite.id}
-            invite={invite}
-            busy={
-              (acceptMutation.isPending && acceptMutation.variables === invite.id) ||
-              (declineMutation.isPending && declineMutation.variables === invite.id)
-            }
-            error={
-              (acceptMutation.isError && acceptMutation.variables === invite.id) ||
-              (declineMutation.isError && declineMutation.variables === invite.id)
-                ? "Couldn't reach the server. Check your connection and try again."
-                : null
-            }
-            onAccept={() => acceptMutation.mutate(invite.id)}
-            onDecline={() => declineMutation.mutate(invite.id)}
-          />
+    <View style={styles.container}>
+      <Enter kind="down">
+        <HeaderBand title="You’ve been invited" subtitle="Accept to help manage their farm" />
+      </Enter>
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
+        {invites.map((invite, i) => (
+          <Enter key={invite.id} delay={300 + i * 120}>
+            <InviteCard
+              invite={invite}
+              busy={
+                (acceptMutation.isPending && acceptMutation.variables === invite.id) ||
+                (declineMutation.isPending && declineMutation.variables === invite.id)
+              }
+              error={
+                (acceptMutation.isError && acceptMutation.variables === invite.id) ||
+                (declineMutation.isError && declineMutation.variables === invite.id)
+                  ? "Couldn't reach the server. Check your connection and try again."
+                  : null
+              }
+              onAccept={() => acceptMutation.mutate(invite.id)}
+              onDecline={() => declineMutation.mutate(invite.id)}
+            />
+          </Enter>
         ))}
-      </View>
-    </ScrollView>
+        <Enter delay={600}>
+          <Text style={styles.note}>You won’t see their money, loans, subscription or other farms. You can leave any time.</Text>
+        </Enter>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -83,26 +99,28 @@ function InviteCard({
   onAccept: () => void;
   onDecline: () => void;
 }) {
+  const who = invite.ownerName ?? invite.ownerEmail ?? invite.ownerPhone ?? "Someone";
+  const contact = invite.ownerName ? invite.ownerEmail ?? invite.ownerPhone : null;
   return (
-    <Card style={{ gap: spacing.sm }}>
+    <Card style={{ gap: 14, padding: 18 }}>
       <View style={styles.row}>
-        <View style={styles.iconWrap}>
-          <Users size={18} color={colors.primary} />
-        </View>
+        <IconChip icon={Users} index={0} size={52} />
         <View style={{ flex: 1 }}>
-          <Text style={styles.rowTitle}>
-            {invite.ownerName ?? invite.ownerEmail ?? invite.ownerPhone ?? "Someone"} invited you
-          </Text>
+          <Text style={styles.rowTitle}>{who} invited you</Text>
           <Text style={styles.rowSubtitle}>
-            {invite.farmName ? `To help manage "${invite.farmName}"` : "To help manage their farm"}
+            {invite.farmName ? `To help manage “${invite.farmName}”` : "To help manage their farm"}
+            {contact ? ` · ${contact}` : ""}
           </Text>
-          {invite.ownerName && (invite.ownerEmail || invite.ownerPhone) ? (
-            <Text style={styles.rowSubtitle}>{invite.ownerEmail ?? invite.ownerPhone}</Text>
-          ) : null}
         </View>
       </View>
+      {CAN_DO.map((line) => (
+        <View key={line} style={styles.canRow}>
+          <Check size={18} color={colors.success} strokeWidth={2.6} />
+          <Text style={styles.canText}>{line}</Text>
+        </View>
+      ))}
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <View style={{ flexDirection: "row", gap: spacing.sm }}>
+      <View style={{ flexDirection: "row", gap: 10 }}>
         <View style={{ flex: 1 }}>
           <Button title="Decline" variant="secondary" onPress={onDecline} disabled={busy} />
         </View>
@@ -116,18 +134,11 @@ function InviteCard({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  title: { fontSize: 22, fontWeight: "700", color: colors.text },
-  subtitle: { fontSize: 13.5, color: colors.textMuted, lineHeight: 19 },
-  row: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.sm,
-    backgroundColor: colors.primary + "15",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  rowTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
-  rowSubtitle: { fontSize: 12.5, color: colors.textMuted, marginTop: 2 },
-  error: { fontSize: 12.5, color: colors.danger },
+  row: { flexDirection: "row", alignItems: "center", gap: 12 },
+  rowTitle: { fontSize: 17, fontWeight: "800", color: colors.text },
+  rowSubtitle: { fontSize: 14, color: colors.textMuted, marginTop: 1 },
+  canRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  canText: { fontSize: 16, color: colors.text },
+  note: { fontSize: 15, color: colors.textMuted, lineHeight: 22, paddingHorizontal: spacing.xs },
+  error: { fontSize: 14, fontWeight: "600", color: colors.danger },
 });

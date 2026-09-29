@@ -163,9 +163,21 @@ export function ListRow({
 }
 
 /** Rolling green hills with a pale sun and sprouts - sits at the bottom of the yellow bands. */
-export function HillsArt({ height = 140, width = 400 }: { height?: number; width?: number }) {
+export const SPROUT_XS = [40, 80, 120, 280, 320, 360];
+
+export function HillsArt({
+  height = 140,
+  width = 400,
+  sun = true,
+  sprouts: showSprouts = true,
+}: {
+  height?: number;
+  width?: number;
+  sun?: boolean;
+  sprouts?: boolean;
+}) {
   const h = height;
-  const sprouts = [40, 80, 120, 280, 320, 360];
+  const sprouts = showSprouts ? SPROUT_XS : [];
   return (
     <Svg
       width="100%"
@@ -175,7 +187,7 @@ export function HillsArt({ height = 140, width = 400 }: { height?: number; width
       style={{ position: "absolute", left: 0, right: 0, bottom: 0 }}
       pointerEvents="none"
     >
-      <Circle cx={width - 70} cy={Math.min(40, h * 0.3)} r={26} fill="#FFFFFF" opacity={0.55} />
+      {sun ? <Circle cx={width - 70} cy={Math.min(40, h * 0.3)} r={26} fill="#FFFFFF" opacity={0.55} /> : null}
       <Path d={`M0 ${h - 60} Q100 ${h - 110} 200 ${h - 70} T${width} ${h - 80} L${width} ${h} L0 ${h} Z`} fill={colors.hill} />
       <Path d={`M0 ${h - 30} Q120 ${h - 70} 240 ${h - 35} T${width} ${h - 45} L${width} ${h} L0 ${h} Z`} fill={colors.hillDark} />
       {sprouts.map((x) => (

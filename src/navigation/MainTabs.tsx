@@ -171,7 +171,7 @@ function registerSharedScreens(Nav: ReturnType<typeof createNativeStackNavigator
       <Nav.Screen name="Help" component={HelpScreen} options={{ title: "Help" }} />
       <Nav.Screen name="Profile" component={ProfileScreen} options={{ title: "Profile" }} />
       <Nav.Screen name="BackupRestore" component={BackupRestoreScreen} options={{ title: "Backup & Restore" }} />
-      <Nav.Screen name="Onboarding" component={OnboardingScreen} options={{ title: "Set Up Your Farm" }} />
+      <Nav.Screen name="Onboarding" component={OnboardingScreen} options={{ title: "Set Up Your Farm", headerShown: false }} />
       <Nav.Screen name="EstateEdit" component={EstateEditScreen} options={{ title: "Edit Farm" }} />
       <Nav.Screen name="Welcome" options={{ title: "How Chiguru Works" }}>
         {({ navigation }: any) => <WelcomeScreen onDone={() => navigation.goBack()} />}

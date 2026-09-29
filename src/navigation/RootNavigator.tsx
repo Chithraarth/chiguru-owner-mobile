@@ -15,7 +15,8 @@ import { useSessionStore } from "../store/sessionStore";
 import { useSyncStore } from "../store/syncStore";
 import { runSync } from "../lib/syncManager";
 import { usePushStore } from "../lib/push";
-import { LoadingView } from "../components/StateViews";
+import { SplashView } from "../features/intro/SplashView";
+import { useWelcomeStore } from "../features/welcome/store/welcomeStore";
 import { AuthStack } from "./AuthStack";
 import { MainTabs } from "./MainTabs";
 import { InviteeStack } from "../features/invitee/InviteeStack";
@@ -31,6 +32,8 @@ export function RootNavigator() {
   const activeEstateId = useEstateStore((s) => s.activeEstateId);
   const setActiveEstate = useEstateStore((s) => s.setActiveEstate);
   const setOnline = useSyncStore((s) => s.setOnline);
+  const welcomeHydrated = useWelcomeStore((s) => s.hydrated);
+  const hydrateWelcome = useWelcomeStore((s) => s.hydrate);
 
   const { blocked, devices, maxDevices, recheck } = useDeviceRegistration(!!user);
   const hydratePush = usePushStore((s) => s.hydrate);
@@ -76,7 +79,8 @@ export function RootNavigator() {
 
   useEffect(() => {
     hydrateEstate();
-  }, [hydrateEstate]);
+    hydrateWelcome();
+  }, [hydrateEstate, hydrateWelcome]);
 
   // Auto-pick the (only) estate when there's exactly one relationship, or
   // self-heal a stale activeEstateId (deleted farm, revoked invite) back to
@@ -110,8 +114,8 @@ export function RootNavigator() {
     return unsubscribe;
   }, [user, setOnline]);
 
-  if (authLoading || (user && !estateHydrated)) {
-    return <LoadingView label="Loading..." />;
+  if (authLoading || !welcomeHydrated || (user && !estateHydrated)) {
+    return <SplashView />;
   }
 
   if (!user) {
@@ -127,7 +131,7 @@ export function RootNavigator() {
   }
 
   if (myEstatesQuery.isLoading || myInvitesQuery.isLoading) {
-    return <LoadingView label="Loading your farms..." />;
+    return <SplashView label="Loading your farms…" />;
   }
 
   // Any invite this person hasn't yet accepted/declined must be resolved
