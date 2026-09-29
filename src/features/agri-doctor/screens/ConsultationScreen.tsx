@@ -256,7 +256,7 @@ export function ConsultationScreen({ navigation, route }: { navigation: any; rou
             <Camera size={18} color={colors.textMuted} />
           </Pressable>
           <View style={{ flex: 1 }}>
-            <TextField placeholder="Describe your crop problem…" value={input} onChangeText={setInput} containerStyle={{ marginBottom: 0 }} multiline />
+            <TextField placeholder="Describe your crop problem…" value={input} onChangeText={setInput} containerStyle={{ marginBottom: 0 }} style={{ borderWidth: 0, backgroundColor: colors.muted, borderRadius: 26, minHeight: 50 }} multiline />
           </View>
           {input.trim() ? (
             <Pressable
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   voiceProgress: { height: "100%", borderRadius: 2 },
   voiceDuration: { fontSize: 13, color: colors.textMuted, minWidth: 32 },
 
-  iconBtn: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", backgroundColor: colors.muted },
+  iconBtn: { width: 48, height: 48, borderRadius: 24, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card, alignItems: "center", justifyContent: "center" },
 
   recordingBar: { flexDirection: "row", alignItems: "center", gap: spacing.sm, padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.card },
   recordingDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.danger },
@@ -313,8 +313,8 @@ const styles = StyleSheet.create({
   recordingCancelText: { fontSize: 14.5, color: colors.textMuted, fontWeight: "600" },
   recordingStop: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.danger, alignItems: "center", justifyContent: "center" },
 
-  inputRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.card },
-  sendBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+  inputRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 18, backgroundColor: colors.card, borderTopLeftRadius: 28, borderTopRightRadius: 28, shadowColor: "#5A4600", shadowOpacity: 0.1, shadowRadius: 20, shadowOffset: { width: 0, height: -6 }, elevation: 12 },
+  sendBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
 
   endedContainer: { flex: 1, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center", padding: spacing.lg, gap: spacing.sm },
   endedIconWrap: { width: 72, height: 72, borderRadius: 36, backgroundColor: "#FBF2D9", alignItems: "center", justifyContent: "center" },

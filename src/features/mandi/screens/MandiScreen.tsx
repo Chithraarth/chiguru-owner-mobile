@@ -231,7 +231,7 @@ export function MandiScreen() {
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       <View style={styles.hero}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
-          <View style={styles.heroIconWrap}><Sparkles size={18} color="#fff" /></View>
+          <View style={styles.heroIconWrap}><Sparkles size={18} color={colors.primary} /></View>
           <View style={{ flex: 1 }}>
             <Text style={styles.heroTitle}>Today's market prices</Text>
             <Text style={styles.heroSubtitle}>Found automatically every morning from government mandi rates, curing works & buyer websites for your district</Text>
@@ -242,7 +242,7 @@ export function MandiScreen() {
             {fetching ? "Searching the internet now…" : query.data?.fetchedAt ? `Updated today at ${fmtTime(query.data.fetchedAt)}` : ""}
           </Text>
           <Pressable style={styles.syncBtn} onPress={() => refreshMutation.mutate()} disabled={fetching || refreshMutation.isPending}>
-            <RefreshCw size={13} color="#fff" />
+            <RefreshCw size={15} color={colors.primary} />
             <Text style={styles.syncBtnText}>Check again</Text>
           </Pressable>
         </View>
@@ -273,7 +273,7 @@ export function MandiScreen() {
                     <Text style={[styles.recentChipText, active && styles.recentChipTextActive]}>{term}</Text>
                   </Pressable>
                   <Pressable onPress={() => removeRecent(term)} hitSlop={6}>
-                    <X size={11} color={active ? "rgba(255,255,255,0.8)" : colors.textMuted} />
+                    <X size={13} color={colors.textMuted} />
                   </Pressable>
                 </View>
               );
@@ -340,21 +340,21 @@ export function MandiScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
-  hero: { backgroundColor: "#2F6B1F", borderRadius: radius.md, padding: spacing.md },
-  heroIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
-  heroTitle: { color: "#fff", fontSize: 16, fontWeight: "700" },
-  heroSubtitle: { color: "rgba(255,255,255,0.8)", fontSize: 13, marginTop: 2, lineHeight: 15 },
-  heroUpdated: { color: "rgba(255,255,255,0.7)", fontSize: 12.5, flex: 1 },
-  syncBtn: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
-  syncBtnText: { color: "#fff", fontSize: 13, fontWeight: "700" },
+  hero: { backgroundColor: colors.accent, borderRadius: 28, padding: spacing.md },
+  heroIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
+  heroTitle: { color: colors.accentInk, fontSize: 18, fontWeight: "800" },
+  heroSubtitle: { color: colors.accentInkSoft, fontSize: 13, marginTop: 2, lineHeight: 15 },
+  heroUpdated: { color: colors.accentInkSoft, fontSize: 12.5, flex: 1 },
+  syncBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#FFFFFF", borderRadius: 999, paddingHorizontal: 14, minHeight: 40 },
+  syncBtnText: { color: colors.text, fontSize: 14.5, fontWeight: "800" },
 
-  searchWrap: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", ...shadow, borderRadius: 22, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs + 2 },
+  searchWrap: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderWidth: 2, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: 14, minHeight: 54 },
   searchInput: { flex: 1, fontSize: 15, color: colors.text },
 
-  recentChip: { flexDirection: "row", alignItems: "center", gap: 5, ...shadow, backgroundColor: "#fff", borderRadius: radius.pill, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs },
-  recentChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  recentChip: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingHorizontal: 14, borderRadius: 999, borderWidth: 2.5, borderColor: colors.border, backgroundColor: "#fff" },
+  recentChipActive: { backgroundColor: colors.tint, borderColor: colors.primary },
   recentChipText: { fontSize: 13.5, color: colors.text, textTransform: "capitalize" },
-  recentChipTextActive: { color: "#fff", fontWeight: "600" },
+  recentChipTextActive: { color: colors.text, fontWeight: "800" },
 
   sectionLabel: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, marginBottom: spacing.sm },
 

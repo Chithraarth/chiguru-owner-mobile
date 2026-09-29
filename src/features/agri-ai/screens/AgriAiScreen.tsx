@@ -164,7 +164,7 @@ export function AgriAiScreen({ navigation }: { navigation: any }) {
       <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
         <View style={styles.hero}>
           <View style={styles.heroIconWrap}>
-            <Sprout size={30} color="#fff" />
+            <Sprout size={30} color={colors.primary} />
           </View>
           <Text style={styles.heroTitle}>Your Agri Technician</Text>
           <Text style={styles.heroSubtitle}>
@@ -239,10 +239,10 @@ export function AgriAiScreen({ navigation }: { navigation: any }) {
             value={input}
             onChangeText={setInput}
             containerStyle={{ marginBottom: 0 }}
+            style={{ borderWidth: 0, backgroundColor: colors.muted, borderRadius: 26, minHeight: 50 }}
             multiline
           />
         </View>
-        <View style={{ width: spacing.sm }} />
         <Pressable
           style={[styles.sendBtn, (!input.trim() || sending) && { opacity: 0.5 }]}
           onPress={() => send(input)}
@@ -258,10 +258,10 @@ export function AgriAiScreen({ navigation }: { navigation: any }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
-  hero: { backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.lg, alignItems: "center" },
-  heroIconWrap: { width: 64, height: 64, borderRadius: 32, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", marginBottom: spacing.sm },
-  heroTitle: { color: "#fff", fontSize: 19, fontWeight: "700" },
-  heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 14.5, marginTop: spacing.xs, textAlign: "center", lineHeight: 18 },
+  hero: { backgroundColor: colors.accent, borderRadius: 28, padding: spacing.lg, alignItems: "center" },
+  heroIconWrap: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", marginBottom: spacing.sm },
+  heroTitle: { color: colors.accentInk, fontSize: 19, fontWeight: "800" },
+  heroSubtitle: { color: colors.accentInkSoft, fontSize: 14.5, marginTop: spacing.xs, textAlign: "center", lineHeight: 18 },
 
   disclaimer: { flexDirection: "row", gap: spacing.sm, backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", borderRadius: radius.md, padding: spacing.sm + 4 },
   disclaimerText: { flex: 1, fontSize: 13.5, color: "#92600E", lineHeight: 16 },
@@ -289,8 +289,8 @@ const styles = StyleSheet.create({
   typingBubble: { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: spacing.sm + 6 },
   typingDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: colors.primary, opacity: 0.5 },
 
-  inputRow: { flexDirection: "row", alignItems: "center", padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.card },
-  sendBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+  inputRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 18, backgroundColor: colors.card, borderTopLeftRadius: 28, borderTopRightRadius: 28, shadowColor: "#5A4600", shadowOpacity: 0.1, shadowRadius: 20, shadowOffset: { width: 0, height: -6 }, elevation: 12 },
+  sendBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
 });
 
 /** Markdown node styles for AI replies, matched to the app's aiText look (colors.text, 13.5/19). */

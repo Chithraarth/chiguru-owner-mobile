@@ -59,7 +59,7 @@ export function AgriDoctorScreen({ navigation }: { navigation: any }) {
     return (
       <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
         <View style={styles.hero}>
-          <View style={styles.heroIconWrap}><Stethoscope size={20} color="#fff" /></View>
+          <View style={styles.heroIconWrap}><Stethoscope size={20} color={colors.primary} /></View>
           <View style={{ flex: 1 }}>
             <Text style={styles.heroTitle}>Agriculture Doctor</Text>
             <Text style={styles.heroSubtitle}>Consult agronomists, professors & crop doctors to boost your yield</Text>
@@ -78,7 +78,7 @@ export function AgriDoctorScreen({ navigation }: { navigation: any }) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       <View style={styles.hero}>
-        <View style={styles.heroIconWrap}><Stethoscope size={20} color="#fff" /></View>
+        <View style={styles.heroIconWrap}><Stethoscope size={20} color={colors.primary} /></View>
         <View style={{ flex: 1 }}>
           <Text style={styles.heroTitle}>Agriculture Doctor</Text>
           <Text style={styles.heroSubtitle}>Consult agronomists, professors & crop doctors to boost your yield</Text>
@@ -153,10 +153,10 @@ export function AgriDoctorScreen({ navigation }: { navigation: any }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
-  hero: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md },
-  heroIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
-  heroTitle: { color: "#fff", fontSize: 16.5, fontWeight: "700" },
-  heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 13.5, marginTop: 2 },
+  hero: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.accent, borderRadius: 28, padding: spacing.md },
+  heroIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
+  heroTitle: { color: colors.accentInk, fontSize: 18, fontWeight: "800" },
+  heroSubtitle: { color: colors.accentInkSoft, fontSize: 13.5, marginTop: 2 },
 
   lockCard: { backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", borderRadius: radius.md, padding: spacing.lg, alignItems: "center", gap: spacing.sm },
   lockIconWrap: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#FDE68A", alignItems: "center", justifyContent: "center" },

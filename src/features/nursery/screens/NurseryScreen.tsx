@@ -385,10 +385,10 @@ const styles = StyleSheet.create({
   searchWrap: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, ...shadow, borderRadius: 22, paddingHorizontal: spacing.sm + 4, height: 44 },
   searchInput: { flex: 1, fontSize: 15, color: colors.text },
 
-  chip: { paddingVertical: spacing.xs + 2, paddingHorizontal: spacing.sm + 4, borderRadius: radius.pill, ...shadow, backgroundColor: colors.card },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chip: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingHorizontal: 14, borderRadius: 999, borderWidth: 2.5, borderColor: colors.border, backgroundColor: "#fff" },
+  chipActive: { backgroundColor: colors.tint, borderColor: colors.primary },
   chipText: { fontSize: 14, color: colors.textMuted, fontWeight: "500" },
-  chipTextActive: { color: "#fff", fontWeight: "700" },
+  chipTextActive: { color: colors.text, fontWeight: "800" },
 
   sectionTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
   sectionLabel: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.4 },

@@ -15,8 +15,7 @@ import {
   Tractor,
   Users,
   Wrench,
-  Plus,
-} from "lucide-react-native";
+  Plus, Check } from "lucide-react-native";
 import { Button } from "../../../components/Button";
 import { Card } from "../../../components/Card";
 import { HeaderAddButton } from "../../../components/harvest";
@@ -73,7 +72,8 @@ function distanceKm(lat1: number, lng1: number, lat2: number, lng2: number) {
 
 function Chip({ active, onPress, children, activeColor }: { active: boolean; onPress: () => void; children: string; activeColor: string }) {
   return (
-    <Pressable onPress={onPress} style={[styles.chip, active && { backgroundColor: activeColor, borderColor: activeColor }]}>
+    <Pressable onPress={onPress} style={[styles.chip, active && { backgroundColor: colors.tint, borderColor: activeColor }]}>
+      {active ? <Check size={15} color={colors.text} strokeWidth={2.6} /> : null}
       <Text style={[styles.chipText, active && styles.chipTextActive]}>{children}</Text>
     </Pressable>
   );
@@ -242,7 +242,7 @@ export function HireScreen({ navigation, route }: { navigation: any; route?: { p
       <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
         <View style={styles.hero}>
           <View style={styles.heroIconWrap}>
-            <Handshake size={22} color="#fff" />
+            <Handshake size={22} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.heroTitle}>{t("more.farmManager")}</Text>
@@ -287,7 +287,7 @@ export function HireScreen({ navigation, route }: { navigation: any; route?: { p
 
         <View style={[styles.hero, { backgroundColor: accent }]}>
           <View style={styles.heroIconWrap}>
-            <AccentIcon size={22} color="#fff" />
+            <AccentIcon size={22} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.heroTitle}>{tab === "rental" ? "Rent Machines & Vehicles" : "Find Workers for Your Estate"}</Text>
@@ -364,10 +364,10 @@ export function HireScreen({ navigation, route }: { navigation: any; route?: { p
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
-  hero: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md },
-  heroIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
-  heroTitle: { color: "#fff", fontSize: 17, fontWeight: "700" },
-  heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 14, marginTop: 2 },
+  hero: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.accent, borderRadius: 28, padding: spacing.md },
+  heroIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
+  heroTitle: { color: colors.accentInk, fontSize: 18, fontWeight: "800" },
+  heroSubtitle: { color: colors.accentInkSoft, fontSize: 14, marginTop: 2 },
 
   landingTile: { flex: 1, borderRadius: radius.md, padding: spacing.md, alignItems: "center", gap: spacing.xs },
   landingIconWrap: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center" },
@@ -379,9 +379,9 @@ const styles = StyleSheet.create({
   locBtn: { flexDirection: "row", alignItems: "center", gap: 6, ...shadow, backgroundColor: "#fff", borderRadius: radius.pill, paddingHorizontal: spacing.sm + 4, paddingVertical: spacing.xs + 2 },
   locBtnText: { fontSize: 14, fontWeight: "500", color: colors.textMuted },
 
-  chip: { paddingVertical: spacing.xs + 2, paddingHorizontal: spacing.sm + 4, borderRadius: radius.pill, ...shadow, backgroundColor: "#fff" },
+  chip: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingHorizontal: 14, borderRadius: 999, borderWidth: 2.5, borderColor: colors.border, backgroundColor: "#fff" },
   chipText: { fontSize: 14.5, color: colors.textMuted, fontWeight: "500" },
-  chipTextActive: { color: "#fff", fontWeight: "700" },
+  chipTextActive: { color: colors.text, fontWeight: "800" },
 
   cardTop: { flexDirection: "row" },
   cardIcon: { width: 76, height: 76, alignItems: "center", justifyContent: "center" },

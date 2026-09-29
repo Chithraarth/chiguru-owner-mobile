@@ -136,7 +136,7 @@ export function DiseaseScreen({ navigation }: { navigation: any }) {
       {!result && !diagnosing ? (
         <View style={styles.hero}>
           <View style={styles.heroIconWrap}>
-            <FlaskConical size={24} color="#fff" />
+            <FlaskConical size={24} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.heroTitle}>Plant Disease Detector</Text>
@@ -441,10 +441,10 @@ export function DiseaseScreen({ navigation }: { navigation: any }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
-  hero: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md },
-  heroIconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
-  heroTitle: { color: "#fff", fontSize: 16.5, fontWeight: "700" },
-  heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 13.5, marginTop: 2 },
+  hero: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.accent, borderRadius: 28, padding: spacing.md },
+  heroIconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
+  heroTitle: { color: colors.accentInk, fontSize: 18, fontWeight: "800" },
+  heroSubtitle: { color: colors.accentInkSoft, fontSize: 13.5, marginTop: 2 },
 
   sectionLabel: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5 },
   cropPicker: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 2, borderColor: colors.border, backgroundColor: "#fff", borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 4 },

@@ -52,7 +52,7 @@ export function EquipmentScreen({ navigation }: { navigation: any }) {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         <View style={styles.hero}>
-          <View style={styles.heroIconWrap}><Tractor size={22} color="#fff" /></View>
+          <View style={styles.heroIconWrap}><Tractor size={22} color={colors.primary} /></View>
           <View style={{ flex: 1 }}>
             <Text style={styles.heroTitle}>Buy & Sell Farm Equipment</Text>
             <Text style={styles.heroSubtitle}>Tractors, pumps, sprinklers & more — new or used. Contact sellers directly.</Text>
@@ -141,15 +141,15 @@ export function EquipmentScreen({ navigation }: { navigation: any }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  hero: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md },
-  heroIconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
-  heroTitle: { color: "#fff", fontSize: 16.5, fontWeight: "700" },
-  heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 13.5, marginTop: 2 },
+  hero: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.accent, borderRadius: 28, padding: spacing.md },
+  heroIconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
+  heroTitle: { color: colors.accentInk, fontSize: 18, fontWeight: "800" },
+  heroSubtitle: { color: colors.accentInkSoft, fontSize: 13.5, marginTop: 2 },
 
-  chip: { paddingVertical: spacing.xs + 2, paddingHorizontal: spacing.sm + 4, borderRadius: radius.pill, ...shadow, backgroundColor: "#fff" },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chip: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingHorizontal: 14, borderRadius: 999, borderWidth: 2.5, borderColor: colors.border, backgroundColor: "#fff" },
+  chipActive: { backgroundColor: colors.tint, borderColor: colors.primary },
   chipText: { fontSize: 14.5, color: colors.textMuted, fontWeight: "500" },
-  chipTextActive: { color: "#fff", fontWeight: "700" },
+  chipTextActive: { color: colors.text, fontWeight: "800" },
 
   emptyTitle: { fontSize: 15, fontWeight: "600", color: colors.text, marginTop: spacing.sm },
   emptySubtitle: { fontSize: 13.5, color: colors.textMuted, marginTop: 2 },

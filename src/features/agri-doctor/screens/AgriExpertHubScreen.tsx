@@ -8,7 +8,7 @@ export function AgriExpertHubScreen({ navigation }: { navigation: any }) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       <View style={styles.hero}>
-        <View style={styles.heroIconWrap}><BadgeCheck size={26} color="#fff" /></View>
+        <View style={styles.heroIconWrap}><BadgeCheck size={26} color={colors.primary} /></View>
         <Text style={styles.heroTitle}>For agriculture experts</Text>
         <Text style={styles.heroSubtitle}>Offer paid consultations to farmers, and track and withdraw your earnings — all in one place.</Text>
       </View>
@@ -36,10 +36,10 @@ export function AgriExpertHubScreen({ navigation }: { navigation: any }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  hero: { backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.lg },
-  heroIconWrap: { width: 52, height: 52, borderRadius: 26, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", marginBottom: spacing.sm },
-  heroTitle: { color: "#fff", fontSize: 18, fontWeight: "700" },
-  heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 14.5, marginTop: spacing.xs, lineHeight: 17 },
+  hero: { backgroundColor: colors.accent, borderRadius: 28, padding: spacing.lg },
+  heroIconWrap: { width: 52, height: 52, borderRadius: 26, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", marginBottom: spacing.sm },
+  heroTitle: { color: colors.accentInk, fontSize: 18, fontWeight: "800" },
+  heroSubtitle: { color: colors.accentInkSoft, fontSize: 14.5, marginTop: spacing.xs, lineHeight: 17 },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, ...shadow, borderRadius: 22, padding: spacing.md },
   iconWrap: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
   rowTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text },
