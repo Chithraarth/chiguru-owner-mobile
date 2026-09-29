@@ -5,7 +5,7 @@ import * as ImagePicker from "expo-image-picker";
 import { AlertCircle, Camera, CheckCircle2, ImageIcon, RefreshCw, Sparkles, Sun } from "lucide-react-native";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { scanAccountsPage, type AccountsScanEntry, type AccountsScanResult } from "../../../api/endpoints/ai";
 import { createExpense } from "../../../api/endpoints/expenses";
 import { compressToDataUrl } from "../../../lib/imageCompression";
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
   warningBannerText: { flex: 1, fontSize: 14.5, fontWeight: "600", color: "#95530F" },
 
   categoryLabel: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5 },
-  entryCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm + 4 },
+  entryCard: { backgroundColor: colors.card, ...shadow, borderRadius: 22, padding: spacing.sm + 4 },
   entryCardWarn: { borderColor: "#FBD9AE" },
   typeBadge: { borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 3, marginTop: 2 },
   typeBadgeText: { fontSize: 12.5, fontWeight: "700" },

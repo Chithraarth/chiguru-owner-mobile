@@ -17,7 +17,7 @@ import {
 import { Button } from "../../../components/Button";
 import { Card } from "../../../components/Card";
 import { TextField } from "../../../components/TextField";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { diagnoseDisease, submitDiagnosisOutcome } from "../../../api/endpoints/ai";
 import { createSpray } from "../../../api/endpoints/sprays";
 import { compressToDataUrl } from "../../../lib/imageCompression";
@@ -173,7 +173,7 @@ export function DiseaseScreen({ navigation }: { navigation: any }) {
               </Pressable>
               {selectedCrop ? (
                 <View style={styles.photoCropTag}>
-                  <Text style={styles.photoCropTagText}>🌱 {selectedCrop}</Text>
+                  <Text style={styles.photoCropTagText}>{selectedCrop}</Text>
                 </View>
               ) : null}
             </View>
@@ -225,7 +225,7 @@ export function DiseaseScreen({ navigation }: { navigation: any }) {
               <Image source={{ uri: photoUri }} style={styles.thumb} />
               <View>
                 <Text style={styles.thumbLabel}>Analyzed photo</Text>
-                {selectedCrop ? <Text style={styles.thumbCrop}>🌱 {selectedCrop}</Text> : null}
+                {selectedCrop ? <Text style={styles.thumbCrop}>{selectedCrop}</Text> : null}
                 <Pressable onPress={reset}>
                   <Text style={styles.thumbLink}>← Analyze another photo</Text>
                 </Pressable>
@@ -257,7 +257,7 @@ export function DiseaseScreen({ navigation }: { navigation: any }) {
               ) : null}
               {result.affectedCrop ? (
                 <View style={[styles.pill, { backgroundColor: "#E4EEFB" }]}>
-                  <Text style={[styles.pillText, { color: "#5B8CD6" }]}>🌱 {result.affectedCrop}</Text>
+                  <Text style={[styles.pillText, { color: "#5B8CD6" }]}>{result.affectedCrop}</Text>
                 </View>
               ) : null}
               {urgency && result.isDisease ? (
@@ -312,25 +312,25 @@ export function DiseaseScreen({ navigation }: { navigation: any }) {
 
           {result.immediateSteps && result.immediateSteps.length > 0 && !isHealthy ? (
             <Card>
-              <Text style={styles.blockTitle}>👀 Do this first (free)</Text>
+              <Text style={styles.blockTitle}>Do this first (free)</Text>
               {result.immediateSteps.map((s, i) => (
-                <Text key={i} style={styles.checkItem}>✓ {s}</Text>
+                <Text key={i} style={styles.checkItem}>{s}</Text>
               ))}
             </Card>
           ) : null}
 
           {result.doNotDo && result.doNotDo.length > 0 && !isHealthy ? (
             <Card style={{ backgroundColor: "#FDEAEA", borderColor: "#F5C6C6" }}>
-              <Text style={[styles.blockTitle, { color: colors.danger }]}>🚫 Do NOT do this</Text>
+              <Text style={[styles.blockTitle, { color: colors.danger }]}>Do NOT do this</Text>
               {result.doNotDo.map((s, i) => (
-                <Text key={i} style={[styles.checkItem, { color: colors.danger }]}>✕ {s}</Text>
+                <Text key={i} style={[styles.checkItem, { color: colors.danger }]}>{s}</Text>
               ))}
             </Card>
           ) : null}
 
           {result.treatmentSteps?.length > 0 && result.isDisease ? (
             <Card>
-              <Text style={styles.blockTitle}>💊 Treatment Steps</Text>
+              <Text style={styles.blockTitle}>Treatment Steps</Text>
               {result.treatmentSteps.map((s, i) => (
                 <View key={i} style={{ flexDirection: "row", gap: spacing.sm, marginTop: spacing.xs }}>
                   <View style={styles.stepNum}><Text style={styles.stepNumText}>{i + 1}</Text></View>
@@ -342,7 +342,7 @@ export function DiseaseScreen({ navigation }: { navigation: any }) {
 
           {result.preventionTips?.length > 0 ? (
             <Card style={{ backgroundColor: "#E4EEFB", borderColor: "#C7DCF5" }}>
-              <Text style={[styles.blockTitle, { color: "#3E6FB0" }]}>🛡️ Prevention Tips</Text>
+              <Text style={[styles.blockTitle, { color: "#3E6FB0" }]}>Prevention Tips</Text>
               {result.preventionTips.map((s, i) => (
                 <Text key={i} style={[styles.checkItem, { color: "#3E6FB0" }]}>• {s}</Text>
               ))}
@@ -351,7 +351,7 @@ export function DiseaseScreen({ navigation }: { navigation: any }) {
 
           <Card style={{ backgroundColor: colors.muted }}>
             <Text style={styles.kvkText}>
-              💡 <Text style={{ fontWeight: "600" }}>Expert tip:</Text> For confirmation, take a sample to your nearest{" "}
+              <Text style={{ fontWeight: "600" }}>Expert tip:</Text> For confirmation, take a sample to your nearest{" "}
               <Text style={{ fontWeight: "600", color: colors.primary }}>KVK (Krishi Vigyan Kendra)</Text> or contact the
               state agriculture department helpline.
             </Text>
@@ -385,19 +385,19 @@ export function DiseaseScreen({ navigation }: { navigation: any }) {
                   style={[styles.feedbackBtn, outcome === "helpful" && { backgroundColor: colors.primary, borderColor: colors.primary }]}
                   onPress={() => submitOutcome("helpful")}
                 >
-                  <Text style={[styles.feedbackBtnText, outcome === "helpful" && { color: "#fff" }]}>👍 Helpful</Text>
+                  <Text style={[styles.feedbackBtnText, outcome === "helpful" && { color: "#fff" }]}>Helpful</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.feedbackBtn, outcome === "not-helpful" && { backgroundColor: colors.danger, borderColor: colors.danger }]}
                   onPress={() => submitOutcome("not-helpful")}
                 >
-                  <Text style={[styles.feedbackBtnText, outcome === "not-helpful" && { color: "#fff" }]}>👎 Not helpful</Text>
+                  <Text style={[styles.feedbackBtnText, outcome === "not-helpful" && { color: "#fff" }]}>Not helpful</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.feedbackBtn, outcome === "agronomist-confirmed" && { backgroundColor: colors.primary, borderColor: colors.primary }]}
                   onPress={() => submitOutcome("agronomist-confirmed")}
                 >
-                  <Text style={[styles.feedbackBtnText, outcome === "agronomist-confirmed" && { color: "#fff" }]}>✅ Confirmed</Text>
+                  <Text style={[styles.feedbackBtnText, outcome === "agronomist-confirmed" && { color: "#fff" }]}>Confirmed</Text>
                 </Pressable>
               </View>
             </Card>
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
   dropzoneIcon: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
   dropzoneTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text },
   dropzoneSubtitle: { fontSize: 13.5, color: colors.textMuted, textAlign: "center" },
-  dropzoneChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#fff", borderWidth: 1, borderColor: colors.border, borderRadius: radius.pill, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs },
+  dropzoneChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#fff", ...shadow, borderRadius: radius.pill, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs },
   dropzoneChipText: { fontSize: 13, color: colors.textMuted },
 
   errorText: { color: colors.danger, fontSize: 14.5 },
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
   doctorCtaSubtitle: { fontSize: 13, color: colors.primary },
 
   feedbackTitle: { fontSize: 14, fontWeight: "600", color: colors.textMuted, textAlign: "center" },
-  feedbackBtn: { flex: 1, alignItems: "center", paddingVertical: spacing.sm, borderWidth: 1, borderColor: colors.border, backgroundColor: "#fff", borderRadius: radius.sm },
+  feedbackBtn: { flex: 1, alignItems: "center", paddingVertical: spacing.sm, ...shadow, backgroundColor: "#fff", borderRadius: 22 },
   feedbackBtnText: { fontSize: 13.5, fontWeight: "600", color: colors.text },
 
   analyzeAnother: { textAlign: "center", fontSize: 14.5, color: colors.textMuted, paddingVertical: spacing.sm },
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
   cropSheet: { position: "absolute", left: 0, right: 0, bottom: 0, maxHeight: "80%", backgroundColor: colors.card, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg },
   cropSheetHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.sm },
   cropSheetTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
-  cropChip: { paddingHorizontal: spacing.sm + 4, paddingVertical: spacing.xs + 2, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: "#fff" },
+  cropChip: { paddingHorizontal: spacing.sm + 4, paddingVertical: spacing.xs + 2, borderRadius: radius.pill, ...shadow, backgroundColor: "#fff" },
   cropChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   cropChipText: { fontSize: 14.5, color: colors.text },
   cropChipTextActive: { color: "#fff", fontWeight: "600" },

@@ -178,7 +178,7 @@ export function PaySheet({
                     onPress={() => setPayeeKind("group")}
                   >
                     <Text style={[styles.payeeOptionTitle, payeeKind === "group" && styles.payeeOptionTitleActive]}>
-                      👥 Whole group
+                      Whole group
                     </Text>
                     <Text style={[styles.payeeOptionSub, payeeKind === "group" && styles.payeeOptionSubActive]} numberOfLines={1}>
                       {groupName}
@@ -190,7 +190,7 @@ export function PaySheet({
                   onPress={() => setPayeeKind("worker")}
                 >
                   <Text style={[styles.payeeOptionTitle, payeeKind === "worker" && styles.payeeOptionTitleActive]}>
-                    🧑‍🌾 One worker
+                    One worker
                   </Text>
                   <Text style={[styles.payeeOptionSub, payeeKind === "worker" && styles.payeeOptionSubActive]}>
                     Pick by name

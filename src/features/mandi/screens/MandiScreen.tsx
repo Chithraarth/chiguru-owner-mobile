@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Bookmark, Globe, MapPin, Phone, RefreshCw, Search, Sparkles, Store, Trophy, X } from "lucide-react-native";
 import { LoadingView } from "../../../components/StateViews";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { getMandiPrices, refreshMandiPrices } from "../../../api/endpoints/mandi";
 import { useEstateStore } from "../../estate/store/estateStore";
 import { NoEstateNotice } from "../../../components/NoEstateNotice";
@@ -348,17 +348,17 @@ const styles = StyleSheet.create({
   syncBtn: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
   syncBtnText: { color: "#fff", fontSize: 13, fontWeight: "700" },
 
-  searchWrap: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs + 2 },
+  searchWrap: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", ...shadow, borderRadius: 22, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs + 2 },
   searchInput: { flex: 1, fontSize: 15, color: colors.text },
 
-  recentChip: { flexDirection: "row", alignItems: "center", gap: 5, borderWidth: 1, borderColor: colors.border, backgroundColor: "#fff", borderRadius: radius.pill, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs },
+  recentChip: { flexDirection: "row", alignItems: "center", gap: 5, ...shadow, backgroundColor: "#fff", borderRadius: radius.pill, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs },
   recentChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   recentChipText: { fontSize: 13.5, color: colors.text, textTransform: "capitalize" },
   recentChipTextActive: { color: "#fff", fontWeight: "600" },
 
   sectionLabel: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, marginBottom: spacing.sm },
 
-  cropGroup: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, overflow: "hidden" },
+  cropGroup: { backgroundColor: colors.card, ...shadow, borderRadius: 22, overflow: "hidden" },
   cropGroupHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: colors.bg, paddingHorizontal: spacing.sm + 4, paddingVertical: spacing.sm },
   cropGroupTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text },
   cropGroupCount: { fontSize: 12.5, color: colors.textMuted },

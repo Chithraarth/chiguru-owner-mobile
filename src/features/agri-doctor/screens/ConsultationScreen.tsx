@@ -11,11 +11,11 @@ import {
   useAudioRecorder,
   useAudioRecorderState,
 } from "expo-audio";
-import { ArrowLeft, BadgeCheck, Camera, Clock, Mic, Pause, Play, Send, Square, User } from "lucide-react-native";
+import { ArrowLeft, BadgeCheck, Camera, Clock, Mic, Pause, Play, Send, Square, User, Stethoscope } from "lucide-react-native";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { LoadingView } from "../../../components/StateViews";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { endConsultation, getAgronomist, getConsultationMessages, sendConsultationMessage } from "../../../api/endpoints/agriDoctor";
 import { compressToDataUrl, fileUriToBase64 } from "../../../lib/imageCompression";
 import type { AgriDoctorEndResult, ConsultationMessage } from "../../../types/api";
@@ -219,7 +219,7 @@ export function ConsultationScreen({ navigation, route }: { navigation: any; rou
           return (
             <View style={[styles.msgRow, isFarmer && { flexDirection: "row-reverse" }]}>
               <View style={[styles.avatar, { backgroundColor: isFarmer ? colors.primary : colors.bg }]}>
-                {isFarmer ? <User size={14} color="#fff" /> : <Text style={{ fontSize: 15.5 }}>{doctor?.emoji ?? "🌾"}</Text>}
+                {isFarmer ? <User size={14} color="#fff" /> : <Stethoscope size={14} color={colors.primary} />}
               </View>
               <View style={[styles.bubble, isFarmer ? styles.farmerBubble : styles.doctorBubble]}>
                 {item.mediaType === "image" && item.mediaUrl ? (
@@ -290,9 +290,9 @@ const styles = StyleSheet.create({
 
   msgRow: { flexDirection: "row", alignItems: "flex-end", gap: spacing.xs },
   avatar: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  bubble: { maxWidth: "78%", borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  farmerBubble: { backgroundColor: colors.primary, borderTopRightRadius: 4 },
-  doctorBubble: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderTopLeftRadius: 4 },
+  bubble: { maxWidth: "82%", borderRadius: 22, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  farmerBubble: { backgroundColor: colors.primary, borderBottomRightRadius: 6 },
+  doctorBubble: { backgroundColor: colors.card, borderBottomLeftRadius: 6, ...shadow },
   farmerText: { color: "#fff", fontSize: 15 },
   doctorText: { color: colors.text, fontSize: 15 },
 
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
   endedIconWrap: { width: 72, height: 72, borderRadius: 36, backgroundColor: "#FBF2D9", alignItems: "center", justifyContent: "center" },
   endedTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
   endedSubtitle: { fontSize: 14.5, color: colors.textMuted },
-  endedCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md, width: "100%", maxWidth: 300, marginVertical: spacing.sm },
+  endedCard: { backgroundColor: colors.card, ...shadow, borderRadius: 22, padding: spacing.md, width: "100%", maxWidth: 300, marginVertical: spacing.sm },
   endedRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 4 },
   endedRowBorder: { borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 4, paddingBottom: 6 },
   endedLabel: { fontSize: 14.5, color: colors.textMuted },

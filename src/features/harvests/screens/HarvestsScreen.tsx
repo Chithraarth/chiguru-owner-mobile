@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Text, TextInput } from "../../../components/Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Leaf, Plus, TrendingUp, Trash2, X } from "lucide-react-native";
+import { Leaf, Plus, TrendingUp, Trash2, X, Users } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
@@ -141,13 +141,13 @@ export function HarvestsScreen() {
               </Pressable>
             </View>
 
-            <Text style={styles.sectionLabel}>👥 YOUR WORK GROUPS</Text>
+            <Text style={styles.sectionLabel}>YOUR WORK GROUPS</Text>
             <View style={{ gap: spacing.sm }}>
               {folders.map((f) => (
                 <Pressable key={f.id ?? "general"} onPress={() => setOpenFolder({ id: f.id, name: f.name })}>
                   <Card style={styles.folderRow}>
                     <View style={styles.folderIcon}>
-                      <Text style={{ fontSize: 20 }}>{f.id == null ? "🌾" : "👥"}</Text>
+                      {f.id == null ? <Leaf size={22} color={colors.text} /> : <Users size={22} color={colors.text} />}
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.folderName}>{f.name}</Text>
@@ -239,7 +239,7 @@ export function HarvestsScreen() {
                 {quickAdd === "sold" ? "Record Sold Harvest" : quickAdd === "general" ? "Record General Harvest" : "Record Harvest"}
               </Text>
               <Text style={styles.formSubtitle}>
-                {quickAdd === "sold" ? "💰 Sold — adds to Total income" : quickAdd === "general" ? "🌾 General — adds to Total yield" : openFolder?.id != null ? `👥 ${openFolder.name}` : "🌾 General"}
+                {quickAdd === "sold" ? "Sold — adds to Total income" : quickAdd === "general" ? "General — adds to Total yield" : openFolder?.id != null ? `${openFolder.name}` : "General"}
               </Text>
             </View>
             <Pressable onPress={() => setShowForm(false)} hitSlop={10}>

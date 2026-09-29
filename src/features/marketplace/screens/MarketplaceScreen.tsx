@@ -7,7 +7,7 @@ import { Button } from "../../../components/Button";
 import { Card } from "../../../components/Card";
 import { HeaderAddButton } from "../../../components/harvest";
 import { LoadingView } from "../../../components/StateViews";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { useMarketplace } from "../hooks/useMarketplace";
 
 const CATEGORIES = [
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   heroTitle: { color: "#fff", fontSize: 16.5, fontWeight: "700" },
   heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 13.5, marginTop: 2 },
 
-  chip: { paddingVertical: spacing.xs + 2, paddingHorizontal: spacing.sm + 4, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: "#fff" },
+  chip: { paddingVertical: spacing.xs + 2, paddingHorizontal: spacing.sm + 4, borderRadius: radius.pill, ...shadow, backgroundColor: "#fff" },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontSize: 14.5, color: colors.textMuted, fontWeight: "500" },
   chipTextActive: { color: "#fff", fontWeight: "700" },

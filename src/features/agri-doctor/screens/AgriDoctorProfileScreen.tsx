@@ -16,7 +16,8 @@ import {
 } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { LoadingView } from "../../../components/StateViews";
-import { colors, radius, spacing } from "../../../components/theme";
+import { Avatar } from "../../../components/harvest";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { getAgronomist, startConsultation } from "../../../api/endpoints/agriDoctor";
 
 function inr(n: number) {
@@ -50,7 +51,7 @@ export function AgriDoctorProfileScreen({ navigation, route }: { navigation: any
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       <Card>
         <View style={{ flexDirection: "row", gap: spacing.sm }}>
-          <View style={styles.emojiWrap}><Text style={{ fontSize: 34 }}>{d.emoji ?? "🌾"}</Text></View>
+          <Avatar name={d.name} index={3} size={80} />
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
               <Text style={styles.name}>{d.name}</Text>
@@ -142,7 +143,7 @@ const styles = StyleSheet.create({
   rowText: { fontSize: 14.5, color: colors.text, flexShrink: 1 },
   bio: { fontSize: 14.5, color: colors.textMuted, marginTop: spacing.md, lineHeight: 18 },
   certLabel: { fontSize: 13.5, fontWeight: "600", color: colors.primary },
-  certImage: { width: "100%", height: 180, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border, backgroundColor: "#fff" },
+  certImage: { width: "100%", height: 180, borderRadius: 22, ...shadow, backgroundColor: "#fff" },
   planBox: { backgroundColor: colors.bg, borderRadius: radius.sm, padding: spacing.sm + 4, marginTop: spacing.md },
   planLabel: { fontSize: 13, color: colors.textMuted },
   planValue: { fontSize: 15, fontWeight: "700", color: colors.primary, marginTop: 2 },

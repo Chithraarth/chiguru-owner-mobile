@@ -4,7 +4,7 @@ import { Text } from "../../../components/Text";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { BadgeCheck, PhoneOff } from "lucide-react-native";
 import { Button } from "../../../components/Button";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { endConsultation, getAgronomist } from "../../../api/endpoints/agriDoctor";
 import type { AgriDoctorEndResult } from "../../../types/api";
 
@@ -19,6 +19,10 @@ function fmtClock(sec: number) {
 function billing(elapsedSec: number, ratePer15: number) {
   const blocks = Math.max(1, Math.ceil(elapsedSec / (15 * 60)));
   return blocks * ratePer15;
+}
+
+function initials(name?: string | null) {
+  return (name ?? "Dr").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("");
 }
 
 export function AgriDoctorCallScreen({ navigation, route }: { navigation: any; route: any }) {
@@ -63,7 +67,7 @@ export function AgriDoctorCallScreen({ navigation, route }: { navigation: any; r
   return (
     <View style={styles.callContainer}>
       <View style={{ alignItems: "center", gap: spacing.sm, marginTop: spacing.xl }}>
-        <View style={styles.emojiWrap}><Text style={{ fontSize: 48 }}>{doctor?.emoji ?? "🌾"}</Text></View>
+        <View style={styles.emojiWrap}><Text style={{ fontSize: 40, fontWeight: "800", color: colors.accentInk }}>{initials(doctor?.name)}</Text></View>
         <Text style={styles.callName}>{doctor?.name}</Text>
         <Text style={styles.callSpeciality}>{doctor?.speciality}</Text>
         <Text style={styles.callStatus}>Connected · {fmtClock(elapsed)}</Text>
@@ -84,20 +88,20 @@ export function AgriDoctorCallScreen({ navigation, route }: { navigation: any; r
 
 const styles = StyleSheet.create({
   callContainer: { flex: 1, backgroundColor: colors.primary, alignItems: "center", justifyContent: "space-between", paddingVertical: spacing.xl * 1.5 },
-  emojiWrap: { width: 110, height: 110, borderRadius: 55, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
-  callName: { color: "#fff", fontSize: 19, fontWeight: "700" },
+  emojiWrap: { width: 120, height: 120, borderRadius: 60, backgroundColor: colors.accent, alignItems: "center", justifyContent: "center" },
+  callName: { color: "#fff", fontSize: 26, fontWeight: "800" },
   callSpeciality: { color: "rgba(255,255,255,0.8)", fontSize: 14.5 },
   callStatus: { color: "rgba(255,255,255,0.8)", fontSize: 13, marginTop: spacing.sm },
   callChargeLabel: { color: "rgba(255,255,255,0.8)", fontSize: 13 },
-  callChargeValue: { color: "#fff", fontSize: 30, fontWeight: "700" },
+  callChargeValue: { color: "#fff", fontSize: 34, fontWeight: "800" },
   callRateNote: { color: "rgba(255,255,255,0.8)", fontSize: 12.5, marginTop: 2 },
   endCallBtn: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.danger, alignItems: "center", justifyContent: "center" },
 
   endedContainer: { flex: 1, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center", padding: spacing.lg, gap: spacing.sm },
-  endedIconWrap: { width: 72, height: 72, borderRadius: 36, backgroundColor: "#FBF2D9", alignItems: "center", justifyContent: "center" },
-  endedTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
+  endedIconWrap: { width: 80, height: 80, borderRadius: 40, backgroundColor: colors.successBg, alignItems: "center", justifyContent: "center" },
+  endedTitle: { fontSize: 24, fontWeight: "800", color: colors.text },
   endedSubtitle: { fontSize: 14.5, color: colors.textMuted },
-  endedCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md, width: "100%", maxWidth: 300, marginVertical: spacing.sm },
+  endedCard: { backgroundColor: colors.card, borderRadius: 22, ...shadow, padding: spacing.md, width: "100%", maxWidth: 300, marginVertical: spacing.sm },
   endedRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 4 },
   endedRowBorder: { borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 4, paddingBottom: 6 },
   endedLabel: { fontSize: 14.5, color: colors.textMuted },

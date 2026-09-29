@@ -3,7 +3,7 @@ import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, View } from "re
 import { Text } from "../../../components/Text";
 import * as ImagePicker from "expo-image-picker";
 import { useQuery } from "@tanstack/react-query";
-import { Camera, ChevronDown, ChevronUp, X, Plus } from "lucide-react-native";
+import { Camera, ChevronDown, ChevronUp, X, Plus, Wallet, Users } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
@@ -164,12 +164,12 @@ export function LoansScreen() {
                 <Text style={styles.outstandingValue}>{inr(allOutstanding)}</Text>
               </View>
             ) : null}
-            <Text style={styles.sectionLabel}>👥 YOUR WORK GROUPS</Text>
+            <Text style={styles.sectionLabel}>YOUR WORK GROUPS</Text>
             <View style={{ gap: spacing.sm }}>
               {folders.map((f) => (
                 <Pressable key={f.id ?? "general"} onPress={() => setOpenFolder({ id: f.id, name: f.name })}>
                   <Card style={styles.folderRow}>
-                    <View style={styles.folderIcon}><Text style={{ fontSize: 20 }}>{f.id == null ? "💰" : "👥"}</Text></View>
+                    <View style={styles.folderIcon}>{f.id == null ? <Wallet size={22} color={colors.text} /> : <Users size={22} color={colors.text} />}</View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.folderName}>{f.name}</Text>
                       <Text style={styles.folderSubtitle}>{f.subtitle}</Text>
@@ -209,7 +209,7 @@ export function LoansScreen() {
                         <View>
                           <Text style={styles.workerName}>{workerName(l)}</Text>
                           <Text style={styles.loanMeta}>Issued {l.issuedDate} · {l.repaymentMethod}</Text>
-                          {l.workGroupName ? <Text style={styles.groupTag}>👥 {l.workGroupName}</Text> : null}
+                          {l.workGroupName ? <Text style={styles.groupTag}>{l.workGroupName}</Text> : null}
                         </View>
                         <View style={{ alignItems: "flex-end" }}>
                           <Text style={styles.remainingLabel}>Remaining</Text>
@@ -251,7 +251,7 @@ export function LoansScreen() {
                   <View key={l.id} style={styles.closedRow}>
                     <View>
                       <Text style={styles.closedName}>{workerName(l)}</Text>
-                      <Text style={styles.closedMeta}>{l.issuedDate}{l.workGroupName ? ` · 👥 ${l.workGroupName}` : ""}</Text>
+                      <Text style={styles.closedMeta}>{l.issuedDate}{l.workGroupName ? ` · ${l.workGroupName}` : ""}</Text>
                     </View>
                     <View style={styles.closedBadge}><Text style={styles.closedBadgeText}>Closed</Text></View>
                   </View>
@@ -268,7 +268,7 @@ export function LoansScreen() {
           <View style={styles.sheetHeader}>
             <View>
               <Text style={styles.sheetTitle}>New Loan</Text>
-              <Text style={styles.sheetSubtitle}>{openFolder?.id != null ? `👥 ${openFolder.name}` : "💰 General"}</Text>
+              <Text style={styles.sheetSubtitle}>{openFolder?.id != null ? `${openFolder.name}` : "General"}</Text>
             </View>
             <Pressable onPress={() => setShowLoanForm(false)} hitSlop={10}><X size={20} color={colors.textMuted} /></Pressable>
           </View>

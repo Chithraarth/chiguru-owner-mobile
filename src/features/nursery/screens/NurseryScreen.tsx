@@ -6,7 +6,7 @@ import { ArrowLeft, MapPin, Phone, Search, Sprout, Star, Store, X } from "lucide
 import { Button } from "../../../components/Button";
 import { Card } from "../../../components/Card";
 import { LoadingView } from "../../../components/StateViews";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { getNurseryListings, getNurseryVendorDetail, getNurseryVendors, submitNurseryRating } from "../../../api/endpoints/nursery";
 import type { NurseryListing, NurseryVendor } from "../../../types/api";
 
@@ -125,7 +125,7 @@ function VendorDetail({ vendor, onBack, onContact }: { vendor: NurseryVendor; on
               <StarRow value={avgRating} size={13} />
               <Text style={styles.vendorHeroSub}>{ratingCount > 0 ? `${avgRating} (${ratingCount})` : "No ratings yet"}</Text>
             </View>
-            {vendor.speciality ? <Text style={styles.vendorHeroSub}>🌿 {vendor.speciality}</Text> : null}
+            {vendor.speciality ? <Text style={styles.vendorHeroSub}>{vendor.speciality}</Text> : null}
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
               <MapPin size={11} color="rgba(255,255,255,0.8)" />
               <Text style={styles.vendorHeroSub}>{vendor.location}</Text>
@@ -295,7 +295,7 @@ export function NurseryScreen() {
 
         {catFilter === "All" && !search.trim() ? (
           <View>
-            <Text style={styles.sectionTitle}>🏪 Nursery Vendors</Text>
+            <Text style={styles.sectionTitle}>Nursery Vendors</Text>
             {vendorsQuery.isLoading ? (
               <LoadingView label="Loading vendors..." />
             ) : vendors.length === 0 ? (
@@ -330,7 +330,7 @@ export function NurseryScreen() {
                           <Text style={styles.vendorCardNoRating}>No ratings yet</Text>
                         )}
                         {v.speciality ? <Text style={styles.vendorCardSpeciality} numberOfLines={1}>{v.speciality}</Text> : null}
-                        <Text style={styles.vendorCardLocation} numberOfLines={1}>📍 {v.location}</Text>
+                        <Text style={styles.vendorCardLocation} numberOfLines={1}>{v.location}</Text>
                         <Text style={styles.vendorCardCount}>{v.listingCount ?? 0} plants</Text>
                       </Pressable>
                     );
@@ -382,10 +382,10 @@ export function NurseryScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
-  searchWrap: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.sm + 4, height: 44 },
+  searchWrap: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, ...shadow, borderRadius: 22, paddingHorizontal: spacing.sm + 4, height: 44 },
   searchInput: { flex: 1, fontSize: 15, color: colors.text },
 
-  chip: { paddingVertical: spacing.xs + 2, paddingHorizontal: spacing.sm + 4, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
+  chip: { paddingVertical: spacing.xs + 2, paddingHorizontal: spacing.sm + 4, borderRadius: radius.pill, ...shadow, backgroundColor: colors.card },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontSize: 14, color: colors.textMuted, fontWeight: "500" },
   chipTextActive: { color: "#fff", fontWeight: "700" },
@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
   vendorEmptyTitle: { fontSize: 14.5, fontWeight: "700", color: colors.primary, marginTop: spacing.xs },
   vendorEmptySub: { fontSize: 13.5, color: colors.primary, marginTop: 2, textAlign: "center" },
 
-  vendorCard: { width: 148, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm + 4 },
+  vendorCard: { width: 148, backgroundColor: colors.card, ...shadow, borderRadius: 22, padding: spacing.sm + 4 },
   topBadge: { position: "absolute", top: 8, right: 8, flexDirection: "row", alignItems: "center", gap: 2, backgroundColor: "#FEF3C7", borderRadius: radius.pill, paddingHorizontal: 6, paddingVertical: 2 },
   topBadgeText: { fontSize: 10, fontWeight: "700", color: "#B45309" },
   vendorCardIcon: { width: 40, height: 40, borderRadius: radius.sm, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center", overflow: "hidden", marginBottom: spacing.xs },

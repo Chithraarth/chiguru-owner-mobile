@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
   actionBtnPrimaryText: { color: "#fff", fontWeight: "700", fontSize: 14.5 },
   actionBtnDanger: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#F5C6C6" },
   actionBtnDangerText: { color: colors.danger, fontWeight: "700", fontSize: 14.5 },
-  actionBtnSecondary: { backgroundColor: "#fff", borderWidth: 1, borderColor: colors.border },
+  actionBtnSecondary: { backgroundColor: "#fff", ...shadow },
   actionBtnSecondaryText: { color: colors.text, fontWeight: "600", fontSize: 14.5 },
 
   blockTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text, marginBottom: spacing.sm },

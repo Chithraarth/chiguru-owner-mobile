@@ -2,7 +2,7 @@ import React from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Text } from "../../../components/Text";
 import { Banknote, BadgeCheck, ChevronRight, UserPlus } from "lucide-react-native";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 
 export function AgriExpertHubScreen({ navigation }: { navigation: any }) {
   return (
@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
   heroIconWrap: { width: 52, height: 52, borderRadius: 26, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", marginBottom: spacing.sm },
   heroTitle: { color: "#fff", fontSize: 18, fontWeight: "700" },
   heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 14.5, marginTop: spacing.xs, lineHeight: 17 },
-  row: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md },
+  row: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, ...shadow, borderRadius: 22, padding: spacing.md },
   iconWrap: { width: 40, height: 40, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
   rowTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text },
   rowSubtitle: { fontSize: 13.5, color: colors.textMuted, marginTop: 1 },

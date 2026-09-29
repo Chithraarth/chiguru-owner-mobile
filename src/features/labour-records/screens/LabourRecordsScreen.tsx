@@ -13,7 +13,7 @@ import {
   Scale,
   Send,
   Trash2,
-  Wheat,
+  Wheat, ClipboardList, Users
 } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
@@ -300,13 +300,13 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
     return (
       <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
         <View>
-          <Text style={styles.sectionLabel}>👥 YOUR WORK GROUPS</Text>
+          <Text style={styles.sectionLabel}>YOUR WORK GROUPS</Text>
           <View style={{ gap: spacing.sm }}>
             {folders.map((f) => (
               <Pressable key={f.id ?? "general"} onPress={() => { setView("weekly"); setOpenFolder({ id: f.id, name: f.name }); }}>
                 <Card style={styles.folderRow}>
                   <View style={styles.folderIcon}>
-                    <Text style={{ fontSize: 20 }}>{f.id == null ? "📋" : "👥"}</Text>
+                    {f.id == null ? <ClipboardList size={22} color={colors.text} /> : <Users size={22} color={colors.text} />}
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.folderName}>{f.name}</Text>
@@ -325,7 +325,7 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
 
         {clearedGroups.length > 0 ? (
           <View>
-            <Text style={styles.sectionLabel}>✅ ACCOUNTS HISTORY</Text>
+            <Text style={styles.sectionLabel}>ACCOUNTS HISTORY</Text>
             <View style={{ gap: spacing.sm }}>
               {clearedGroups.map((g) => (
                 <Pressable key={g.id} onPress={() => { setView("final"); setOpenFolder({ id: g.id, name: g.name }); }}>

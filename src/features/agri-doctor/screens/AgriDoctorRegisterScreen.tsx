@@ -7,7 +7,7 @@ import { CheckCircle2, FileText, Landmark, Upload } from "lucide-react-native";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { ChipSelect } from "../../../components/ChipSelect";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { registerAgronomist } from "../../../api/endpoints/agriDoctor";
 import { compressToDataUrl } from "../../../lib/imageCompression";
 
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
   certBox: { backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm + 4, marginVertical: spacing.sm },
   certTitle: { fontSize: 14.5, fontWeight: "700", color: colors.primary },
   certSubtitle: { fontSize: 13, color: colors.primary, marginTop: 2, lineHeight: 15 },
-  certPreview: { width: "100%", height: 160, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border, backgroundColor: "#fff" },
+  certPreview: { width: "100%", height: 160, borderRadius: 22, ...shadow, backgroundColor: "#fff" },
   certAddedText: { fontSize: 13.5, color: colors.primary, fontWeight: "600" },
   replaceLink: { fontSize: 13.5, color: colors.primary, textDecorationLine: "underline" },
   uploadBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderWidth: 1, borderColor: colors.primary, borderRadius: radius.sm, paddingVertical: spacing.sm + 2, marginTop: spacing.sm },

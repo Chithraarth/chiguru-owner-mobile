@@ -58,7 +58,7 @@ export function DailyUpdateFormScreen({ navigation }: { navigation: any }) {
     try {
       const { count } = await countWorkersInUpdatePhoto(dataUrl);
       setAttendanceCount(String(count));
-      setAiHint(`🤖 AI detected ${count} workers`);
+      setAiHint(`AI detected ${count} workers`);
     } catch {
       // best-effort only, matches the web app's silent failure here
     }
@@ -127,9 +127,9 @@ export function DailyUpdateFormScreen({ navigation }: { navigation: any }) {
       <TextField label="Notes" multiline numberOfLines={2} value={notes} onChangeText={setNotes} />
 
       <Text style={styles.locationStatus}>
-        {locationStatus === "locating" && "📍 Getting location..."}
-        {locationStatus === "attached" && "📍 Location attached"}
-        {locationStatus === "none" && "📍 Location not available"}
+        {locationStatus === "locating" && "Getting location..."}
+        {locationStatus === "attached" && "Location attached"}
+        {locationStatus === "none" && "Location not available"}
       </Text>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}

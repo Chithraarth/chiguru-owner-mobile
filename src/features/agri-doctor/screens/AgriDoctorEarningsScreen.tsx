@@ -7,6 +7,7 @@ import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { LoadingView } from "../../../components/StateViews";
+import { Avatar } from "../../../components/harvest";
 import { colors, radius, spacing } from "../../../components/theme";
 import { getAgronomists } from "../../../api/endpoints/agriDoctor";
 import { getAgronomistEarnings, markPayoutPaid, requestPayout } from "../../../api/endpoints/agriDoctor";
@@ -52,7 +53,7 @@ export function AgriDoctorEarningsScreen() {
         {(doctorsQuery.data ?? []).map((d) => (
           <Pressable key={d.id} onPress={() => setSelectedId(d.id)}>
             <Card style={styles.doctorRow}>
-              <View style={styles.emojiWrap}><Text style={{ fontSize: 22 }}>{d.emoji ?? "🌾"}</Text></View>
+              <Avatar name={d.name} index={3} size={48} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.doctorName} numberOfLines={1}>{d.name}</Text>
                 <Text style={styles.doctorSpeciality} numberOfLines={1}>{d.speciality}</Text>

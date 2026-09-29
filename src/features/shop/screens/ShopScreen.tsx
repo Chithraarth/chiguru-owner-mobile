@@ -1,49 +1,42 @@
 import React from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet } from "react-native";
 import { Text } from "../../../components/Text";
-import { Sprout, Store, Tractor, Users } from "lucide-react-native";
-import { colors, radius, spacing } from "../../../components/theme";
+import { Handshake, Leaf, Megaphone, Sprout, Store, TrendingUp, Tractor, Users } from "lucide-react-native";
+import { BigTiles } from "../../../components/harvest";
+import { Enter } from "../../../components/motion";
+import { colors, spacing } from "../../../components/theme";
 import { useT } from "../../../lib/i18n";
 
+/** Market hub: sell or buy produce, rent or sell equipment, hire, nursery, mandi prices and your ads. */
 export function ShopScreen({ navigation }: { navigation: any }) {
   const { t } = useT();
+  const go = (screen: string, params?: Record<string, unknown>) => () => navigation.navigate(screen, params);
   return (
-    <View style={styles.container}>
-      <View style={styles.grid}>
-        <Pressable style={[styles.tile, { backgroundColor: "#FFF0C2" }]} onPress={() => navigation.navigate("Nursery")}>
-          <View style={styles.iconWrap}>
-            <Sprout size={26} color={colors.primary} />
-          </View>
-          <Text style={[styles.tileText, { color: colors.primary }]}>{t("more.nursery")}</Text>
-        </Pressable>
-        <Pressable style={[styles.tile, { backgroundColor: colors.primary }]} onPress={() => navigation.navigate("Marketplace")}>
-          <View style={styles.iconWrap}>
-            <Store size={26} color="#fff" />
-          </View>
-          <Text style={[styles.tileText, { color: "#fff" }]}>{t("more.market")}</Text>
-        </Pressable>
-        <Pressable style={[styles.tile, { backgroundColor: colors.secondary }]} onPress={() => navigation.navigate("Equipment")}>
-          <View style={styles.iconWrap}>
-            <Tractor size={26} color={colors.text} />
-          </View>
-          <Text style={[styles.tileText, { color: colors.text }]}>{t("more.equipment")}</Text>
-        </Pressable>
-      </View>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
+      <Enter>
+        <BigTiles
+          items={[
+            { icon: Store, title: "Sell produce", sub: "Post your crop", onPress: go("MarketplaceForm") },
+            { icon: Leaf, title: t("more.market"), sub: "Buy from farmers near you", onPress: go("Marketplace") },
+            { icon: Tractor, title: t("more.equipment"), sub: "Rent or sell", onPress: go("Equipment") },
+            { icon: Handshake, title: "Hire board", sub: "Workers & jobs", onPress: go("Hire") },
+            { icon: Sprout, title: t("more.nursery"), sub: "Saplings & seeds", onPress: go("Nursery") },
+            { icon: TrendingUp, title: "Mandi prices", sub: "Today’s rates", onPress: go("Mandi") },
+            { icon: Megaphone, title: "My ads", sub: "Everything you posted", onPress: go("MyAds") },
+          ]}
+        />
+      </Enter>
 
-      <Pressable style={styles.adminLink} onPress={() => navigation.navigate("NurseryAdmin")}>
-        <Users size={14} color={colors.textMuted} />
+      <Pressable style={styles.adminLink} onPress={go("NurseryAdmin")} accessibilityRole="button">
+        <Users size={16} color={colors.textMuted} />
         <Text style={styles.adminLinkText}>Nursery vendor admin</Text>
       </Pressable>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  tile: { width: "47%", borderRadius: radius.md, padding: spacing.md, alignItems: "center", gap: spacing.sm },
-  iconWrap: { width: 48, height: 48, borderRadius: radius.sm, backgroundColor: "rgba(255,255,255,0.5)", alignItems: "center", justifyContent: "center" },
-  tileText: { fontSize: 14.5, fontWeight: "700", textAlign: "center" },
-  adminLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: spacing.lg, paddingVertical: spacing.sm },
-  adminLinkText: { fontSize: 14.5, color: colors.textMuted, fontWeight: "500" },
+  container: { flex: 1, backgroundColor: colors.bg },
+  adminLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: spacing.sm, minHeight: 44 },
+  adminLinkText: { fontSize: 15, color: colors.textMuted, fontWeight: "700" },
 });

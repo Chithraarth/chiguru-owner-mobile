@@ -13,12 +13,12 @@ import {
 } from "react-native";
 import { Text } from "../../../components/Text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Bot, MessageSquare, Send, Sprout, Trash2, User } from "lucide-react-native";
+import { AlertTriangle, Bot, MessageSquare, Send, Sprout, Trash2, User, MessageCircle } from "lucide-react-native";
 import Markdown from "react-native-markdown-display";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { LoadingView } from "../../../components/StateViews";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import {
   createConversation,
   deleteConversation,
@@ -187,7 +187,7 @@ export function AgriAiScreen({ navigation }: { navigation: any }) {
           <View style={{ gap: spacing.sm }}>
             {QUICK_QUESTIONS.map((q) => (
               <Pressable key={q} style={styles.questionRow} onPress={() => send(q)}>
-                <Text style={styles.questionEmoji}>💬</Text>
+                <MessageCircle size={18} color={colors.primary} />
                 <Text style={styles.questionText}>{q}</Text>
               </Pressable>
             ))}
@@ -268,11 +268,11 @@ const styles = StyleSheet.create({
   disclaimerBold: { fontWeight: "700" },
 
   sectionLabel: { fontSize: 14, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, marginBottom: spacing.sm },
-  questionRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm + 4 },
+  questionRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, ...shadow, borderRadius: 22, padding: spacing.sm + 4 },
   questionEmoji: { fontSize: 16.5 },
   questionText: { flex: 1, fontSize: 15, color: colors.text },
 
-  convRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm + 4 },
+  convRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, ...shadow, borderRadius: 22, padding: spacing.sm + 4 },
   convTitle: { fontSize: 15, color: colors.text },
 
   emptyChat: { flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.sm },
@@ -280,9 +280,9 @@ const styles = StyleSheet.create({
 
   msgRow: { flexDirection: "row", alignItems: "flex-end", gap: spacing.sm },
   avatar: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
-  bubble: { maxWidth: "78%", borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
-  userBubble: { backgroundColor: colors.primary, borderTopRightRadius: 4 },
-  aiBubble: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderTopLeftRadius: 4 },
+  bubble: { maxWidth: "82%", borderRadius: 22, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
+  userBubble: { backgroundColor: colors.primary, borderBottomRightRadius: 6 },
+  aiBubble: { backgroundColor: colors.card, borderBottomLeftRadius: 6, ...shadow },
   userText: { color: "#fff", fontSize: 15, lineHeight: 19 },
   aiText: { color: colors.text, fontSize: 15, lineHeight: 19 },
 

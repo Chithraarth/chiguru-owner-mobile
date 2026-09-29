@@ -3,7 +3,7 @@ import { Alert, Image, Pressable, RefreshControl, ScrollView, StyleSheet, View }
 import { Text } from "../../../components/Text";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MapPin, Megaphone, Pencil, Tag, Trash2 } from "lucide-react-native";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { useT } from "../../../lib/i18n";
 import { getMyProduceListings, deleteProduceListing } from "../../../api/endpoints/marketplace";
 import { getMyEquipmentListings, deleteEquipmentListing } from "../../../api/endpoints/equipment";
@@ -161,7 +161,7 @@ export function MyAdsScreen({ navigation }: { navigation: any }) {
       ) : (
         <View style={{ gap: spacing.lg }}>
           {jobs.length > 0 ? (
-            <Section title={`👷 ${t("myAds.workerAds")}`}>
+            <Section title={`${t("myAds.workerAds")}`}>
               {jobs.map((l) => (
                 <AdCard
                   key={l.id}
@@ -176,7 +176,7 @@ export function MyAdsScreen({ navigation }: { navigation: any }) {
             </Section>
           ) : null}
           {rentals.length > 0 ? (
-            <Section title={`🚛 ${t("myAds.machineAds")}`}>
+            <Section title={`${t("myAds.machineAds")}`}>
               {rentals.map((l) => (
                 <AdCard
                   key={l.id}
@@ -191,7 +191,7 @@ export function MyAdsScreen({ navigation }: { navigation: any }) {
             </Section>
           ) : null}
           {produceAds.length > 0 ? (
-            <Section title={`🧺 ${t("myAds.produceAds")}`}>
+            <Section title={`${t("myAds.produceAds")}`}>
               {produceAds.map((l) => (
                 <AdCard
                   key={l.id}
@@ -205,7 +205,7 @@ export function MyAdsScreen({ navigation }: { navigation: any }) {
             </Section>
           ) : null}
           {equipmentAds.length > 0 ? (
-            <Section title={`🚜 ${t("myAds.equipmentAds")}`}>
+            <Section title={`${t("myAds.equipmentAds")}`}>
               {equipmentAds.map((l) => (
                 <AdCard
                   key={l.id}
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   postOptionText: { fontSize: 11.5, fontWeight: "600", color: colors.text, textAlign: "center", lineHeight: 12 },
 
   sectionTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text },
-  adCard: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm + 4 },
+  adCard: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, ...shadow, borderRadius: 22, padding: spacing.sm + 4 },
   adPhoto: { width: 52, height: 52, borderRadius: radius.sm },
   adPhotoPlaceholder: { width: 52, height: 52, borderRadius: radius.sm, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" },
   adTitle: { fontSize: 15, fontWeight: "700", color: colors.text },

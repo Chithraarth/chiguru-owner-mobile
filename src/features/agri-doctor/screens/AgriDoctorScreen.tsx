@@ -7,6 +7,7 @@ import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { LoadingView } from "../../../components/StateViews";
+import { Avatar } from "../../../components/harvest";
 import { colors, radius, spacing } from "../../../components/theme";
 import { getAgronomists, getAppSettings, topUpWallet } from "../../../api/endpoints/agriDoctor";
 
@@ -113,7 +114,7 @@ export function AgriDoctorScreen({ navigation }: { navigation: any }) {
           {(agronomistsQuery.data ?? []).map((d) => (
             <Pressable key={d.id} onPress={() => navigation.navigate("AgriDoctorProfile", { doctorId: d.id })}>
               <Card style={styles.doctorRow}>
-                <View style={styles.doctorEmojiWrap}><Text style={{ fontSize: 26 }}>{d.emoji ?? "🌾"}</Text></View>
+                <Avatar name={d.name} index={d.id} size={52} />
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                     <Text style={styles.doctorName} numberOfLines={1}>{d.name}</Text>

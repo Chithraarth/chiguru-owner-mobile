@@ -22,7 +22,7 @@ import { Card } from "../../../components/Card";
 import { HeaderAddButton } from "../../../components/harvest";
 import { TextField } from "../../../components/TextField";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { useT } from "../../../lib/i18n";
 import { useHire } from "../hooks/useHire";
 import { getMyHireListings } from "../../../api/endpoints/hire";
@@ -376,10 +376,10 @@ const styles = StyleSheet.create({
 
   backLink: { fontSize: 14.5, fontWeight: "700" },
 
-  locBtn: { flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 1, borderColor: colors.border, backgroundColor: "#fff", borderRadius: radius.pill, paddingHorizontal: spacing.sm + 4, paddingVertical: spacing.xs + 2 },
+  locBtn: { flexDirection: "row", alignItems: "center", gap: 6, ...shadow, backgroundColor: "#fff", borderRadius: radius.pill, paddingHorizontal: spacing.sm + 4, paddingVertical: spacing.xs + 2 },
   locBtnText: { fontSize: 14, fontWeight: "500", color: colors.textMuted },
 
-  chip: { paddingVertical: spacing.xs + 2, paddingHorizontal: spacing.sm + 4, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: "#fff" },
+  chip: { paddingVertical: spacing.xs + 2, paddingHorizontal: spacing.sm + 4, borderRadius: radius.pill, ...shadow, backgroundColor: "#fff" },
   chipText: { fontSize: 14.5, color: colors.textMuted, fontWeight: "500" },
   chipTextActive: { color: "#fff", fontWeight: "700" },
 

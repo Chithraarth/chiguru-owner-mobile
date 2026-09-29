@@ -15,7 +15,7 @@ import {
 } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { useSettingsStore } from "../../../lib/settings";
 import { usePushStore } from "../../../lib/push";
 import { useT } from "../../../lib/i18n";
@@ -177,12 +177,12 @@ const styles = StyleSheet.create({
   pushSub: { marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
   pushLastSent: { fontSize: 13, color: colors.textMuted, marginTop: spacing.xs },
   langRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: spacing.sm },
-  langChip: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: "#fff" },
+  langChip: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, ...shadow, backgroundColor: "#fff" },
   langChipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   langChipText: { fontSize: 14.5, color: colors.text },
   langChipTextSelected: { color: "#fff", fontWeight: "700" },
 
-  linkRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm + 4 },
+  linkRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, ...shadow, borderRadius: 22, padding: spacing.sm + 4 },
   linkIconWrap: { width: 32, height: 32, borderRadius: radius.sm, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center" },
   linkLabel: { flex: 1, fontSize: 15.5, fontWeight: "600", color: colors.text },
 });
