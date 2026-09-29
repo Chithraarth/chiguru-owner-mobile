@@ -13,7 +13,7 @@
     "android": {
       "package": "com.thechiguru.owner",
       "adaptiveIcon": {
-        "backgroundColor": "#EDEBF7",
+        "backgroundColor": "#F4B400",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -30,13 +30,13 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/splash-light.png",
-          "imageWidth": 220,
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
           "resizeMode": "contain",
-          "backgroundColor": "#F8F7FC",
+          "backgroundColor": "#F4B400",
           "dark": {
-            "image": "./assets/splash-dark.png",
-            "backgroundColor": "#2E2A54"
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#F4B400"
           }
         }
       ],
