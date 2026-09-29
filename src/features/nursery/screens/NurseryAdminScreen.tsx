@@ -21,7 +21,7 @@ import {
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { LoadingView, EmptyState } from "../../../components/StateViews";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, shadow, spacing } from "../../../components/theme";
 import { useT } from "../../../lib/i18n";
 import {
   getAllNurseryVendors,
@@ -371,11 +371,11 @@ const styles = StyleSheet.create({
   alertSubtitle: { fontSize: 13, color: "#B7791F", marginTop: 2 },
   alertLink: { fontSize: 14, fontWeight: "700", color: "#92600E", textDecorationLine: "underline" },
 
-  tabs: { flexDirection: "row", backgroundColor: colors.muted, borderRadius: radius.sm, padding: 4, gap: 2 },
-  tab: { flex: 1, paddingVertical: spacing.sm - 2, borderRadius: radius.sm - 2, alignItems: "center" },
-  tabActive: { backgroundColor: "#fff" },
+  tabs: { flexDirection: "row", backgroundColor: colors.muted, borderRadius: radius.pill, padding: 4, gap: 2 },
+  tab: { flex: 1, minHeight: 44, justifyContent: "center", borderRadius: radius.pill, alignItems: "center" },
+  tabActive: { backgroundColor: "#fff", ...shadow },
   tabText: { fontSize: 13, fontWeight: "600", color: colors.textMuted },
-  tabTextActive: { color: colors.text },
+  tabTextActive: { color: colors.text, fontWeight: "800" },
 
   badge: { flexDirection: "row", alignItems: "center", gap: 3, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 2 },
   badgeText: { fontSize: 12, fontWeight: "700" },

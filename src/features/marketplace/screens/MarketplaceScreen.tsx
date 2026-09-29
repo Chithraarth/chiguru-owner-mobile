@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useLayoutEffect } from "react";
 import { Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { Text } from "../../../components/Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MessageCircle, Phone, ShoppingBasket, Tag, Plus } from "lucide-react-native";
 import { Button } from "../../../components/Button";
 import { Card } from "../../../components/Card";
+import { HeaderAddButton } from "../../../components/harvest";
 import { LoadingView } from "../../../components/StateViews";
 import { colors, radius, spacing } from "../../../components/theme";
 import { useMarketplace } from "../hooks/useMarketplace";
@@ -24,6 +25,12 @@ const CATEGORIES = [
 const CAT_MAP = Object.fromEntries(CATEGORIES.map((c) => [c.key, c]));
 
 export function MarketplaceScreen({ navigation }: { navigation: any }) {
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => <HeaderAddButton label="Sell produce" onPress={() => navigation.navigate("MarketplaceForm")} />,
+    });
+  });
+
   const [filter, setFilter] = useState("all");
   const { data, isLoading, refetch } = useMarketplace(filter === "all" ? undefined : filter);
   const [refreshing, setRefreshing] = useState(false);
@@ -115,9 +122,6 @@ export function MarketplaceScreen({ navigation }: { navigation: any }) {
           </View>
         )}
       </ScrollView>
-      <View style={[styles.footer, { paddingBottom: spacing.md + insets.bottom }]}>
-        <Button title="Sell produce" icon={Plus} onPress={() => navigation.navigate("MarketplaceForm")} />
-      </View>
     </View>
   );
 }

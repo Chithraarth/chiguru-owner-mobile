@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { LoadingView, EmptyState } from "../../../components/StateViews";
 import { NoEstateNotice } from "../../../components/NoEstateNotice";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, shadow, spacing } from "../../../components/theme";
 import { getMonthlyReport, getSeasonReport, getWeeklyReport } from "../../../api/endpoints/reports";
 import { useEstateStore } from "../../estate/store/estateStore";
 
@@ -246,11 +246,11 @@ export function ReportsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
-  tabs: { flexDirection: "row", backgroundColor: colors.muted, borderRadius: radius.sm, padding: 4, gap: 2 },
-  tab: { flex: 1, paddingVertical: spacing.sm - 2, borderRadius: radius.sm - 2, alignItems: "center" },
-  tabActive: { backgroundColor: "#fff" },
+  tabs: { flexDirection: "row", backgroundColor: colors.muted, borderRadius: radius.pill, padding: 4, gap: 2 },
+  tab: { flex: 1, minHeight: 44, justifyContent: "center", borderRadius: radius.pill, alignItems: "center" },
+  tabActive: { backgroundColor: "#fff", ...shadow },
   tabText: { fontSize: 13.5, fontWeight: "600", color: colors.textMuted },
-  tabTextActive: { color: colors.primary },
+  tabTextActive: { color: colors.text, fontWeight: "800" },
 
   filterLabel: { fontSize: 13.5, color: colors.textMuted, marginBottom: spacing.sm },
   filterSubLabel: { fontSize: 12.5, color: colors.textMuted, marginBottom: 2 },

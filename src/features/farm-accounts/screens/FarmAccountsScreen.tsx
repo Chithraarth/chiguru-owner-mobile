@@ -1,63 +1,81 @@
 import React from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { useQuery } from "@tanstack/react-query";
 import { Text } from "../../../components/Text";
-import { Archive, Banknote, Camera, CalendarCheck, Landmark, Leaf, LineChart, Users } from "lucide-react-native";
+import { Archive, Banknote, Camera, CalendarCheck, ChevronRight, Landmark, Leaf, LineChart, Users } from "lucide-react-native";
+import { BigTiles, SectionLabel, StatTiles, shortRupees } from "../../../components/harvest";
+import { Enter } from "../../../components/motion";
 import { colors, radius, spacing } from "../../../components/theme";
+import { getDashboardSummary } from "../../../api/endpoints/dashboard";
+import { useEstateStore } from "../../estate/store/estateStore";
 import { useT } from "../../../lib/i18n";
 
 function getAccounts(t: (key: string) => string) {
   return [
-    { screen: "ExpenseList", label: t("home.expenses"), icon: Banknote, chipBg: "#FFF0C2", chipColor: "#6C5DD3" },
-    { screen: "Harvests", label: t("home.harvest"), icon: Leaf, chipBg: "#D5F1EE", chipColor: "#1F9E92" },
-    { screen: "Reports", label: t("home.reports"), icon: LineChart, chipBg: "#F7B7C9", chipColor: "#B45BC7" },
-    { screen: "LabourRecords", label: t("farmAcct.labour"), icon: Users, chipBg: "#FBF2D9", chipColor: "#4F63D2" },
-    { screen: "EmployeeAttendance", label: "Employee Attendance", icon: CalendarCheck, chipBg: "#DDF3E4", chipColor: "#2E9E5B" },
-    { screen: "Loans", label: t("more.loans"), icon: Landmark, chipBg: "#FBE3E8", chipColor: "#D4526E" },
-    { screen: "OldLedger", label: "Old Ledger", icon: Archive, chipBg: "#F0EAE0", chipColor: "#9C7B4F" },
+    { screen: "ExpenseList", label: t("home.expenses"), icon: Banknote, sub: "Bills & receipts" },
+    { screen: "Harvests", label: t("home.harvest"), icon: Leaf, sub: "Sales & income" },
+    { screen: "LabourRecords", label: t("farmAcct.labour"), icon: Users, sub: "Wages & advances" },
+    { screen: "Loans", label: t("more.loans"), icon: Landmark, sub: "Given & taken" },
+    { screen: "Reports", label: t("home.reports"), icon: LineChart, sub: "Season totals" },
+    { screen: "EmployeeAttendance", label: "Employee Attendance", icon: CalendarCheck, sub: "Days worked" },
+    { screen: "OldLedger", label: "Old Ledger", icon: Archive, sub: "Past seasons" },
   ];
 }
 
 export function FarmAccountsScreen({ navigation }: { navigation: any }) {
   const { t } = useT();
-  const ACCOUNTS = getAccounts(t);
+  const activeEstateId = useEstateStore((s) => s.activeEstateId);
+  const summary = useQuery({
+    queryKey: ["dashboard", activeEstateId],
+    queryFn: getDashboardSummary,
+    enabled: activeEstateId != null,
+  }).data;
+  const income = summary?.totalIncomeThisMonth ?? 0;
+  const spent = summary?.totalExpensesThisMonth ?? 0;
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
-      <Pressable style={styles.scanHero} onPress={() => navigation.navigate("AccountsScan")}>
-        <View style={styles.scanIconWrap}>
-          <Camera size={26} color="#fff" />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.scanTitle}>{t("farmAcct.scan")}</Text>
-          <Text style={styles.scanSubtitle}>{t("farmAcct.scanSub")}</Text>
-        </View>
-      </Pressable>
+      {summary ? (
+        <Enter>
+          <StatTiles
+            items={[
+              { label: "Income", value: shortRupees(income), sub: "this month" },
+              { label: "Spent", value: shortRupees(spent), sub: "this month" },
+              { label: "Net", value: shortRupees(income - spent), sub: "this month" },
+            ]}
+          />
+        </Enter>
+      ) : null}
 
-      <Text style={styles.sectionLabel}>{t("farmAcct.currentRecords").toUpperCase()}</Text>
+      <Enter delay={120}>
+        <Pressable
+          style={({ pressed }) => [styles.scanHero, pressed && { transform: [{ scale: 0.98 }] }]}
+          onPress={() => navigation.navigate("AccountsScan")}
+          accessibilityRole="button"
+        >
+          <View style={styles.scanIconWrap}>
+            <Camera size={28} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.scanTitle}>{t("farmAcct.scan")}</Text>
+            <Text style={styles.scanSubtitle}>{t("farmAcct.scanSub")}</Text>
+          </View>
+          <ChevronRight size={22} color={colors.accentInk} />
+        </Pressable>
+      </Enter>
 
-      <View style={{ gap: spacing.sm }}>
-        {ACCOUNTS.map((a) => (
-          <Pressable key={a.screen} style={styles.row} onPress={() => navigation.navigate(a.screen)}>
-            <View style={[styles.iconWrap, { backgroundColor: a.chipBg }]}>
-              <a.icon size={20} color={a.chipColor} />
-            </View>
-            <Text style={styles.rowLabel}>{a.label}</Text>
-          </Pressable>
-        ))}
-      </View>
+      <SectionLabel>{t("farmAcct.currentRecords")}</SectionLabel>
+      <Enter delay={240}>
+        <BigTiles items={getAccounts(t).map((a) => ({ icon: a.icon, title: a.label, sub: a.sub, onPress: () => navigation.navigate(a.screen) }))} />
+      </Enter>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  scanHero: { flexDirection: "row", alignItems: "center", gap: spacing.md, backgroundColor: colors.primary, borderRadius: radius.lg, padding: spacing.lg },
-  scanIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
-  scanTitle: { color: "#fff", fontSize: 18, fontWeight: "700", lineHeight: 21 },
-  scanSubtitle: { color: "rgba(255,255,255,0.8)", fontSize: 14.5, marginTop: 2, lineHeight: 16 },
-
-  sectionLabel: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5 },
-
-  row: { flexDirection: "row", alignItems: "center", gap: spacing.md, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.md },
-  iconWrap: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
-  rowLabel: { flex: 1, fontSize: 17, fontWeight: "700", color: colors.text },
+  scanHero: { flexDirection: "row", alignItems: "center", gap: spacing.md, backgroundColor: colors.accent, borderRadius: radius.lg, padding: 18 },
+  scanIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
+  scanTitle: { color: colors.accentInk, fontSize: 19, fontWeight: "800", lineHeight: 23 },
+  scanSubtitle: { color: colors.accentInkSoft, fontSize: 14.5, marginTop: 2, lineHeight: 19 },
 });

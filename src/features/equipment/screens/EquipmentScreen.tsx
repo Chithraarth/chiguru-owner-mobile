@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useLayoutEffect } from "react";
 import { Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { Text } from "../../../components/Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { MessageCircle, Phone, Tag, Tractor, Plus } from "lucide-react-native";
 import { Button } from "../../../components/Button";
 import { Card } from "../../../components/Card";
+import { HeaderAddButton } from "../../../components/harvest";
 import { LoadingView } from "../../../components/StateViews";
 import { colors, radius, spacing } from "../../../components/theme";
 import { getEquipmentListings } from "../../../api/endpoints/equipment";
@@ -26,6 +27,12 @@ const CATEGORIES = [
 const CAT_MAP = Object.fromEntries(CATEGORIES.map((c) => [c.key, c]));
 
 export function EquipmentScreen({ navigation }: { navigation: any }) {
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => <HeaderAddButton label="List equipment" onPress={() => navigation.navigate("EquipmentForm")} />,
+    });
+  });
+
   const [category, setCategory] = useState("all");
   const [condition, setCondition] = useState("all");
   const [refreshing, setRefreshing] = useState(false);
@@ -128,9 +135,6 @@ export function EquipmentScreen({ navigation }: { navigation: any }) {
           </View>
         )}
       </ScrollView>
-      <View style={[styles.footer, { paddingBottom: spacing.md + insets.bottom }]}>
-        <Button title="List equipment" icon={Plus} onPress={() => navigation.navigate("EquipmentForm")} />
-      </View>
     </View>
   );
 }

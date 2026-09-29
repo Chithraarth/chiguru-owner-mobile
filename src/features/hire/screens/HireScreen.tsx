@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useLayoutEffect } from "react";
 import { Alert, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { Text } from "../../../components/Text";
 import * as Location from "expo-location";
@@ -19,6 +19,7 @@ import {
 } from "lucide-react-native";
 import { Button } from "../../../components/Button";
 import { Card } from "../../../components/Card";
+import { HeaderAddButton } from "../../../components/harvest";
 import { TextField } from "../../../components/TextField";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
 import { colors, radius, spacing } from "../../../components/theme";
@@ -164,6 +165,12 @@ function ListingCard({ listing, dist, tab, onDelete }: { listing: HireListing; d
 }
 
 export function HireScreen({ navigation, route }: { navigation: any; route?: { params?: { initialTab?: Tab } } }) {
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => <HeaderAddButton label="Post listing" onPress={() => navigation.navigate("HireForm", { listingType: tab })} />,
+    });
+  });
+
   const { t } = useT();
   const [tab, setTab] = useState<Tab | null>(route?.params?.initialTab ?? null);
   const [filter, setFilter] = useState("all");
@@ -350,9 +357,6 @@ export function HireScreen({ navigation, route }: { navigation: any; route?: { p
           </View>
         )}
       </ScrollView>
-      <View style={[styles.footer, { paddingBottom: spacing.md + insets.bottom }]}>
-        <Button title="Post listing" icon={Plus} onPress={() => navigation.navigate("HireForm", { listingType: tab })} />
-      </View>
     </View>
   );
 }
