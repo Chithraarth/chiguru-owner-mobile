@@ -3,6 +3,10 @@ import { GoogleSignin, isSuccessResponse, isErrorWithCode, statusCodes } from "@
 import { signInWithGoogleIdToken } from "../../../lib/firebase";
 
 const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+// iOS needs its own OAuth client (from GoogleService-Info.plist's CLIENT_ID);
+// its reversed form is registered as a URL scheme via app.json's
+// google-signin plugin so Google can hand control back to the app.
+const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || undefined;
 
 export const isGoogleSignInConfigured = !!webClientId;
 
@@ -13,11 +17,11 @@ if (isGoogleSignInConfigured) {
   // the Android client id) is what's passed here; Google matches the
   // request to the Android client via this app's package name + SHA-1
   // registered in Cloud Console.
-  GoogleSignin.configure({ webClientId, offlineAccess: false });
+  GoogleSignin.configure({ webClientId, iosClientId, offlineAccess: false });
 }
 
 /**
- * Google Sign-In via the native Android SDK. Until
+ * Google Sign-In via the native Google SDK (Android and iOS). Until
  * EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID is set, canSignIn stays false and the
  * caller should show a "not configured" message instead of prompting.
  */

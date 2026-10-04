@@ -10,7 +10,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.thechiguru.owner",
       "appleTeamId": "UZKCN9NQ7G",
-      "buildNumber": "1"
+      "buildNumber": "2"
     },
     "android": {
       "package": "com.thechiguru.owner",
@@ -73,7 +73,12 @@
         }
       ],
       "expo-asset",
-      "@react-native-google-signin/google-signin",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.299684443899-vp9u66ilmgh9rko1de7oji0em83llbub"
+        }
+      ],
       "@react-native-community/datetimepicker",
       "expo-font",
       "./plugins/withSceneLifecycle"
