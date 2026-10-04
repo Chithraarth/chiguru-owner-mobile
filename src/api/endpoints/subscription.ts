@@ -1,5 +1,6 @@
 import { apiFetch, apiMutate } from "../client";
 import type {
+  AppleVerifyRequest,
   ManagerSeatAddonOrderResponse,
   ManagerSeatAddonVerifyRequest,
   ManagerSeatAddonVerifyResponse,
@@ -51,4 +52,14 @@ export function createManagerSeatAddonOrder() {
 /** Step 2: verify the signature Razorpay's checkout returns, then permanently add +1 manager seat. */
 export function verifyManagerSeatAddon(req: ManagerSeatAddonVerifyRequest) {
   return apiMutate<ManagerSeatAddonVerifyResponse>("POST", "/subscriptions/manager-seat-addon/verify", req);
+}
+
+/** iPhone: verify a StoreKit 2 subscription transaction and activate the plan. */
+export function verifyApplePurchase(req: AppleVerifyRequest) {
+  return apiMutate<SubscriptionActionResponse>("POST", "/subscriptions/apple/verify", req);
+}
+
+/** iPhone: verify the invitee-seat consumable and add +1 seat. */
+export function verifyAppleSeatAddon(req: AppleVerifyRequest) {
+  return apiMutate<ManagerSeatAddonVerifyResponse>("POST", "/subscriptions/manager-seat-addon/apple/verify", req);
 }

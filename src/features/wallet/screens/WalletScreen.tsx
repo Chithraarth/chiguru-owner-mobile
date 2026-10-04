@@ -12,6 +12,10 @@ import { createRechargeOrder, getWallet, verifyRecharge } from "../../../api/end
 import { RazorpayCheckoutModal } from "../components/RazorpayCheckoutModal";
 import { ApiError } from "../../../api/errors";
 import type { WalletRechargeOrderResponse } from "../../../types/api";
+import { isIOS, buyWithApple, useAppleIapStore } from "../../iap/appleIap";
+
+// Must match App Store Connect; the server's list (GET /wallet) wins when present.
+const DEFAULT_APPLE_PACKS = [299, 499, 999].map((amount) => ({ productId: `com.thechiguru.owner.wallet.${amount}`, amount }));
 
 function inr(n: number) {
   return `₹${Math.round(n).toLocaleString("en-IN")}`;
@@ -34,6 +38,9 @@ export function WalletScreen() {
   const [order, setOrder] = useState<WalletRechargeOrderResponse | null>(null);
   const [checkoutVisible, setCheckoutVisible] = useState(false);
   const [verifying, setVerifying] = useState(false);
+
+  const applePendingSku = useAppleIapStore((s) => s.pendingSku);
+  const appleVerifying = useAppleIapStore((s) => s.verifying === "wallet");
 
   const walletQuery = useQuery({ queryKey: ["wallet"], queryFn: getWallet });
 
@@ -119,7 +126,7 @@ export function WalletScreen() {
         <Text style={styles.balanceDesc}>Used to pay for AI features, on top of your subscription.</Text>
       </View>
 
-      {verifying ? (
+      {verifying || appleVerifying ? (
         <Card style={{ backgroundColor: "#FFF8E6", borderColor: "#F0DFA6" }}>
           <Text style={{ color: "#8A6D1D", fontSize: 14.5 }}>Payment received. Verifying your recharge...</Text>
         </Card>
@@ -127,6 +134,22 @@ export function WalletScreen() {
 
       <View>
         <Text style={styles.sectionTitle}>Recharge wallet</Text>
+        {isIOS ? (
+          // iPhone: fixed packs through Apple In-App Purchase.
+          <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
+            {(data?.applePacks?.length ? data.applePacks : DEFAULT_APPLE_PACKS).map((pack) => (
+              <Button
+                key={pack.productId}
+                title={`Add ${inr(pack.amount)}`}
+                variant="secondary"
+                onPress={() => buyWithApple(pack.productId)}
+                loading={applePendingSku === pack.productId}
+                disabled={applePendingSku !== null || appleVerifying}
+              />
+            ))}
+          </View>
+        ) : (
+        <>
         <View style={styles.amountRow}>
           {[100, 250, 500, 1000].filter((a) => a >= minRechargeAmount).map((a) => {
             const on = rechargeInput === String(a);
@@ -156,6 +179,8 @@ export function WalletScreen() {
           />
         </View>
         <Text style={styles.minRechargeNote}>Minimum {inr(minRechargeAmount)}</Text>
+        </>
+        )}
       </View>
 
       <View>

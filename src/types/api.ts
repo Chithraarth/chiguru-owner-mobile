@@ -817,6 +817,13 @@ export interface SubscriptionPlan {
   billingPeriod: string;
   managerLimit: number;
   googlePlayProductId: string | null;
+  /** App Store auto-renewable subscription id — what the iPhone app buys. */
+  appleProductId?: string | null;
+}
+
+/** StoreKit 2's JWS for a purchase (react-native-iap's purchase.purchaseToken on iOS). */
+export interface AppleVerifyRequest {
+  signedTransaction: string;
 }
 
 export interface SubscriptionPlansResponse {
@@ -913,6 +920,8 @@ export interface WalletTransaction {
 export interface WalletMeResponse {
   balance: number;
   minRechargeAmount: number;
+  /** Fixed credit packs sold through Apple In-App Purchase on iPhone. */
+  applePacks?: { productId: string; amount: number }[];
   aiPrices: Record<string, WalletAiPrice>;
   share: {
     target: number;

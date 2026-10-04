@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, Linking, ScrollView, StyleSheet, View } from "react-native";
 import { Text } from "../../../components/Text";
 import Constants from "expo-constants";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -38,6 +38,14 @@ import {
 import { RazorpayCheckoutModal } from "../../wallet/components/RazorpayCheckoutModal";
 import { ApiError } from "../../../api/errors";
 import type { ManagerSeatAddonOrderResponse, SubscriptionPlan } from "../../../types/api";
+import {
+  isIOS,
+  buyWithApple,
+  restoreApplePurchases,
+  manageAppleSubscription,
+  useAppleIapStore,
+  APPLE_SEAT_PRODUCT_ID,
+} from "../../iap/appleIap";
 
 function inr(n: number) {
   return `₹${Math.round(n).toLocaleString("en-IN")}`;
@@ -70,6 +78,9 @@ export function SubscriptionScreen() {
   // backgrounded — the listener must always see the *current* plan list to
   // resolve a productId back to our own plan id, not a stale closure's.
   const plansRef = useRef<SubscriptionPlan[]>([]);
+  // iPhone: purchases run through Apple; the app-wide handler verifies them.
+  const applePendingSku = useAppleIapStore((s) => s.pendingSku);
+  const appleVerifying = useAppleIapStore((s) => s.verifying);
 
   const plansQuery = useQuery({ queryKey: ["subscription-plans"], queryFn: getPlans });
   const subQuery = useQuery({ queryKey: ["subscription"], queryFn: getSubscription });
@@ -93,7 +104,7 @@ export function SubscriptionScreen() {
       }
       return tokenByProductId;
     },
-    enabled: productIds.length > 0,
+    enabled: !isIOS && productIds.length > 0,
   });
 
   const invalidateAll = () => {
@@ -105,6 +116,8 @@ export function SubscriptionScreen() {
   // this screen. A purchase's result never comes back from requestSubscription
   // itself; it always arrives here, asynchronously.
   useEffect(() => {
+    // iOS purchases are handled app-wide by useApplePurchaseHandler.
+    if (isIOS) return;
     let mounted = true;
     initConnection().catch((err: unknown) => console.warn("IAP initConnection failed", err));
 
@@ -157,6 +170,14 @@ export function SubscriptionScreen() {
       invalidateAll();
     },
     onError: (err: unknown) => {
+      if (err instanceof ApiError && err.is("MANAGE_VIA_APPLE")) {
+        manageAppleSubscription();
+        return;
+      }
+      if (err instanceof ApiError && err.is("MANAGE_VIA_GOOGLE_PLAY") && isIOS) {
+        Alert.alert("Bought on Google Play", "This plan was bought on an Android phone — manage it from the Play Store on that phone.");
+        return;
+      }
       if (err instanceof ApiError && err.is("MANAGE_VIA_GOOGLE_PLAY")) {
         // Google's own guidance: subscriptions bought via Play Billing are
         // managed from Play Store's own UI, not from inside the app.
@@ -181,6 +202,14 @@ export function SubscriptionScreen() {
   const isActive = current?.status === "ACTIVE" || current?.status === "GRACE_PERIOD";
 
   async function onChoosePlan(plan: SubscriptionPlan) {
+    if (isIOS) {
+      if (!plan.appleProductId) {
+        Alert.alert("Not available yet", "This plan isn't set up for purchase on iPhone yet.");
+        return;
+      }
+      await buyWithApple(plan.appleProductId);
+      return;
+    }
     if (!plan.googlePlayProductId) {
       Alert.alert("Not available yet", "This plan isn't set up for purchase on Android yet.");
       return;
@@ -212,6 +241,10 @@ export function SubscriptionScreen() {
   }
 
   async function onBuySeatAddon() {
+    if (isIOS) {
+      await buyWithApple(APPLE_SEAT_PRODUCT_ID);
+      return;
+    }
     setBuyingSeatAddon(true);
     try {
       const created = await createManagerSeatAddonOrder();
@@ -285,7 +318,12 @@ export function SubscriptionScreen() {
           ) : null}
           {current!.autoRenew ? (
             <View style={{ marginTop: spacing.sm }}>
-              <Button title="Cancel subscription" variant="secondary" onPress={() => cancelMutation.mutate()} loading={cancelMutation.isPending} />
+              <Button
+                title={current!.provider === "APPLE" ? "Manage subscription" : "Cancel subscription"}
+                variant="secondary"
+                onPress={() => (current!.provider === "APPLE" ? manageAppleSubscription() : cancelMutation.mutate())}
+                loading={cancelMutation.isPending}
+              />
             </View>
           ) : null}
           {subQuery.data ? (
@@ -304,8 +342,8 @@ export function SubscriptionScreen() {
               title={`Add extra invitee seat — ${inr(subQuery.data?.entitlement.managerSeatAddonPrice ?? 99)} one-time`}
               variant="secondary"
               onPress={onBuySeatAddon}
-              loading={buyingSeatAddon && !seatAddonCheckoutVisible}
-              disabled={buyingSeatAddon}
+              loading={(buyingSeatAddon && !seatAddonCheckoutVisible) || applePendingSku === APPLE_SEAT_PRODUCT_ID}
+              disabled={buyingSeatAddon || applePendingSku !== null}
             />
           </View>
         </View>
@@ -319,13 +357,13 @@ export function SubscriptionScreen() {
         </View>
       )}
 
-      {verifying ? (
+      {verifying || appleVerifying === "subscription" ? (
         <Card style={{ backgroundColor: "#FFF8E6", borderColor: "#F0DFA6" }}>
           <Text style={{ color: "#8A6D1D", fontSize: 14.5 }}>Payment received. Verifying your subscription...</Text>
         </Card>
       ) : null}
 
-      {verifyingSeatAddon ? (
+      {verifyingSeatAddon || appleVerifying === "seat" ? (
         <Card style={{ backgroundColor: "#FFF8E6", borderColor: "#F0DFA6" }}>
           <Text style={{ color: "#8A6D1D", fontSize: 14.5 }}>Payment received. Verifying your invitee seat...</Text>
         </Card>
@@ -339,7 +377,8 @@ export function SubscriptionScreen() {
       <View style={{ gap: spacing.sm }}>
         {plans.map((plan) => {
           const isCurrent = isActive && current?.plan?.id === plan.id;
-          const purchasing = purchasingPlanId === plan.id;
+          const storeProductId = isIOS ? plan.appleProductId : plan.googlePlayProductId;
+          const purchasing = isIOS ? !!storeProductId && applePendingSku === storeProductId : purchasingPlanId === plan.id;
           return (
             <Card key={plan.id} style={isCurrent ? styles.planCardCurrent : undefined}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
@@ -358,7 +397,7 @@ export function SubscriptionScreen() {
               <View style={{ marginTop: spacing.md }}>
                 <Button
                   title={isCurrent ? "Current plan" : "Choose"}
-                  disabled={purchasing || isCurrent || !plan.googlePlayProductId}
+                  disabled={purchasing || isCurrent || !storeProductId || (isIOS && applePendingSku !== null)}
                   loading={purchasing}
                   onPress={() => onChoosePlan(plan)}
                 />
@@ -367,6 +406,25 @@ export function SubscriptionScreen() {
           );
         })}
       </View>
+
+      {isIOS ? (
+        <View style={{ gap: spacing.sm }}>
+          <Button
+            title="Restore purchases"
+            variant="secondary"
+            onPress={() => restoreApplePurchases(invalidateAll)}
+          />
+          {/* Disclosure Apple requires next to auto-renewing subscriptions. */}
+          <Text style={styles.legalText}>
+            Payment is charged to your Apple ID. The subscription renews automatically every period unless cancelled at least
+            24 hours before it ends; manage or cancel it anytime in your Apple ID's Subscriptions settings.
+          </Text>
+          <View style={{ flexDirection: "row", justifyContent: "center", gap: spacing.md }}>
+            <Text style={styles.legalLink} onPress={() => Linking.openURL("https://thechiguru.com/terms")}>Terms of Use</Text>
+            <Text style={styles.legalLink} onPress={() => Linking.openURL("https://thechiguru.com/privacy")}>Privacy Policy</Text>
+          </View>
+        </View>
+      ) : null}
 
       <Card style={{ gap: spacing.sm }}>
         <Text style={styles.whyTitle}>Why do we charge this money?</Text>
@@ -437,6 +495,9 @@ const styles = StyleSheet.create({
   planPrice: { fontSize: 26, fontWeight: "700", color: colors.text, marginTop: spacing.sm },
   planPerMonth: { fontSize: 14, color: colors.textMuted },
   planFeature: { fontSize: 14, color: colors.text, flex: 1 },
+
+  legalText: { fontSize: 12.5, color: colors.textMuted, lineHeight: 17, textAlign: "center" },
+  legalLink: { fontSize: 13, color: colors.primary, fontWeight: "700", textDecorationLine: "underline" },
 
   sectionTitle: { fontSize: 20, fontWeight: "800", color: colors.text },
 

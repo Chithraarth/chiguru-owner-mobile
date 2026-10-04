@@ -1,5 +1,6 @@
 import { apiFetch, apiMutate } from "../client";
 import type {
+  AppleVerifyRequest,
   WalletMeResponse,
   WalletRechargeOrderResponse,
   WalletRechargeVerifyRequest,
@@ -23,4 +24,9 @@ export function verifyRecharge(req: WalletRechargeVerifyRequest) {
 
 export function shareWalletReward(platform: string) {
   return apiMutate<WalletShareResponse>("POST", "/wallet/share", { platform });
+}
+
+/** iPhone: verify a wallet-pack consumable bought through Apple and credit the wallet. */
+export function verifyAppleWalletPack(req: AppleVerifyRequest) {
+  return apiMutate<WalletRechargeVerifyResponse>("POST", "/wallet/apple/verify", req);
 }

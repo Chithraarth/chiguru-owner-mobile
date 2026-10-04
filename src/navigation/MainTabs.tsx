@@ -52,6 +52,7 @@ import { AgriDoctorEarningsScreen } from "../features/agri-doctor/screens/AgriDo
 import { ConsultationScreen } from "../features/agri-doctor/screens/ConsultationScreen";
 import { SubscriptionScreen } from "../features/subscription/screens/SubscriptionScreen";
 import { WalletScreen } from "../features/wallet/screens/WalletScreen";
+import { useApplePurchaseHandler } from "../features/iap/appleIap";
 import { BinScreen } from "../features/bin/screens/BinScreen";
 import { SyncLogScreen } from "../features/sync-log/screens/SyncLogScreen";
 import { ManagerDevicesScreen } from "../features/manager-devices/screens/ManagerDevicesScreen";
@@ -250,6 +251,8 @@ const TAB_ICONS: Record<string, React.ComponentType<{ size?: number; color?: str
 };
 
 export function MainTabs() {
+  // iPhone purchases (plans, wallet packs, seats) are verified here, app-wide.
+  useApplePurchaseHandler();
   return (
     <Tab.Navigator
       tabBar={(props) => <HarvestTabBar {...props} />}
