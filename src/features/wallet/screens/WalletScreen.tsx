@@ -15,7 +15,7 @@ import type { WalletRechargeOrderResponse } from "../../../types/api";
 import { isIOS, buyWithApple, useAppleIapStore } from "../../iap/appleIap";
 
 // Must match App Store Connect; the server's list (GET /wallet) wins when present.
-const DEFAULT_APPLE_PACKS = [299, 499, 999].map((amount) => ({ productId: `com.thechiguru.owner.wallet.${amount}`, amount }));
+const DEFAULT_APPLE_PACKS = [599].map((amount) => ({ productId: `com.thechiguru.owner.wallet.${amount}`, amount }));
 
 function inr(n: number) {
   return `₹${Math.round(n).toLocaleString("en-IN")}`;
