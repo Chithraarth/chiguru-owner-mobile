@@ -10,7 +10,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.thechiguru.owner",
       "appleTeamId": "UZKCN9NQ7G",
-      "buildNumber": "4"
+      "buildNumber": "5"
     },
     "android": {
       "package": "com.thechiguru.owner",

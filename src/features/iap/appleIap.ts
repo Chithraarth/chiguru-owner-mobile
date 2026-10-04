@@ -21,6 +21,7 @@ import {
   getAvailablePurchases,
   deepLinkToSubscriptions,
   isUserCancelledError,
+  ErrorCode,
   type Purchase,
 } from "react-native-iap";
 import { verifyApplePurchase, verifyAppleSeatAddon } from "../../api/endpoints/subscription";
@@ -53,8 +54,19 @@ export async function buyWithApple(sku: string) {
     await ensureConnection();
     await requestPurchase({ request: { apple: { sku } }, type: kindOf(sku) === "subscription" ? "subs" : "in-app" });
   } catch (err) {
+    if (!isUserCancelledError(err)) {
+      const { code, message } = (err ?? {}) as { code?: string; message?: string };
+      if (code === ErrorCode.SkuNotFound) {
+        // Apple only serves products that are complete in App Store Connect
+        // ("Ready to Submit") once the Paid Apps agreement is active.
+        Alert.alert("Not available yet", "Apple hasn't made this purchase available yet. Please try again later.");
+      } else {
+        Alert.alert("Couldn't start purchase", `${message || "Please try again."}${code ? ` (${code})` : ""}`);
+      }
+    }
+  } finally {
+    // The sheet has closed (bought, cancelled or failed); verification has its own state.
     setIap({ pendingSku: null });
-    if (!isUserCancelledError(err)) Alert.alert("Couldn't start purchase", "Please try again.");
   }
 }
 
