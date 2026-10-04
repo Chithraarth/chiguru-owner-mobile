@@ -8,7 +8,9 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.thechiguru.owner"
+      "bundleIdentifier": "com.thechiguru.owner",
+      "appleTeamId": "UZKCN9NQ7G",
+      "buildNumber": "1"
     },
     "android": {
       "package": "com.thechiguru.owner",
@@ -73,7 +75,8 @@
       "expo-asset",
       "@react-native-google-signin/google-signin",
       "@react-native-community/datetimepicker",
-      "expo-font"
+      "expo-font",
+      "./plugins/withSceneLifecycle"
     ]
   }
 }
