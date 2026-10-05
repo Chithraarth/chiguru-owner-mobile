@@ -63,6 +63,8 @@ const SELLER_TYPE_COLORS: Record<string, { bg: string; fg: string }> = {
 
 function PriceCard({ row, isBest, tracked, onToggleTrack }: { row: MandiPrice; isBest: boolean; tracked: boolean; onToggleTrack: () => void }) {
   const typeColor = SELLER_TYPE_COLORS[row.sellerType] ?? { bg: colors.muted, fg: colors.textMuted };
+  // The price source calls a government market a "Mandi"; the app says "Market".
+  const typeLabel = row.sellerType === "Mandi" ? "Market" : row.sellerType;
   const f = freshness(row.priceDate);
   const perKg = convert(row.price, row.unit, 1);
   const perQuintal = convert(row.price, row.unit, 100);
@@ -74,7 +76,7 @@ function PriceCard({ row, isBest, tracked, onToggleTrack }: { row: MandiPrice; i
             {isBest ? <Trophy size={13} color="#D9A441" /> : null}
             <Text style={styles.sellerName}>{row.sellerName}</Text>
             <View style={[styles.typeBadge, { backgroundColor: typeColor.bg }]}>
-              <Text style={[styles.typeBadgeText, { color: typeColor.fg }]}>{row.sellerType}</Text>
+              <Text style={[styles.typeBadgeText, { color: typeColor.fg }]}>{typeLabel}</Text>
             </View>
           </View>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
@@ -225,7 +227,7 @@ export function MandiScreen() {
   }, [filtered]);
 
   if (activeEstateId == null) return <NoEstateNotice />;
-  if (query.isLoading) return <LoadingView label="Loading mandi prices..." />;
+  if (query.isLoading) return <LoadingView label="Loading market prices..." />;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
@@ -234,7 +236,7 @@ export function MandiScreen() {
           <View style={styles.heroIconWrap}><Sparkles size={18} color={colors.primary} /></View>
           <View style={{ flex: 1 }}>
             <Text style={styles.heroTitle}>Today's market prices</Text>
-            <Text style={styles.heroSubtitle}>Found automatically every morning from government mandi rates, curing works & buyer websites for your district</Text>
+            <Text style={styles.heroSubtitle}>Found automatically every morning from government market rates, curing works & buyer websites for your district</Text>
           </View>
         </View>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: spacing.sm }}>
@@ -299,7 +301,7 @@ export function MandiScreen() {
           <View style={styles.centerState}>
             <View style={styles.fetchIconWrap}><Globe size={26} color={colors.primary} /></View>
             <Text style={styles.centerTitle}>Fetching today's prices…</Text>
-            <Text style={styles.centerSubtitle}>Checking government mandi rates, curing works and local buyers near you. This takes a minute or two.</Text>
+            <Text style={styles.centerSubtitle}>Checking government market rates, curing works and local buyers near you. This takes a minute or two.</Text>
           </View>
         ) : status === "error" && prices.length === 0 ? (
           <View style={styles.centerState}>

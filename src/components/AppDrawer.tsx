@@ -65,7 +65,7 @@ const GROUPS: { title: string; items: MenuItem[] }[] = [
       { label: "Agri doctor", icon: Stethoscope, screen: "AgriDoctor" },
       { label: "AI advisor", icon: Sparkles, screen: "AgriAi" },
       { label: "Market", icon: Store, screen: "Shop" },
-      { label: "Mandi prices", icon: TrendingUp, screen: "Mandi" },
+      { label: "Market prices", icon: TrendingUp, screen: "Mandi" },
     ],
   },
   {

@@ -22,13 +22,14 @@ import {
   ChevronRight,
   ChevronDown,
   ChevronUp,
+  TrendingUp,
 } from "lucide-react-native";
 import type { RecentAd } from "../../../types/api";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { LoadingView } from "../../../components/StateViews";
 import { colors, radius, shadow, spacing } from "../../../components/theme";
-import { BigTiles, IconChip, ListCard, ListRow, Pill, SectionLabel, StatTiles, shortRupees } from "../../../components/harvest";
+import { BigTiles, IconChip, ListCard, ListRow, Pill, RoundButton, SectionLabel, StatTiles, shortRupees } from "../../../components/harvest";
 import { AppDrawer } from "../../../components/AppDrawer";
 import { EstateSwitcherModal } from "../../estate/components/EstateSwitcherModal";
 import { useSessionStore } from "../../../store/sessionStore";
@@ -188,6 +189,7 @@ export function DashboardScreen({ navigation }: { navigation: any }) {
           badge={needsSetup ? "New here" : "My farm"}
           onMenu={() => setDrawerOpen(true)}
           onSwitch={needsSetup ? undefined : () => setSwitcherOpen(true)}
+          right={<RoundButton icon={TrendingUp} label="Market prices" onPress={() => navigation.navigate("Mandi")} />}
         />
 
         <View style={styles.body}>
@@ -260,7 +262,7 @@ export function DashboardScreen({ navigation }: { navigation: any }) {
           <View style={styles.sectionRow}>
             <SectionLabel>{t("home.recentAds")}</SectionLabel>
             <Text style={styles.marketLink} onPress={() => navigation.navigate("Mandi")}>
-              Mandi prices
+              Market prices
             </Text>
           </View>
           {(adsQuery.data?.length ?? 0) === 0 ? (

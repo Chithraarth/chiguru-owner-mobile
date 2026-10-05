@@ -27,7 +27,7 @@ const COMMON_CROPS = ["Soybean", "Sugarcane", "Tur", "Cotton", "Onion", "Grapes"
 
 const STEPS = [
   { title: "Tell us about your farm", sub: "Takes about a minute. Change anything later." },
-  { title: "Where is your farm?", sub: "Used for weather, mandi prices and your work plan." },
+  { title: "Where is your farm?", sub: "Used for weather, market prices and your work plan." },
   { title: "What do you grow?", sub: "Pick all that apply. Add plots and seasons later." },
 ];
 

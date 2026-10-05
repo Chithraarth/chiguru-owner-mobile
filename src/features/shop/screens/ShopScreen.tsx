@@ -7,7 +7,7 @@ import { Enter } from "../../../components/motion";
 import { colors, spacing } from "../../../components/theme";
 import { useT } from "../../../lib/i18n";
 
-/** Market hub: sell or buy produce, rent or sell equipment, hire, nursery, mandi prices and your ads. */
+/** Market hub: sell or buy produce, rent or sell equipment, hire, nursery, market prices and your ads. */
 export function ShopScreen({ navigation }: { navigation: any }) {
   const { t } = useT();
   const go = (screen: string, params?: Record<string, unknown>) => () => navigation.navigate(screen, params);
@@ -21,7 +21,7 @@ export function ShopScreen({ navigation }: { navigation: any }) {
             { icon: Tractor, title: t("more.equipment"), sub: "Rent or sell", onPress: go("Equipment") },
             { icon: Handshake, title: "Hire board", sub: "Workers & jobs", onPress: go("Hire") },
             { icon: Sprout, title: t("more.nursery"), sub: "Saplings & seeds", onPress: go("Nursery") },
-            { icon: TrendingUp, title: "Mandi prices", sub: "Today’s rates", onPress: go("Mandi") },
+            { icon: TrendingUp, title: "Market prices", sub: "Today’s rates", onPress: go("Mandi") },
             { icon: Megaphone, title: "My ads", sub: "Everything you posted", onPress: go("MyAds") },
           ]}
         />
