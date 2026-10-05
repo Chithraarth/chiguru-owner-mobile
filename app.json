@@ -7,10 +7,11 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.thechiguru.owner",
       "appleTeamId": "UZKCN9NQ7G",
-      "buildNumber": "5"
+      "buildNumber": "6",
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.thechiguru.owner",
@@ -81,7 +82,8 @@
       ],
       "@react-native-community/datetimepicker",
       "expo-font",
-      "./plugins/withSceneLifecycle"
+      "./plugins/withSceneLifecycle",
+      "expo-apple-authentication"
     ]
   }
 }

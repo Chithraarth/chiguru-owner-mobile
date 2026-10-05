@@ -2,7 +2,7 @@ import NetInfo from "@react-native-community/netinfo";
 import { getIdToken } from "../lib/firebase";
 import { getActiveEstateId } from "../features/estate/store/estateStore";
 import * as offlineQueue from "../lib/offlineQueue";
-import { ApiError } from "./errors";
+import { ApiError, isGateError } from "./errors";
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
@@ -62,6 +62,19 @@ async function toApiError(res: Response): Promise<ApiError> {
   return new ApiError(res.status, message, code, body);
 }
 
+// Called when an action the user just took was refused for lack of a plan or
+// wallet credit, so one app-wide prompt can send them to the right screen
+// (see lib/planGate.ts). Background reads never trigger it - screens show a
+// lock for those instead of popping alerts while someone is just browsing.
+let gateErrorHandler: ((err: ApiError) => void) | null = null;
+export function setGateErrorHandler(handler: ((err: ApiError) => void) | null) {
+  gateErrorHandler = handler;
+}
+export function reportIfGate(err: ApiError) {
+  if (isGateError(err)) gateErrorHandler?.(err);
+  return err;
+}
+
 export interface ApiFetchOptions extends RequestInit {
   mediaTimeout?: boolean;
 }
@@ -76,7 +89,11 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
     timeoutMs
   );
 
-  if (!res.ok) throw await toApiError(res);
+  if (!res.ok) {
+    const err = await toApiError(res);
+    // A POST through apiFetch is a user action (AI scan, plan generation...).
+    throw options.method && options.method !== "GET" ? reportIfGate(err) : err;
+  }
   if (!looksLikeOurApi(res)) {
     throw new ApiError(0, "Unexpected response (captive portal or offline gateway)");
   }
@@ -148,7 +165,7 @@ export async function apiMutate<T>(
       if (res.status === 404 && (method === "DELETE" || method === "PATCH")) {
         return null; // already-done, safe no-op (matches web app behavior)
       }
-      throw await toApiError(res);
+      throw reportIfGate(await toApiError(res));
     }
 
     if (!looksLikeOurApi(res)) {

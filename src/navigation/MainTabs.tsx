@@ -53,6 +53,7 @@ import { ConsultationScreen } from "../features/agri-doctor/screens/Consultation
 import { SubscriptionScreen } from "../features/subscription/screens/SubscriptionScreen";
 import { WalletScreen } from "../features/wallet/screens/WalletScreen";
 import { useApplePurchaseHandler } from "../features/iap/appleIap";
+import { withPlan } from "../components/PlanLock";
 import { BinScreen } from "../features/bin/screens/BinScreen";
 import { SyncLogScreen } from "../features/sync-log/screens/SyncLogScreen";
 import { ManagerDevicesScreen } from "../features/manager-devices/screens/ManagerDevicesScreen";
@@ -105,6 +106,29 @@ const headerOptions = {
   headerRight: () => <EstateSwitcherButton />,
 };
 
+// Screens whose data the server only serves to an active plan: without one
+// they show a "Subscribe to unlock" card instead, so nothing typed offline is
+// lost when the server later refuses it.
+const AttendanceScreenGated = withPlan(AttendanceScreen);
+const EmployeeAttendanceScreenGated = withPlan(EmployeeAttendanceScreen);
+const LabourRecordsScreenGated = withPlan(LabourRecordsScreen);
+const ExpenseListScreenGated = withPlan(ExpenseListScreen);
+const ExpenseFormScreenGated = withPlan(ExpenseFormScreen);
+const HarvestsScreenGated = withPlan(HarvestsScreen);
+const HarvestFormScreenGated = withPlan(HarvestFormScreen);
+const LoansScreenGated = withPlan(LoansScreen);
+const LoanFormScreenGated = withPlan(LoanFormScreen);
+const ReportsScreenGated = withPlan(ReportsScreen);
+const FarmAccountsScreenGated = withPlan(FarmAccountsScreen);
+const OldLedgerScreenGated = withPlan(OldLedgerScreen);
+const OldLedgerDetailScreenGated = withPlan(OldLedgerDetailScreen);
+const AccountsScanScreenGated = withPlan(AccountsScanScreen);
+const MandiScreenGated = withPlan(MandiScreen);
+const AgriAiScreenGated = withPlan(AgriAiScreen);
+const DiseaseScreenGated = withPlan(DiseaseScreen);
+const MarketplaceFormScreenGated = withPlan(MarketplaceFormScreen);
+const EquipmentFormScreenGated = withPlan(EquipmentFormScreen);
+
 // Screens deep-linked from the More/Shop/Farm-Accounts hubs and the drawer
 // menu are registered on every stack that can navigate to them, so
 // `navigation.navigate(...)` resolves no matter which tab the user started from.
@@ -117,45 +141,45 @@ function registerSharedScreens(Nav: ReturnType<typeof createNativeStackNavigator
       <Nav.Screen name="SprayForm" component={SprayFormScreen} options={{ title: "Log Spray" }} />
       <Nav.Screen name="YearPlan" component={YearPlanScreen} options={{ title: "Year Plan" }} />
       <Nav.Screen name="PlanTaskForm" component={PlanTaskFormScreen} options={({ route }: any) => ({ title: route.params?.task ? "Edit Task" : "Add Task" })} />
-      <Nav.Screen name="Harvests" component={HarvestsScreen} options={{ title: "Harvests" }} />
-      <Nav.Screen name="HarvestForm" component={HarvestFormScreen} options={{ title: "Log Harvest" }} />
-      <Nav.Screen name="Loans" component={LoansScreen} options={{ title: "Loans" }} />
-      <Nav.Screen name="LoanForm" component={LoanFormScreen} options={{ title: "New Loan" }} />
-      <Nav.Screen name="Reports" component={ReportsScreen} options={{ title: "Reports" }} />
-      <Nav.Screen name="AccountsScan" component={AccountsScanScreen} options={{ title: "Scan Account Page" }} />
-      <Nav.Screen name="ExpenseList" component={ExpenseListScreen} options={{ title: "Expenses" }} />
-      <Nav.Screen name="ExpenseForm" component={ExpenseFormScreen} options={{ title: "New Expense" }} />
+      <Nav.Screen name="Harvests" component={HarvestsScreenGated} options={{ title: "Harvests" }} />
+      <Nav.Screen name="HarvestForm" component={HarvestFormScreenGated} options={{ title: "Log Harvest" }} />
+      <Nav.Screen name="Loans" component={LoansScreenGated} options={{ title: "Loans" }} />
+      <Nav.Screen name="LoanForm" component={LoanFormScreenGated} options={{ title: "New Loan" }} />
+      <Nav.Screen name="Reports" component={ReportsScreenGated} options={{ title: "Reports" }} />
+      <Nav.Screen name="AccountsScan" component={AccountsScanScreenGated} options={{ title: "Scan Account Page" }} />
+      <Nav.Screen name="ExpenseList" component={ExpenseListScreenGated} options={{ title: "Expenses" }} />
+      <Nav.Screen name="ExpenseForm" component={ExpenseFormScreenGated} options={{ title: "New Expense" }} />
       <Nav.Screen name="WorkGroupList" component={WorkGroupListScreen} options={{ title: "Work Groups" }} />
       <Nav.Screen name="WorkGroupForm" component={WorkGroupFormScreen} options={{ title: "New Work Group" }} />
       <Nav.Screen
         name="Attendance"
-        component={AttendanceScreen}
+        component={AttendanceScreenGated}
         options={({ route }: any) => ({ title: route.params?.workGroupName ?? "Attendance" })}
       />
-      <Nav.Screen name="FarmAccounts" component={FarmAccountsScreen} options={{ title: "Farm Accounts" }} />
-      <Nav.Screen name="OldLedger" component={OldLedgerScreen} options={{ title: "Old Ledger" }} />
+      <Nav.Screen name="FarmAccounts" component={FarmAccountsScreenGated} options={{ title: "Farm Accounts" }} />
+      <Nav.Screen name="OldLedger" component={OldLedgerScreenGated} options={{ title: "Old Ledger" }} />
       <Nav.Screen
         name="OldLedgerDetail"
-        component={OldLedgerDetailScreen}
+        component={OldLedgerDetailScreenGated}
         options={({ route }: any) => ({ title: String(route.params?.year ?? "Year") })}
       />
-      <Nav.Screen name="LabourRecords" component={LabourRecordsScreen} options={{ title: "Labour Payments & Records" }} />
-      <Nav.Screen name="EmployeeAttendance" component={EmployeeAttendanceScreen} options={{ title: "Employee Attendance" }} />
+      <Nav.Screen name="LabourRecords" component={LabourRecordsScreenGated} options={{ title: "Labour Payments & Records" }} />
+      <Nav.Screen name="EmployeeAttendance" component={EmployeeAttendanceScreenGated} options={{ title: "Employee Attendance" }} />
       <Nav.Screen name="DailyUpdateList" component={DailyUpdateListScreen} options={{ title: "Work Updates" }} />
       <Nav.Screen name="DailyUpdateForm" component={DailyUpdateFormScreen} options={{ title: "New Update" }} />
       <Nav.Screen name="Shop" component={ShopScreen} options={{ title: "Shop" }} />
       <Nav.Screen name="Marketplace" component={MarketplaceScreen} options={{ title: "Marketplace" }} />
-      <Nav.Screen name="MarketplaceForm" component={MarketplaceFormScreen} options={{ title: "Sell Produce" }} />
+      <Nav.Screen name="MarketplaceForm" component={MarketplaceFormScreenGated} options={{ title: "Sell Produce" }} />
       <Nav.Screen name="Equipment" component={EquipmentScreen} options={{ title: "Equipment" }} />
-      <Nav.Screen name="EquipmentForm" component={EquipmentFormScreen} options={{ title: "List Equipment" }} />
+      <Nav.Screen name="EquipmentForm" component={EquipmentFormScreenGated} options={{ title: "List Equipment" }} />
       <Nav.Screen name="Hire" component={HireScreen} options={{ title: "Hire Board" }} />
       <Nav.Screen name="HireForm" component={HireFormScreen} options={{ title: "Post Listing" }} />
       <Nav.Screen name="Nursery" component={NurseryScreen} options={{ title: "Nursery" }} />
       <Nav.Screen name="NurseryAdmin" component={NurseryAdminScreen} options={{ title: "Nursery Vendor Admin" }} />
-      <Nav.Screen name="Mandi" component={MandiScreen} options={{ title: "Market Prices" }} />
+      <Nav.Screen name="Mandi" component={MandiScreenGated} options={{ title: "Market Prices" }} />
       <Nav.Screen name="MyAds" component={MyAdsScreen} options={{ title: "My Ads" }} />
-      <Nav.Screen name="AgriAi" component={AgriAiScreen} options={{ title: "AI Agri Advisor" }} />
-      <Nav.Screen name="Disease" component={DiseaseScreen} options={{ title: "AI Disease Check" }} />
+      <Nav.Screen name="AgriAi" component={AgriAiScreenGated} options={{ title: "AI Agri Advisor" }} />
+      <Nav.Screen name="Disease" component={DiseaseScreenGated} options={{ title: "AI Disease Check" }} />
       <Nav.Screen name="AgriDoctor" component={AgriDoctorScreen} options={{ title: "Agri Doctor" }} />
       <Nav.Screen name="AgriDoctorProfile" component={AgriDoctorProfileScreen} options={{ title: "Doctor Profile" }} />
       <Nav.Screen name="AgriDoctorCall" component={AgriDoctorCallScreen} options={{ title: "On call", headerShown: false }} />
@@ -206,7 +230,7 @@ function WorkStack() {
       <WorkStackNav.Screen name="WorkGroupForm" component={WorkGroupFormScreen} options={{ title: "New Work Group" }} />
       <WorkStackNav.Screen
         name="Attendance"
-        component={AttendanceScreen}
+        component={AttendanceScreenGated}
         options={({ route }: any) => ({ title: route.params?.workGroupName ?? "Attendance" })}
       />
     </WorkStackNav.Navigator>

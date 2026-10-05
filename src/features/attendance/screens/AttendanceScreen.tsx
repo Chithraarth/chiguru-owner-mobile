@@ -49,6 +49,7 @@ import { countWorkersFromPhoto, type SeasonEndResult } from "../../../api/endpoi
 import { createWorker, matchFace } from "../../../api/endpoints/workers";
 import { compressToDataUrl } from "../../../lib/imageCompression";
 import type { GroupLoan, Worker } from "../../../types/api";
+import { isGateError } from "../../../api/errors";
 
 const SETTLEMENT_MODES: { value: string; label: string }[] = [
   { value: "weekly", label: "Weekly" },
@@ -300,7 +301,8 @@ export function AttendanceScreen({ route }: { route: any }) {
           "Work start could not be saved — retry from the work session card."
         );
       }
-    } catch {
+    } catch (err) {
+      if (isGateError(err)) return; // the plan/wallet prompt already explained it
       Alert.alert("AI scan failed", "Could not count workers from that photo. Try again.");
     } finally {
       setAiScanning(false);

@@ -18,6 +18,7 @@ import { describeDevice } from "../../../../lib/device";
 import { fmtMoney } from "../../currency";
 import { useSyncStore } from "../../../../store/syncStore";
 import { useInviteeMe } from "../../hooks/useInviteeMe";
+import { isGateError } from "../../../../api/errors";
 
 export function AttendanceWorkersScreen({ route }: { route: any }) {
   const { workGroupId } = route.params as { workGroupId: number; workGroupName: string };
@@ -104,7 +105,8 @@ export function AttendanceWorkersScreen({ route }: { route: any }) {
       }
       setSelected((prev) => new Set([...prev, ...toSelect]));
       Alert.alert("Counted", `Found ${count} people — selected ${toSelect.length} unmarked worker(s). Review and save.`);
-    } catch {
+    } catch (err) {
+      if (isGateError(err)) return; // the owner's plan/wallet prompt already explained it
       Alert.alert("AI headcount failed", "Could not count workers from that photo. Try again or select manually.");
     } finally {
       setScanning(false);

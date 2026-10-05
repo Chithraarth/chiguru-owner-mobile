@@ -3,7 +3,7 @@ import * as Clipboard from "expo-clipboard";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Text } from "../../../components/Text";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, CloudOff, CloudUpload, Copy, LogOut, Phone, RotateCcw, ShieldCheck, UserCircle2 } from "lucide-react-native";
+import { Check, CloudOff, CloudUpload, Copy, LogOut, Phone, RotateCcw, ShieldCheck, Trash2, UserCircle2 } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
@@ -11,7 +11,8 @@ import { Avatar } from "../../../components/harvest";
 import { colors, radius, spacing } from "../../../components/theme";
 import { useSessionStore } from "../../../store/sessionStore";
 import { signOutUser } from "../../../lib/firebase";
-import { getMyFarms, linkFarm } from "../../../api/endpoints/auth";
+import { deleteMyAccount, getMyFarms, linkFarm } from "../../../api/endpoints/auth";
+import { getSubscription } from "../../../api/endpoints/subscription";
 import { getFarmProfile, getBackupCode, restoreBackup, updateFarmProfile } from "../../../api/endpoints/estates";
 import { useEstateStore } from "../../estate/store/estateStore";
 import { useT } from "../../../lib/i18n";
@@ -113,6 +114,55 @@ export function ProfileScreen({ navigation }: { navigation: any }) {
     } finally {
       setRestoring(false);
     }
+  }
+
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
+  async function deleteAccount() {
+    setDeletingAccount(true);
+    try {
+      await deleteMyAccount();
+      await signOutUser();
+      Alert.alert("Account deleted", "Your Chiguru account and all of its data have been permanently deleted.");
+    } catch {
+      Alert.alert("Couldn't delete your account", "Check your internet connection and try again.");
+    } finally {
+      setDeletingAccount(false);
+    }
+  }
+
+  function confirmDeleteAccount() {
+    Alert.alert(
+      "Delete your account?",
+      "This permanently deletes your account and everything in it: all your farms, workers, attendance, accounts, photos, ads, invitees and any wallet balance. This can't be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete forever", style: "destructive", onPress: deleteAccount },
+      ],
+    );
+  }
+
+  async function onDeleteAccountPress() {
+    // Apple and Google keep charging a store subscription until the
+    // subscriber cancels it there - deleting the account can't stop that.
+    const sub = (await qc.fetchQuery({ queryKey: ["subscription"], queryFn: getSubscription }).catch(() => null))?.subscription;
+    const renewsInStore =
+      !!sub && sub.autoRenew && (sub.status === "ACTIVE" || sub.status === "GRACE_PERIOD") &&
+      (sub.provider === "APPLE" || sub.provider === "GOOGLE_PLAY");
+    if (!renewsInStore) {
+      confirmDeleteAccount();
+      return;
+    }
+    const store = sub!.provider === "APPLE" ? "the App Store" : "Google Play";
+    Alert.alert(
+      "Cancel your subscription first",
+      `Your Chiguru plan renews through ${store}. Deleting your account does not stop those charges - cancel the subscription in ${store} first.`,
+      [
+        { text: "Manage subscription", onPress: () => navigation.navigate("Subscription") },
+        { text: "Delete anyway", style: "destructive", onPress: confirmDeleteAccount },
+        { text: "Cancel", style: "cancel" },
+      ],
+    );
   }
 
   return (
@@ -237,6 +287,24 @@ export function ProfileScreen({ navigation }: { navigation: any }) {
           </View>
         </View>
       </Card>
+      ) : null}
+
+      {user ? (
+        <Card>
+          <View style={{ flexDirection: "row", alignItems: "flex-start", gap: spacing.sm }}>
+            <View style={[styles.iconWrap, { backgroundColor: "#FDEAEA" }]}>
+              <Trash2 size={18} color={colors.danger} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardTitle}>Delete account</Text>
+              <Text style={styles.cardSubtitle}>Permanently delete your account and all of its data.</Text>
+              <Pressable style={[styles.signOutBtn, deletingAccount && { opacity: 0.5 }]} disabled={deletingAccount} onPress={onDeleteAccountPress}>
+                <Trash2 size={15} color={colors.danger} />
+                <Text style={styles.signOutText}>{deletingAccount ? "Deleting..." : "Delete my account"}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Card>
       ) : null}
     </ScrollView>
   );

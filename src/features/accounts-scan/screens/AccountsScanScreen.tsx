@@ -10,6 +10,7 @@ import { scanAccountsPage, type AccountsScanEntry, type AccountsScanResult } fro
 import { createExpense } from "../../../api/endpoints/expenses";
 import { compressToDataUrl } from "../../../lib/imageCompression";
 import { useT } from "../../../lib/i18n";
+import { isGateError } from "../../../api/errors";
 
 type Phase = "capture" | "preview" | "analyzing" | "results";
 
@@ -86,7 +87,8 @@ export function AccountsScanScreen({ navigation }: { navigation: any }) {
       setConfirmedSet(new Set());
       setPhase("results");
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("scan.noEntries"));
+      // The plan/wallet prompt already explained a refusal - don't repeat it here.
+      setError(isGateError(err) ? null : err instanceof Error ? err.message : t("scan.noEntries"));
       setPhase("preview");
     }
   }

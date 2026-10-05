@@ -22,6 +22,7 @@ import { diagnoseDisease, submitDiagnosisOutcome } from "../../../api/endpoints/
 import { createSpray } from "../../../api/endpoints/sprays";
 import { compressToDataUrl } from "../../../lib/imageCompression";
 import type { DiagnosisResult } from "../../../types/api";
+import { isGateError } from "../../../api/errors";
 
 const CROPS = [
   "Coffee", "Pepper (Black Pepper)", "Cardamom", "Arecanut (Supari)", "Sugarcane", "Banana",
@@ -78,6 +79,7 @@ export function DiseaseScreen({ navigation }: { navigation: any }) {
       const diagnosis = await diagnoseDisease(dataUrl, selectedCrop || undefined);
       setResult(diagnosis);
     } catch (err) {
+      if (isGateError(err)) return; // the plan/wallet prompt already explained it
       setError(err instanceof Error ? err.message : "Analysis failed. Please try again with a clearer photo.");
     } finally {
       setDiagnosing(false);

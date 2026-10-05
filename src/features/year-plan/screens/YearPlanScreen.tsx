@@ -22,7 +22,7 @@ import { EmptyState, LoadingView } from "../../../components/StateViews";
 import { HeaderAddButton, IconChip } from "../../../components/harvest";
 import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { useYearPlan } from "../hooks/useYearPlan";
-import { ApiError, isSubscriptionRequired } from "../../../api/errors";
+import { ApiError, isGateError } from "../../../api/errors";
 import type { PlanTask } from "../../../types/api";
 
 const CAT_LABEL: Record<string, string> = {
@@ -194,8 +194,8 @@ export function YearPlanScreen({ navigation }: { navigation: any }) {
   function onGenerate() {
     generate.mutate(undefined, {
       onError: (err) => {
-        if (isSubscriptionRequired(err)) {
-          Alert.alert("Subscription required", "Subscribe or start your free trial to generate an AI year plan.");
+        if (isGateError(err)) {
+          // The plan/wallet prompt already explained it, with a button to fix it.
         } else if (err instanceof ApiError && err.message.includes("no_crops")) {
           Alert.alert("Add a crop first", "Add at least one crop before generating a plan.");
         } else {

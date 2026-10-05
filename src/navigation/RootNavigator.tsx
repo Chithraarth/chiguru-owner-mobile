@@ -1,7 +1,9 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import NetInfo from "@react-native-community/netinfo";
 import * as Notifications from "expo-notifications";
-import { NavigationContainer, NavigationContainerRef } from "@react-navigation/native";
+import { NavigationContainer } from "@react-navigation/native";
+import { navigationRef } from "./navigationRef";
+import { useGatePrompts } from "../lib/planGate";
 import { useAuthListener } from "../features/auth/hooks/useAuth";
 import { useDeviceRegistration } from "../features/device-gate/hooks/useDeviceRegistration";
 import { DeviceLimitScreen } from "../features/device-gate/screens/DeviceLimitScreen";
@@ -24,6 +26,8 @@ import { navTheme } from "./navTheme";
 
 export function RootNavigator() {
   useAuthListener();
+  // "Subscription needed" / "Wallet balance too low" prompts, app-wide.
+  useGatePrompts();
 
   const user = useSessionStore((s) => s.user);
   const authLoading = useSessionStore((s) => s.authLoading);
@@ -37,7 +41,6 @@ export function RootNavigator() {
 
   const { blocked, devices, maxDevices, recheck } = useDeviceRegistration(!!user);
   const hydratePush = usePushStore((s) => s.hydrate);
-  const navRef = useRef<NavigationContainerRef<any>>(null);
 
   // Every estate this person may act on (their own + anything they're
   // invited to), so we know up front whether a Choose Estate step is even
@@ -66,7 +69,7 @@ export function RootNavigator() {
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       if (response.notification.request.content.data?.type === "plan-reminder") {
-        navRef.current?.navigate("DashboardTab", { screen: "YearPlan" });
+        if (navigationRef.isReady()) navigationRef.navigate("DashboardTab", { screen: "YearPlan" });
       }
     });
     return () => sub.remove();
@@ -184,7 +187,7 @@ export function RootNavigator() {
   }
 
   return (
-    <NavigationContainer key="owner" ref={navRef} theme={navTheme}>
+    <NavigationContainer key="owner" ref={navigationRef} theme={navTheme}>
       <MainTabs />
     </NavigationContainer>
   );

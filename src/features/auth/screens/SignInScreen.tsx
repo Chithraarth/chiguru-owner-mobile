@@ -25,6 +25,8 @@ import {
   signUpWithEmail,
 } from "../../../lib/firebase";
 import { useGoogleSignIn } from "../hooks/useGoogleSignIn";
+import { useAppleSignIn } from "../hooks/useAppleSignIn";
+import * as AppleAuthentication from "expo-apple-authentication";
 import { useT } from "../../../lib/i18n";
 
 type Tab = "email" | "phone";
@@ -71,6 +73,7 @@ export function SignInScreen() {
 
   const recaptchaVerifier = useRef<RecaptchaModalHandle>(null);
   const { canSignIn: canGoogleSignIn, promptAsync: promptGoogle } = useGoogleSignIn(setError);
+  const { canSignIn: canAppleSignIn, promptAsync: promptApple } = useAppleSignIn(setError);
 
   useEffect(() => {
     if (resendIn <= 0) return;
@@ -310,6 +313,15 @@ export function SignInScreen() {
                   <Text style={styles.dividerText}>or</Text>
                   <View style={styles.dividerLine} />
                 </View>
+                {canAppleSignIn ? (
+                  <AppleAuthentication.AppleAuthenticationButton
+                    buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+                    buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                    cornerRadius={29}
+                    style={styles.appleButton}
+                    onPress={promptApple}
+                  />
+                ) : null}
                 <Button title="Continue with Google" variant="secondary" onPress={handleGoogleSignIn} />
                 <Button title="Use email instead" variant="light" icon={Mail} onPress={() => switchTab("email")} />
               </>
@@ -370,6 +382,7 @@ function OtpBoxes({ value, onChange }: { value: string; onChange: (v: string) =>
 }
 
 const styles = StyleSheet.create({
+  appleButton: { height: 58, width: "100%" },
   flex: { flex: 1, backgroundColor: colors.bg },
   band: {
     backgroundColor: colors.accent,

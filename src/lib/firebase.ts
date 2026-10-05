@@ -11,6 +11,8 @@ import {
   signInWithCredential,
   PhoneAuthProvider,
   GoogleAuthProvider,
+  OAuthProvider,
+  updateProfile,
   signOut,
   type User,
 } from "firebase/auth";
@@ -56,6 +58,21 @@ export async function getIdToken(forceRefresh = false): Promise<string | null> {
 export function confirmPhoneOtp(verificationId: string, code: string) {
   const credential = PhoneAuthProvider.credential(verificationId, code);
   return signInWithCredential(auth, credential);
+}
+
+/**
+ * Sign in with Apple: Apple's identity token plus the raw (unhashed) nonce
+ * whose SHA-256 was sent to Apple, so Firebase can check the token was
+ * issued for this request. Apple only shares the name on the very first
+ * sign-in, so it's saved onto the Firebase profile then.
+ */
+export async function signInWithAppleIdToken(idToken: string, rawNonce: string, fullName?: string | null) {
+  const credential = new OAuthProvider("apple.com").credential({ idToken, rawNonce });
+  const result = await signInWithCredential(auth, credential);
+  if (fullName && !result.user.displayName) {
+    await updateProfile(result.user, { displayName: fullName }).catch(() => {});
+  }
+  return result;
 }
 
 export function signInWithGoogleIdToken(idToken: string) {

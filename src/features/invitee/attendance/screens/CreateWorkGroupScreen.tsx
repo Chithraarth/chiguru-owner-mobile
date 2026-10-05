@@ -13,6 +13,7 @@ import { useWorkGroups } from "../hooks/useAttendance";
 import { countWorkersFromPhoto } from "../../api";
 import { compressToDataUrl } from "../../../../lib/imageCompression";
 import type { PayFrequency, PaymentType } from "../../types";
+import { isGateError } from "../../../../api/errors";
 
 // Matches the owner app's own list exactly - work groups created here show
 // up in the owner's Work Groups screen, so the category/labour-type values
@@ -58,7 +59,8 @@ export function CreateWorkGroupScreen({ navigation }: { navigation: any }) {
       const dataUrl = await compressToDataUrl(result.assets[0].uri, "ai");
       const { count } = await countWorkersFromPhoto(dataUrl);
       setExpectedWorkers(String(count));
-    } catch {
+    } catch (err) {
+      if (isGateError(err)) return; // the owner's plan/wallet prompt already explained it
       Alert.alert("AI headcount failed", "Could not count workers from that photo.");
     } finally {
       setScanning(false);

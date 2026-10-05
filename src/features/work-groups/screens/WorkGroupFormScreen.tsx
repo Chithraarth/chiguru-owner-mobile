@@ -13,6 +13,7 @@ import { useWorkGroups } from "../hooks/useWorkGroups";
 import { countWorkersFromPhoto } from "../../../api/endpoints/workGroups";
 import { compressToDataUrl } from "../../../lib/imageCompression";
 import type { PayFrequency, PaymentType } from "../../../types/api";
+import { isGateError } from "../../../api/errors";
 
 const CATEGORIES = [
   "Harvest / Cutting",
@@ -56,7 +57,8 @@ export function WorkGroupFormScreen({ navigation }: { navigation: any }) {
       const dataUrl = await compressToDataUrl(result.assets[0].uri, "ai");
       const { count } = await countWorkersFromPhoto(dataUrl);
       setExpectedWorkers(String(count));
-    } catch {
+    } catch (err) {
+      if (isGateError(err)) return; // the plan/wallet prompt already explained it
       Alert.alert("AI headcount failed", "Could not count workers from that photo. Try again or enter manually.");
     } finally {
       setScanning(false);
