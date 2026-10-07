@@ -33,6 +33,7 @@ import {
   Wheat,
   X,
   Plus,
+  UserPlus,
 } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
@@ -181,6 +182,13 @@ export function AttendanceScreen({ route }: { route: any }) {
   const [loanPhotoBusy, setLoanPhotoBusy] = useState(false);
   const [loanNameFocused, setLoanNameFocused] = useState(false);
   const [creatingLoanWorker, setCreatingLoanWorker] = useState(false);
+  // "+ Add worker": workers belong to the whole farm, so one added here also
+  // shows in every other group's list.
+  const [showAddWorker, setShowAddWorker] = useState(false);
+  const [newWorkerName, setNewWorkerName] = useState("");
+  const [newWorkerPhone, setNewWorkerPhone] = useState("");
+  const [newWorkerWage, setNewWorkerWage] = useState("");
+  const [addingWorker, setAddingWorker] = useState(false);
   const [payLoanId, setPayLoanId] = useState<number | null>(null);
   const [repayAmount, setRepayAmount] = useState("");
   const [repayMethod, setRepayMethod] = useState("cash");
@@ -541,6 +549,38 @@ export function AttendanceScreen({ route }: { route: any }) {
   // Mirrors web's saveLoan() unresolved-name branch (attendance.tsx:280-310):
   // prefer the picked/matched worker; otherwise create a new one by that name
   // before recording the loan.
+  async function saveNewWorker() {
+    const name = newWorkerName.trim();
+    if (!name || addingWorker) return;
+    if (eligibleWorkers.some((w) => w.name.trim().toLowerCase() === name.toLowerCase())) {
+      Alert.alert("Already in the list", `${name} is already one of your workers.`);
+      return;
+    }
+    const wage = newWorkerWage.trim();
+    setAddingWorker(true);
+    try {
+      const w = await createWorker(name, {
+        ...(newWorkerPhone.trim() ? { phone: newWorkerPhone.trim() } : {}),
+        ...(wage && Number(wage) > 0 ? { wageRate: String(Number(wage)) } : {}),
+      });
+      setShowAddWorker(false);
+      setNewWorkerName("");
+      setNewWorkerPhone("");
+      setNewWorkerWage("");
+      if (!w) {
+        Alert.alert("Saved offline", `${name} will be added when you're back online.`);
+        return;
+      }
+      await refetch();
+      // They're usually being added because they came today - tick them.
+      setSelected((prev) => new Set(prev).add(w.id));
+    } catch {
+      Alert.alert("Could not add worker", "Please try again.");
+    } finally {
+      setAddingWorker(false);
+    }
+  }
+
   async function saveLoan() {
     // Guards a fast double-tap: the button's own disabled/loading state
     // only reflects createLoan.isPending / creatingLoanWorker AFTER this
@@ -678,6 +718,42 @@ export function AttendanceScreen({ route }: { route: any }) {
                   style={styles.searchInput}
                 />
               </View>
+              <Button
+                title={showAddWorker ? "Cancel" : "Add worker"}
+                variant="light"
+                icon={showAddWorker ? undefined : UserPlus}
+                onPress={() => setShowAddWorker((v) => !v)}
+              />
+              {showAddWorker ? (
+                <Card style={{ gap: spacing.sm }}>
+                  <Text style={styles.formTitle}>New worker</Text>
+                  <TextField
+                    label="Name *"
+                    placeholder="e.g. Ramesh Jadhav"
+                    value={newWorkerName}
+                    onChangeText={setNewWorkerName}
+                    autoFocus
+                    containerStyle={{ marginBottom: 0 }}
+                  />
+                  <TextField
+                    label="Phone (optional)"
+                    placeholder="98765 43210"
+                    keyboardType="phone-pad"
+                    value={newWorkerPhone}
+                    onChangeText={setNewWorkerPhone}
+                    containerStyle={{ marginBottom: 0 }}
+                  />
+                  <TextField
+                    label="Daily wage ₹ (optional)"
+                    placeholder="e.g. 350"
+                    keyboardType="number-pad"
+                    value={newWorkerWage}
+                    onChangeText={(v) => setNewWorkerWage(v.replace(/[^0-9]/g, ""))}
+                    containerStyle={{ marginBottom: 0 }}
+                  />
+                  <Button title="Save worker" onPress={saveNewWorker} loading={addingWorker} disabled={!newWorkerName.trim()} />
+                </Card>
+              ) : null}
               {aiResult ? (
                 <Card style={styles.aiResultCard}>
                   <View style={{ flexDirection: "row", gap: spacing.sm, alignItems: "center" }}>
@@ -922,7 +998,7 @@ export function AttendanceScreen({ route }: { route: any }) {
             </View>
           }
           ListEmptyComponent={
-            <EmptyState title="No workers yet" subtitle="Add workers before marking attendance." />
+            <EmptyState title="No workers yet" subtitle="Tap “Add worker” above to add your first worker." />
           }
           renderItem={({ item, index }) => {
             const marked = markedIds.has(item.id);
