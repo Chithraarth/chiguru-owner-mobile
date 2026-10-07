@@ -5,7 +5,6 @@ import type {
   WalletRechargeOrderResponse,
   WalletRechargeVerifyRequest,
   WalletRechargeVerifyResponse,
-  WalletShareResponse,
 } from "../../types/api";
 
 export function getWallet() {
@@ -22,9 +21,6 @@ export function verifyRecharge(req: WalletRechargeVerifyRequest) {
   return apiMutate<WalletRechargeVerifyResponse>("POST", "/wallet/recharge/verify", req);
 }
 
-export function shareWalletReward(platform: string) {
-  return apiMutate<WalletShareResponse>("POST", "/wallet/share", { platform });
-}
 
 /** iPhone: verify a wallet-pack consumable bought through Apple and credit the wallet. */
 export function verifyAppleWalletPack(req: AppleVerifyRequest) {

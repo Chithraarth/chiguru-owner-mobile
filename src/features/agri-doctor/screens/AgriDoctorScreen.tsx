@@ -1,52 +1,20 @@
-import React, { useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import React from "react";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Text } from "../../../components/Text";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BadgeCheck, ChevronRight, Lock, Plus, Star, Stethoscope, Wallet, X } from "lucide-react-native";
+import { useQuery } from "@tanstack/react-query";
+import { BadgeCheck, ChevronRight, Lock, Plus, Star, Stethoscope, Wallet } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
-import { TextField } from "../../../components/TextField";
 import { LoadingView } from "../../../components/StateViews";
 import { Avatar } from "../../../components/harvest";
 import { colors, radius, spacing } from "../../../components/theme";
-import { getAgronomists, getAppSettings, topUpWallet } from "../../../api/endpoints/agriDoctor";
+import { getAgronomists, getAppSettings } from "../../../api/endpoints/agriDoctor";
 
 function inr(n: number) {
   return `₹${Math.round(n).toLocaleString("en-IN")}`;
 }
 
-function TopupModal({ visible, onClose, onDone }: { visible: boolean; onClose: () => void; onDone: () => void }) {
-  const [amount, setAmount] = useState("");
-  const topup = useMutation({
-    mutationFn: (amt: number) => topUpWallet(amt),
-    onSuccess: () => { setAmount(""); onDone(); },
-  });
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={styles.topupSheet}>
-        <View style={styles.topupHeader}>
-          <Text style={styles.topupTitle}>Add money to wallet</Text>
-          <Pressable onPress={onClose} hitSlop={10}><X size={20} color={colors.textMuted} /></Pressable>
-        </View>
-        <View style={{ flexDirection: "row", gap: spacing.sm }}>
-          {[100, 200, 500].map((a) => (
-            <Pressable key={a} style={[styles.amountChip, amount === String(a) && styles.amountChipActive]} onPress={() => setAmount(String(a))}>
-              <Text style={[styles.amountChipText, amount === String(a) && styles.amountChipTextActive]}>{inr(a)}</Text>
-            </Pressable>
-          ))}
-        </View>
-        <TextField label="Or enter amount (₹)" keyboardType="numeric" value={amount} onChangeText={setAmount} placeholder="500" />
-        <Button title={amount ? `Add ${inr(Number(amount))}` : "Add money"} onPress={() => topup.mutate(Number(amount))} loading={topup.isPending} disabled={!Number(amount)} />
-        <Text style={styles.topupNote}>Demo top-up · no real payment is taken</Text>
-      </View>
-    </Modal>
-  );
-}
-
 export function AgriDoctorScreen({ navigation }: { navigation: any }) {
-  const [topupOpen, setTopupOpen] = useState(false);
-  const qc = useQueryClient();
   const agronomistsQuery = useQuery({ queryKey: ["agronomists"], queryFn: getAgronomists });
   const settingsQuery = useQuery({ queryKey: ["app-settings"], queryFn: getAppSettings });
 
@@ -89,13 +57,15 @@ export function AgriDoctorScreen({ navigation }: { navigation: any }) {
         <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
           <View style={styles.walletIconWrap}><Wallet size={18} color="#92600E" /></View>
           <View>
-            <Text style={styles.walletLabel}>Consultation wallet</Text>
+            <Text style={styles.walletLabel}>Wallet balance</Text>
             <Text style={styles.walletValue}>{inr(balance)}</Text>
           </View>
         </View>
-        <Pressable style={styles.addMoneyBtn} onPress={() => setTopupOpen(true)}>
+        {/* Consultations are paid from the Chiguru wallet, recharged only
+            through a real payment on the Wallet screen. */}
+        <Pressable style={styles.addMoneyBtn} onPress={() => navigation.navigate("Wallet")}>
           <Plus size={14} color={colors.primary} />
-          <Text style={styles.addMoneyText}>Add Money</Text>
+          <Text style={styles.addMoneyText}>Recharge</Text>
         </Pressable>
       </Card>
 
@@ -141,11 +111,6 @@ export function AgriDoctorScreen({ navigation }: { navigation: any }) {
         </View>
       </View>
 
-      <TopupModal
-        visible={topupOpen}
-        onClose={() => setTopupOpen(false)}
-        onDone={() => { setTopupOpen(false); qc.invalidateQueries({ queryKey: ["app-settings"] }); }}
-      />
     </ScrollView>
   );
 }
@@ -185,13 +150,4 @@ const styles = StyleSheet.create({
   doctorRate: { fontSize: 14, fontWeight: "600", color: colors.text },
   onlineText: { fontSize: 12.5, fontWeight: "600" },
 
-  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
-  topupSheet: { position: "absolute", left: 0, right: 0, bottom: 0, backgroundColor: colors.card, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg, gap: spacing.md },
-  topupHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  topupTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
-  amountChip: { flex: 1, alignItems: "center", paddingVertical: spacing.sm + 2, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm },
-  amountChipActive: { borderColor: colors.primary, backgroundColor: colors.bg },
-  amountChipText: { fontSize: 14.5, fontWeight: "600", color: colors.textMuted },
-  amountChipTextActive: { color: colors.primary },
-  topupNote: { fontSize: 12.5, color: colors.textMuted, textAlign: "center" },
 });

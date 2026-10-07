@@ -6,9 +6,11 @@ import { BigTiles } from "../../../components/harvest";
 import { Enter } from "../../../components/motion";
 import { colors, spacing } from "../../../components/theme";
 import { useT } from "../../../lib/i18n";
+import { useIsAdmin } from "../../../lib/useIsAdmin";
 
 /** Market hub: sell or buy produce, rent or sell equipment, hire, nursery, market prices and your ads. */
 export function ShopScreen({ navigation }: { navigation: any }) {
+  const isAdmin = useIsAdmin();
   const { t } = useT();
   const go = (screen: string, params?: Record<string, unknown>) => () => navigation.navigate(screen, params);
   return (
@@ -27,10 +29,12 @@ export function ShopScreen({ navigation }: { navigation: any }) {
         />
       </Enter>
 
-      <Pressable style={styles.adminLink} onPress={go("NurseryAdmin")} accessibilityRole="button">
-        <Users size={16} color={colors.textMuted} />
-        <Text style={styles.adminLinkText}>Nursery vendor admin</Text>
-      </Pressable>
+      {isAdmin ? (
+        <Pressable style={styles.adminLink} onPress={go("NurseryAdmin")} accessibilityRole="button">
+          <Users size={16} color={colors.textMuted} />
+          <Text style={styles.adminLinkText}>Nursery vendor admin</Text>
+        </Pressable>
+      ) : null}
     </ScrollView>
   );
 }

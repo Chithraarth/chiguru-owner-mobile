@@ -5,7 +5,6 @@ import type {
   ManagerSeatAddonVerifyRequest,
   ManagerSeatAddonVerifyResponse,
   Payment,
-  ShareRewardResponse,
   SubscriptionActionResponse,
   SubscriptionMeResponse,
   SubscriptionPlansResponse,
@@ -29,9 +28,6 @@ export function verifyAndroidPurchase(req: VerifyAndroidPurchaseRequest) {
   return apiMutate<SubscriptionActionResponse>("POST", "/subscriptions/android/verify", req);
 }
 
-export function shareToEarn(platform: string) {
-  return apiMutate<ShareRewardResponse>("POST", "/subscriptions/share", { platform });
-}
 
 /**
  * Only meaningful for a subscription actually started through this screen

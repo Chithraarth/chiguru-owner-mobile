@@ -25,9 +25,6 @@ export function getAppSettings() {
   return apiFetch<AppSettings>("/app-settings");
 }
 
-export function topUpWallet(amount: number) {
-  return apiMutate<{ walletBalance: string }>("POST", "/app-settings/wallet/topup", { amount });
-}
 
 export function getConsultations() {
   return apiFetch<Consultation[]>("/consultations");

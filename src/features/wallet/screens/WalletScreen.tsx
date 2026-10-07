@@ -29,6 +29,7 @@ const TXN_LABELS: Record<string, string> = {
   recharge: "Wallet recharge",
   share_reward: "Share reward",
   ai_charge: "AI feature use",
+  consultation: "Agri Doctor consultation",
 };
 
 export function WalletScreen() {
