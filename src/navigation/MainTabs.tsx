@@ -38,18 +38,14 @@ import { EquipmentFormScreen } from "../features/equipment/screens/EquipmentForm
 import { HireScreen } from "../features/hire/screens/HireScreen";
 import { HireFormScreen } from "../features/hire/screens/HireFormScreen";
 import { NurseryScreen } from "../features/nursery/screens/NurseryScreen";
-import { NurseryAdminScreen } from "../features/nursery/screens/NurseryAdminScreen";
 import { MandiScreen } from "../features/mandi/screens/MandiScreen";
 import { MyAdsScreen } from "../features/my-ads/screens/MyAdsScreen";
 import { AgriAiScreen } from "../features/agri-ai/screens/AgriAiScreen";
 import { DiseaseScreen } from "../features/disease/screens/DiseaseScreen";
 import { AgriDoctorScreen } from "../features/agri-doctor/screens/AgriDoctorScreen";
 import { AgriDoctorProfileScreen } from "../features/agri-doctor/screens/AgriDoctorProfileScreen";
-import { AgriDoctorCallScreen } from "../features/agri-doctor/screens/AgriDoctorCallScreen";
 import { AgriExpertHubScreen } from "../features/agri-doctor/screens/AgriExpertHubScreen";
 import { AgriDoctorRegisterScreen } from "../features/agri-doctor/screens/AgriDoctorRegisterScreen";
-import { AgriDoctorEarningsScreen } from "../features/agri-doctor/screens/AgriDoctorEarningsScreen";
-import { ConsultationScreen } from "../features/agri-doctor/screens/ConsultationScreen";
 import { SubscriptionScreen } from "../features/subscription/screens/SubscriptionScreen";
 import { WalletScreen } from "../features/wallet/screens/WalletScreen";
 import { useApplePurchaseHandler } from "../features/iap/appleIap";
@@ -175,18 +171,14 @@ function registerSharedScreens(Nav: ReturnType<typeof createNativeStackNavigator
       <Nav.Screen name="Hire" component={HireScreen} options={{ title: "Hire Board" }} />
       <Nav.Screen name="HireForm" component={HireFormScreen} options={{ title: "Post Listing" }} />
       <Nav.Screen name="Nursery" component={NurseryScreen} options={{ title: "Nursery" }} />
-      <Nav.Screen name="NurseryAdmin" component={NurseryAdminScreen} options={{ title: "Nursery Vendor Admin" }} />
       <Nav.Screen name="Mandi" component={MandiScreenGated} options={{ title: "Market Prices" }} />
       <Nav.Screen name="MyAds" component={MyAdsScreen} options={{ title: "My Ads" }} />
       <Nav.Screen name="AgriAi" component={AgriAiScreenGated} options={{ title: "AI Agri Advisor" }} />
       <Nav.Screen name="Disease" component={DiseaseScreenGated} options={{ title: "AI Disease Check" }} />
       <Nav.Screen name="AgriDoctor" component={AgriDoctorScreen} options={{ title: "Agri Doctor" }} />
       <Nav.Screen name="AgriDoctorProfile" component={AgriDoctorProfileScreen} options={{ title: "Doctor Profile" }} />
-      <Nav.Screen name="AgriDoctorCall" component={AgriDoctorCallScreen} options={{ title: "On call", headerShown: false }} />
       <Nav.Screen name="AgriExpertHub" component={AgriExpertHubScreen} options={{ title: "Agriculture Expert" }} />
       <Nav.Screen name="AgriDoctorRegister" component={AgriDoctorRegisterScreen} options={{ title: "Add Doctor Profile" }} />
-      <Nav.Screen name="AgriDoctorEarnings" component={AgriDoctorEarningsScreen} options={{ title: "Earnings & Payouts" }} />
-      <Nav.Screen name="Consultation" component={ConsultationScreen} options={{ title: "Consultation" }} />
       <Nav.Screen name="Subscription" component={SubscriptionScreen} options={{ title: "Subscription" }} />
       <Nav.Screen name="Wallet" component={WalletScreen} options={{ title: "Wallet" }} />
       <Nav.Screen name="ManagerDevices" component={ManagerDevicesScreen} options={{ title: "Invitees" }} />

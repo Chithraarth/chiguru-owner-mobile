@@ -374,7 +374,7 @@ export function DiseaseScreen({ navigation }: { navigation: any }) {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.doctorCtaTitle}>Want a second opinion?</Text>
-              <Text style={styles.doctorCtaSubtitle}>Consult an agriculture doctor to confirm & improve yield</Text>
+              <Text style={styles.doctorCtaSubtitle}>Call an agriculture doctor near you to confirm</Text>
             </View>
             <ChevronRight size={16} color={colors.primary} />
           </Pressable>

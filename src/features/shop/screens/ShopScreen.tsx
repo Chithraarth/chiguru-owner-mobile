@@ -1,16 +1,13 @@
 import React from "react";
-import { Pressable, ScrollView, StyleSheet } from "react-native";
-import { Text } from "../../../components/Text";
-import { Handshake, Leaf, Megaphone, Sprout, Store, TrendingUp, Tractor, Users } from "lucide-react-native";
+import { ScrollView, StyleSheet } from "react-native";
+import { Handshake, Leaf, Megaphone, Sprout, Store, TrendingUp, Tractor } from "lucide-react-native";
 import { BigTiles } from "../../../components/harvest";
 import { Enter } from "../../../components/motion";
 import { colors, spacing } from "../../../components/theme";
 import { useT } from "../../../lib/i18n";
-import { useIsAdmin } from "../../../lib/useIsAdmin";
 
 /** Market hub: sell or buy produce, rent or sell equipment, hire, nursery, market prices and your ads. */
 export function ShopScreen({ navigation }: { navigation: any }) {
-  const isAdmin = useIsAdmin();
   const { t } = useT();
   const go = (screen: string, params?: Record<string, unknown>) => () => navigation.navigate(screen, params);
   return (
@@ -28,19 +25,10 @@ export function ShopScreen({ navigation }: { navigation: any }) {
           ]}
         />
       </Enter>
-
-      {isAdmin ? (
-        <Pressable style={styles.adminLink} onPress={go("NurseryAdmin")} accessibilityRole="button">
-          <Users size={16} color={colors.textMuted} />
-          <Text style={styles.adminLinkText}>Nursery vendor admin</Text>
-        </Pressable>
-      ) : null}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  adminLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: spacing.sm, minHeight: 44 },
-  adminLinkText: { fontSize: 15, color: colors.textMuted, fontWeight: "700" },
 });

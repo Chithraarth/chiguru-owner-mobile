@@ -30,6 +30,7 @@ const TXN_LABELS: Record<string, string> = {
   share_reward: "Share reward",
   ai_charge: "AI feature use",
   consultation: "Agri Doctor consultation",
+  doctor_contacts: "Agri Doctor numbers",
 };
 
 export function WalletScreen() {
@@ -217,7 +218,7 @@ export function WalletScreen() {
                       <Zap size={14} color={isCredit ? "#2F9E67" : colors.danger} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.txnLabel}>{txn.feature ?? TXN_LABELS[txn.type] ?? txn.type}</Text>
+                      <Text style={styles.txnLabel}>{(txn.type === "ai_charge" ? txn.feature : null) ?? TXN_LABELS[txn.type] ?? txn.feature ?? txn.type}</Text>
                       <Text style={styles.txnDate}>{fmtDate(txn.createdAt)}</Text>
                     </View>
                   </View>

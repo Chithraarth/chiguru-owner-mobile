@@ -1090,42 +1090,15 @@ export interface Agronomist {
   experience: string | null;
   location: string;
   languages: string | null;
+  /** Only once this account has unlocked doctors' numbers. */
   contactPhone?: string | null;
+  /** The doctor has a number, hidden until unlocked. */
+  contactLocked?: boolean;
+  /** Same district (or taluk) as the active farm; the list comes nearest first. */
+  nearby?: boolean;
   rating: string;
-  ratePer15Min: string;
-  consultationPlan?: string | null;
   bio: string | null;
   isOnline: boolean;
-  payoutReady: boolean;
-}
-
-export interface AgronomistPayout {
-  id: number;
-  amount: string;
-  method: string;
-  reference: string | null;
-  status: string;
-  notes: string | null;
-  createdAt: string;
-  paidAt: string | null;
-}
-
-export interface AgronomistEarnings {
-  id: number;
-  name: string;
-  totalEarnings: number;
-  paidOut: number;
-  pending: number;
-  available: number;
-  payoutReady: boolean;
-  payoutMethod: {
-    accountHolderName: string | null;
-    bankAccountNumber: string | null;
-    ifscCode: string | null;
-    upiId: string | null;
-    panNumber: string | null;
-  };
-  payouts: AgronomistPayout[];
 }
 
 export interface RegisterAgronomistRequest {
@@ -1137,37 +1110,8 @@ export interface RegisterAgronomistRequest {
   workplace?: string;
   location?: string;
   languages?: string;
-  contactPhone?: string;
-  ratePer15Min?: number;
+  contactPhone: string;
   bio?: string;
-  consultationPlan?: string;
-  accountHolderName?: string;
-  bankAccountNumber?: string;
-  ifscCode?: string;
-  upiId?: string;
-  panNumber?: string;
-}
-
-export interface Consultation {
-  id: number;
-  agronomistId: number;
-  mode: "chat" | "call";
-  status: string;
-  topic: string | null;
-  startedAt: string;
-  endedAt: string | null;
-  durationMinutes: number;
-  cost: string;
-}
-
-export interface ConsultationMessage {
-  id: number;
-  consultationId: number;
-  sender: "farmer" | "doctor";
-  text: string;
-  mediaType: "image" | "audio" | null;
-  mediaUrl: string | null;
-  createdAt: string;
 }
 
 export interface AppSettings {
@@ -1175,14 +1119,8 @@ export interface AppSettings {
   trialActive: boolean;
   trialDaysLeft: number;
   canUseAgriDoctor: boolean;
-}
-
-export interface AgriDoctorEndResult {
-  cost: number;
-  minutes: number;
-  doctorEarning: number;
-  platformFee: number;
-  walletBalance: number;
+  doctorContactsUnlocked?: boolean;
+  doctorContactsFee?: number;
 }
 
 // Normalized error shape. Backend actually returns either {message, code?} or {error}.

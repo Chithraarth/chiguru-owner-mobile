@@ -3,7 +3,7 @@ import { Alert, Image, Pressable, ScrollView, StyleSheet, View } from "react-nat
 import { Text } from "../../../components/Text";
 import * as ImagePicker from "expo-image-picker";
 import { useMutation } from "@tanstack/react-query";
-import { CheckCircle2, FileText, Landmark, Upload } from "lucide-react-native";
+import { CheckCircle2, FileText, Upload } from "lucide-react-native";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { ChipSelect } from "../../../components/ChipSelect";
@@ -32,15 +32,9 @@ export function AgriDoctorRegisterScreen({ navigation }: { navigation: any }) {
   const [location, setLocation] = useState("");
   const [languages, setLanguages] = useState("");
   const [contactPhone, setContactPhone] = useState("");
-  const [ratePer15Min, setRatePer15Min] = useState("100");
   const [bio, setBio] = useState("");
   const [certificateUrl, setCertificateUrl] = useState("");
   const [certUploading, setCertUploading] = useState(false);
-  const [accountHolderName, setAccountHolderName] = useState("");
-  const [bankAccountNumber, setBankAccountNumber] = useState("");
-  const [ifscCode, setIfscCode] = useState("");
-  const [upiId, setUpiId] = useState("");
-  const [panNumber, setPanNumber] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   async function pickCertificate() {
@@ -68,39 +62,31 @@ export function AgriDoctorRegisterScreen({ navigation }: { navigation: any }) {
         experience: experience.trim(),
         certificateUrl,
         workplace: workplace.trim() || undefined,
-        location: location.trim() || undefined,
+        location: location.trim(),
         languages: languages.trim() || undefined,
-        contactPhone: contactPhone.trim() || undefined,
-        ratePer15Min: Number(ratePer15Min) || 100,
+        contactPhone: contactPhone.trim(),
         bio: bio.trim() || undefined,
-        consultationPlan: `₹${Number(ratePer15Min) || 0} per 15 min`,
-        accountHolderName: accountHolderName.trim() || undefined,
-        bankAccountNumber: bankAccountNumber.trim() || undefined,
-        ifscCode: ifscCode.trim() || undefined,
-        upiId: upiId.trim() || undefined,
-        panNumber: panNumber.trim() || undefined,
       }),
     onSuccess: (res) => {
       if (!res) {
         Alert.alert("Saved offline", "Your profile will publish when you're back online.");
       } else {
-        Alert.alert("Your profile is live!", "Farmers can now consult you.");
+        Alert.alert("Your profile is live!", "Farmers near you can now find and call you.");
       }
       navigation.navigate("AgriDoctor");
     },
     onError: (err) => setError(err instanceof Error ? err.message : "Could not save profile"),
   });
 
-  const hasBank = accountHolderName.trim() && bankAccountNumber.trim() && ifscCode.trim();
-  const hasPayout = Boolean(hasBank || upiId.trim());
+  const hasContact = contactPhone.replace(/\D/g, "").length >= 10 && Boolean(location.trim());
   const hasCredentials = Boolean(qualification.trim() && experience.trim() && certificateUrl);
-  const canSubmit = name.trim() && speciality.trim() && hasCredentials && hasPayout;
+  const canSubmit = name.trim() && speciality.trim() && hasCredentials && hasContact;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
     <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.xs }}>
       <Text style={styles.intro}>
-        Agronomists, professors and crop doctors — add your details so farmers and planters can find and consult you.
+        Agronomists, professors and crop doctors — add your details so farmers and planters near you can find and call you.
       </Text>
 
       <TextField label="Full name *" value={name} onChangeText={setName} placeholder="Dr. Suresh Kumar" />
@@ -108,10 +94,9 @@ export function AgriDoctorRegisterScreen({ navigation }: { navigation: any }) {
       <TextField label="Agriculture qualification *" value={qualification} onChangeText={setQualification} placeholder="B.Sc. / M.Sc. / Ph.D. Agriculture" />
       <TextField label="Years of experience *" value={experience} onChangeText={setExperience} placeholder="12 years" />
       <TextField label="Where do you work" value={workplace} onChangeText={setWorkplace} placeholder="Agricultural University / KVK / Private" />
-      <TextField label="Location" value={location} onChangeText={setLocation} placeholder="District, State" />
+      <TextField label="Town, district *" value={location} onChangeText={setLocation} placeholder="Mudigere, Chikkamagaluru, Karnataka" />
       <TextField label="Languages" value={languages} onChangeText={setLanguages} placeholder="Hindi, English" />
-      <TextField label="Contact phone" value={contactPhone} onChangeText={setContactPhone} keyboardType="phone-pad" placeholder="+91 ..." />
-      <TextField label="Consultation fee per 15 min (₹)" value={ratePer15Min} onChangeText={setRatePer15Min} keyboardType="numeric" />
+      <TextField label="Phone number farmers can call *" value={contactPhone} onChangeText={setContactPhone} keyboardType="phone-pad" placeholder="+91 ..." />
       <TextField label="About you" value={bio} onChangeText={setBio} multiline numberOfLines={3} placeholder="How you help farmers improve their yield…" />
 
       <View style={styles.certBox}>
@@ -141,23 +126,8 @@ export function AgriDoctorRegisterScreen({ navigation }: { navigation: any }) {
         )}
       </View>
 
-      <View style={styles.payoutBox}>
-        <View style={{ flexDirection: "row", gap: spacing.sm }}>
-          <Landmark size={16} color="#92600E" />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.payoutTitle}>Payout details</Text>
-            <Text style={styles.payoutSubtitle}>Where should we deposit your 80% share? Add a bank account or a UPI ID.</Text>
-          </View>
-        </View>
-        <TextField label="Account holder name" value={accountHolderName} onChangeText={setAccountHolderName} containerStyle={{ marginTop: spacing.sm }} />
-        <TextField label="Bank account number" value={bankAccountNumber} onChangeText={setBankAccountNumber} keyboardType="numeric" />
-        <TextField label="IFSC code" value={ifscCode} onChangeText={(v) => setIfscCode(v.toUpperCase())} autoCapitalize="characters" />
-        <Text style={styles.orText}>— OR —</Text>
-        <TextField label="UPI ID" value={upiId} onChangeText={setUpiId} autoCapitalize="none" placeholder="e.g. name@bank" />
-        <TextField label="PAN (optional, for tax)" value={panNumber} onChangeText={(v) => setPanNumber(v.toUpperCase())} autoCapitalize="characters" />
-        {!hasPayout ? <Text style={styles.payoutWarning}>Add full bank details or a UPI ID to publish your profile.</Text> : null}
-      </View>
 
+      {!hasContact ? <Text style={styles.hintText}>Add your phone number and town so nearby farmers can reach you.</Text> : null}
       {!hasCredentials ? <Text style={styles.hintText}>Add your qualification, experience and education certificate to publish your profile.</Text> : null}
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </ScrollView>
@@ -180,11 +150,6 @@ const styles = StyleSheet.create({
   uploadBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderWidth: 1, borderColor: colors.primary, borderRadius: radius.sm, paddingVertical: spacing.sm + 2, marginTop: spacing.sm },
   uploadBtnText: { fontSize: 14.5, fontWeight: "600", color: colors.primary },
 
-  payoutBox: { backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", borderRadius: radius.md, padding: spacing.sm + 4, marginBottom: spacing.sm },
-  payoutTitle: { fontSize: 14.5, fontWeight: "700", color: "#92600E" },
-  payoutSubtitle: { fontSize: 13, color: "#92600E", marginTop: 2, lineHeight: 15 },
-  orText: { fontSize: 13, color: "#92600E", textAlign: "center", marginBottom: spacing.sm },
-  payoutWarning: { fontSize: 13.5, color: "#92600E", fontWeight: "600" },
 
   hintText: { fontSize: 13.5, color: colors.textMuted, marginBottom: spacing.sm },
   errorText: { color: colors.danger, fontSize: 14.5, marginBottom: spacing.sm },
