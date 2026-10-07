@@ -24,7 +24,6 @@ import {
   Clock3,
   CreditCard,
   FileText,
-  ScanFace,
   Search,
   Sparkles,
   UserMinus,
@@ -34,6 +33,8 @@ import {
   X,
   Plus,
   UserPlus,
+  Pencil,
+  UserX,
 } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
@@ -47,7 +48,8 @@ import { useWorkGroups } from "../../work-groups/hooks/useWorkGroups";
 import { describeDevice } from "../../../lib/device";
 import { useSyncStore } from "../../../store/syncStore";
 import { countWorkersFromPhoto, type SeasonEndResult } from "../../../api/endpoints/workGroups";
-import { createWorker, matchFace } from "../../../api/endpoints/workers";
+import { createWorker, updateWorker } from "../../../api/endpoints/workers";
+import { deleteAttendance } from "../../../api/endpoints/attendance";
 import { compressToDataUrl } from "../../../lib/imageCompression";
 import type { GroupLoan, Worker } from "../../../types/api";
 import { isGateError } from "../../../api/errors";
@@ -123,7 +125,6 @@ export function AttendanceScreen({ route }: { route: any }) {
     recordLoanRepayment,
     generateSeasonAccount,
     removeWorker,
-    setWorkerPhoto,
   } = useAttendance(workGroupId);
   const { data: workGroups } = useWorkGroups();
   const workGroup = workGroups?.find((g) => g.id === workGroupId);
@@ -161,8 +162,14 @@ export function AttendanceScreen({ route }: { route: any }) {
   const [checkingOut, setCheckingOut] = useState(false);
 
   // ── Single Person Face Attendance state ─────────────────────────────────────
-  const [faceMatching, setFaceMatching] = useState(false);
-  const [savingWorkerPhotoId, setSavingWorkerPhotoId] = useState<number | null>(null);
+  // Edit mode (pencil in the header): fix a worker's details, take back a
+  // "present" saved by mistake (e.g. they were on leave), or remove a worker.
+  const [editMode, setEditMode] = useState(false);
+  const [editingWorkerId, setEditingWorkerId] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editWage, setEditWage] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // ── Advance payment form state ──────────────────────────────────────────────
   const [showPaymentForm, setShowPaymentForm] = useState(false);
@@ -317,71 +324,6 @@ export function AttendanceScreen({ route }: { route: any }) {
     }
   }
 
-  // ── Single Person Face Attendance: camera → send photo to
-  // /workers/face-match → mark the matched worker present. Deliberately
-  // simple compared to web's on-device face-api.js scanning (ruled out this
-  // session for licensing/model-compatibility reasons) — one photo, one
-  // backend call, one result, no live camera/ML here.
-  async function handleFaceAttendance() {
-    const uri = await captureCameraPhoto();
-    if (!uri) return;
-    setFaceMatching(true);
-    try {
-      const photo = await compressToDataUrl(uri, "ai");
-      const result = await matchFace(photo);
-      if (result.matchedWorkerId == null) {
-        if (result.message) {
-          Alert.alert("No reference photos yet", result.message);
-        } else {
-          Alert.alert(
-            "No confident match found",
-            "Add a reference photo for this worker using the camera icon next to their name below, or use Group Attendance / manual marking instead."
-          );
-        }
-        return;
-      }
-      const worker = eligibleWorkers.find((w) => w.id === result.matchedWorkerId);
-      const workerName = result.matchedWorkerName ?? worker?.name ?? "Worker";
-      if (presentIds.has(result.matchedWorkerId)) {
-        Alert.alert(`${workerName} — already marked today`);
-        return;
-      }
-      // Same base-wage computation as web's markFacePresent — this is a
-      // single click-to-mark flow, not harvest-picking. Falls back to the
-      // worker's own wageRate if the group itself has no rate set.
-      const baseWage = (paymentType === "Per hour" ? rate * 8 : rate) || Number(worker?.wageRate ?? 0);
-      await markAttendance.mutateAsync({
-        workGroupId,
-        workerId: result.matchedWorkerId,
-        date,
-        hoursWorked: paymentType === "Per hour" ? 8 : undefined,
-        wageAmount: baseWage,
-        deviceLabel: "Face",
-      });
-      Alert.alert(`${workerName} marked present ✓`);
-    } catch {
-      Alert.alert("Face match failed", "Could not reach the AI service. Try again, or use Group Attendance / manual marking.");
-    } finally {
-      setFaceMatching(false);
-    }
-  }
-
-  // Registers/updates a worker's saved reference photo used for face matching.
-  async function handleSaveWorkerPhoto(worker: Worker) {
-    const uri = await captureCameraPhoto();
-    if (!uri) return;
-    setSavingWorkerPhotoId(worker.id);
-    try {
-      const photo = await compressToDataUrl(uri, "record");
-      await setWorkerPhoto.mutateAsync({ workerId: worker.id, photoDataUrl: photo });
-      Alert.alert("Reference photo saved", `${worker.name}'s photo will be used for face attendance.`);
-    } catch {
-      Alert.alert("Could not save the photo", "Please try again.");
-    } finally {
-      setSavingWorkerPhotoId(null);
-    }
-  }
-
   async function handleWorkUpdatePhoto() {
     if (!workSession) return;
     const uri = await captureCameraPhoto();
@@ -425,12 +367,19 @@ export function AttendanceScreen({ route }: { route: any }) {
     }
   }
 
-  // Face attendance (one worker at a time) sits on the header, next to the
-  // title, so the body matches the canvas: count-from-photo, All, search.
   useLayoutEffect(() => {
     navigation.setOptions({
       subtitle: [workGroup?.blockName, "Today"].filter(Boolean).join(" · "),
-      headerRight: () => <RoundButton icon={ScanFace} label="Face attendance" onPress={handleFaceAttendance} />,
+      headerRight: () => (
+        <RoundButton
+          icon={editMode ? Check : Pencil}
+          label={editMode ? "Done editing" : "Edit workers"}
+          onPress={() => {
+            setEditMode((v) => !v);
+            setEditingWorkerId(null);
+          }}
+        />
+      ),
     });
   });
 
@@ -549,6 +498,68 @@ export function AttendanceScreen({ route }: { route: any }) {
   // Mirrors web's saveLoan() unresolved-name branch (attendance.tsx:280-310):
   // prefer the picked/matched worker; otherwise create a new one by that name
   // before recording the loan.
+  function startEditing(worker: Worker) {
+    if (editingWorkerId === worker.id) {
+      setEditingWorkerId(null);
+      return;
+    }
+    setEditingWorkerId(worker.id);
+    setEditName(worker.name);
+    setEditPhone(worker.phone ?? "");
+    setEditWage(worker.wageRate && Number(worker.wageRate) > 0 ? String(Number(worker.wageRate)) : "");
+  }
+
+  async function saveWorkerEdit(worker: Worker) {
+    const name = editName.trim();
+    if (!name || savingEdit) return;
+    setSavingEdit(true);
+    try {
+      await updateWorker(worker.id, {
+        name,
+        phone: editPhone.trim() || null,
+        ...(Number(editWage) > 0 ? { wageRate: String(Number(editWage)) } : {}),
+      });
+      setEditingWorkerId(null);
+      refetch();
+    } catch {
+      Alert.alert("Could not save", "Please try again.");
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
+  // Someone was saved as present but didn't come (on leave): remove that
+  // day's entry so they aren't paid for it.
+  function confirmMarkAbsent(worker: Worker) {
+    const entry = attendance.find((a) => a.workGroupId === workGroupId && a.workerId === worker.id);
+    if (!entry) return;
+    Alert.alert(
+      `Mark ${worker.name} absent?`,
+      "Their attendance for this day is removed, so it won't count towards wages.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Mark absent",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteAttendance(entry.id);
+              setSelected((prev) => {
+                const next = new Set(prev);
+                next.delete(worker.id);
+                return next;
+              });
+              setEditingWorkerId(null);
+              refetch();
+            } catch {
+              Alert.alert("Could not mark absent", "Please try again.");
+            }
+          },
+        },
+      ],
+    );
+  }
+
   async function saveNewWorker() {
     const name = newWorkerName.trim();
     if (!name || addingWorker) return;
@@ -707,7 +718,6 @@ export function AttendanceScreen({ route }: { route: any }) {
                   onPress={() => setSelected(new Set(eligibleWorkers.filter((w) => !markedIds.has(w.id)).map((w) => w.id)))}
                 />
               </View>
-              {faceMatching ? <Text style={styles.faceHint}>Matching face…</Text> : null}
               <View style={styles.searchWrap}>
                 <Search size={20} color={colors.textMuted} style={styles.searchIcon} />
                 <TextInput
@@ -1017,7 +1027,7 @@ export function AttendanceScreen({ route }: { route: any }) {
                 ]}
               >
                 <View style={styles.workerRowMain}>
-                  <Pressable onPress={() => toggle(item.id)} style={styles.workerRowMainPressable}>
+                  <Pressable onPress={() => (editMode ? startEditing(item) : toggle(item.id))} style={styles.workerRowMainPressable}>
                     <Avatar name={item.name} index={item.id} />
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={styles.workerName} numberOfLines={1}>
@@ -1032,7 +1042,9 @@ export function AttendanceScreen({ route }: { route: any }) {
                       )}
                     </View>
                     {extraFor(item.id) > 0 ? <Pill text={`+₹${extraFor(item.id).toFixed(0)}`} tone="warn" /> : null}
-                    {marked && !isSelected ? (
+                    {editMode ? (
+                      <Pencil size={20} color={colors.textMuted} />
+                    ) : marked && !isSelected ? (
                       <CheckCircle2 size={26} color={colors.success} />
                     ) : (
                       <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
@@ -1040,27 +1052,32 @@ export function AttendanceScreen({ route }: { route: any }) {
                       </View>
                     )}
                   </Pressable>
-                  <Pressable
-                    onPress={() => handleSaveWorkerPhoto(item)}
-                    hitSlop={10}
-                    style={styles.removeWorkerBtn}
-                    disabled={savingWorkerPhotoId === item.id}
-                  >
-                    {savingWorkerPhotoId === item.id ? (
-                      <ActivityIndicator size="small" color={colors.textMuted} />
-                    ) : (
-                      <Camera size={16} color={item.photoUrl ? colors.primary : colors.textMuted} />
-                    )}
-                  </Pressable>
-                  <Pressable
-                    onPress={() => confirmRemoveWorker(item)}
-                    hitSlop={10}
-                    style={styles.removeWorkerBtn}
-                  >
-                    <UserMinus size={16} color={colors.textMuted} />
-                  </Pressable>
                 </View>
-                {isSelected ? (
+                {editMode && editingWorkerId === item.id ? (
+                  <View style={styles.extraFields}>
+                    <TextField label="Name" value={editName} onChangeText={setEditName} containerStyle={{ marginBottom: 0 }} />
+                    <TextField
+                      label="Phone"
+                      keyboardType="phone-pad"
+                      value={editPhone}
+                      onChangeText={setEditPhone}
+                      containerStyle={{ marginBottom: 0 }}
+                    />
+                    <TextField
+                      label="Daily wage ₹"
+                      keyboardType="number-pad"
+                      value={editWage}
+                      onChangeText={(v) => setEditWage(v.replace(/[^0-9]/g, ""))}
+                      containerStyle={{ marginBottom: 0 }}
+                    />
+                    <Button title="Save changes" onPress={() => saveWorkerEdit(item)} loading={savingEdit} disabled={!editName.trim()} />
+                    {marked ? (
+                      <Button title="Mark absent today" variant="secondary" icon={UserX} onPress={() => confirmMarkAbsent(item)} />
+                    ) : null}
+                    <Button title="Remove worker" variant="secondary" icon={UserMinus} onPress={() => confirmRemoveWorker(item)} />
+                  </View>
+                ) : null}
+                {isSelected && !editMode ? (
                   <>
                     <Pressable style={styles.extraToggle} onPress={() => setExpandedId(expanded ? null : item.id)}>
                       <Text style={styles.extraToggleText}>
@@ -1663,7 +1680,6 @@ const styles = StyleSheet.create({
   workerRowLast: { borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },
   workerRowDivider: { borderBottomWidth: 1, borderBottomColor: colors.border },
   workerMeta: { fontSize: 14, color: colors.textMuted },
-  faceHint: { fontSize: 14.5, fontWeight: "700", color: colors.primary, textAlign: "center" },
   searchWrap: { justifyContent: "center" },
   searchIcon: { position: "absolute", left: 14, zIndex: 1 },
   searchInput: {

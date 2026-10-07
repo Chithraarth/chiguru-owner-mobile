@@ -41,3 +41,8 @@ export function getWorkerWages(workerId: number, month?: string) {
 export function getWorkerMoney(workerId: number) {
   return apiFetch<WorkerMoney>(`/workers/${workerId}/money`);
 }
+
+/** Removes one day's attendance entry - e.g. someone saved as present who was actually on leave. */
+export function deleteAttendance(id: number) {
+  return apiMutate<null>("DELETE", `/attendance/${id}`);
+}

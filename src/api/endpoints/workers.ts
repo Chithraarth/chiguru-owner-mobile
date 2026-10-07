@@ -11,6 +11,11 @@ export function createWorker(name: string, details: { phone?: string; wageRate?:
   return apiMutate<Worker>("POST", "/workers", { name, isActive: true, clientId: newClientId(), ...details });
 }
 
+/** Edits a worker's name, phone or daily wage. */
+export function updateWorker(id: number, details: { name?: string; phone?: string | null; wageRate?: string }) {
+  return apiMutate<Worker>("PATCH", `/workers/${id}`, details);
+}
+
 // Soft-deletes the worker (recoverable from BinScreen). Matches web's
 // apiMutate("DELETE", `/workers/${workerId}`).
 export function deleteWorker(id: number) {
