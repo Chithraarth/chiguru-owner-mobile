@@ -110,6 +110,10 @@ export function AppDrawer({
   const [mounted, setMounted] = useState(visible);
   const translateX = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
+  // Something to open once the drawer is fully gone. iOS can't present a
+  // second modal (the farm switcher) while this one is still on screen -
+  // it just freezes - so it waits for the close animation and the unmount.
+  const afterClose = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (visible) {
@@ -122,7 +126,12 @@ export function AppDrawer({
       Animated.parallel([
         Animated.timing(translateX, { toValue: -DRAWER_WIDTH, duration: 220, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
         Animated.timing(backdropOpacity, { toValue: 0, duration: 220, useNativeDriver: true }),
-      ]).start(() => setMounted(false));
+      ]).start(() => {
+        setMounted(false);
+        const next = afterClose.current;
+        afterClose.current = null;
+        if (next) setTimeout(next, 80);
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
@@ -167,8 +176,8 @@ export function AppDrawer({
             <Pressable
               style={({ pressed }) => [styles.farmCard, pressed && { opacity: 0.85 }]}
               onPress={() => {
+                afterClose.current = onSwitchFarm;
                 onClose();
-                onSwitchFarm();
               }}
               accessibilityRole="button"
             >

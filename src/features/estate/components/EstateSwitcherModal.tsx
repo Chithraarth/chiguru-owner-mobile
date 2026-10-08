@@ -56,9 +56,22 @@ export function EstateSwitcherModal({
     ]);
   }
 
-  async function open(id: number) {
-    await switchEstate(id);
+  // Close the sheet first and act once its slide-out is done: switching to an
+  // invited farm swaps the whole app (RootNavigator), and iOS freezes if
+  // that happens while this modal is still on screen.
+  function afterClosing(action: () => void) {
     onClose();
+    setTimeout(action, 350);
+  }
+
+  function open(id: number) {
+    if (id === activeEstateId) {
+      onClose();
+      return;
+    }
+    afterClosing(() => {
+      switchEstate(id).catch(() => Alert.alert("Couldn't switch farm", "Please try again."));
+    });
   }
 
   return (
@@ -135,10 +148,7 @@ export function EstateSwitcherModal({
               title="Add farm"
               variant="light"
               icon={Plus}
-              onPress={() => {
-                onClose();
-                onAddFarm();
-              }}
+              onPress={() => afterClosing(onAddFarm)}
             />
           ) : null}
         </ScrollView>

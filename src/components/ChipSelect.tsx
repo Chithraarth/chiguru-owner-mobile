@@ -8,11 +8,14 @@ export function ChipSelect({
   label,
   options,
   value,
+  values,
   onChange,
 }: {
   label: string;
   options: string[];
-  value: string;
+  value?: string;
+  /** Several selected at once (multi-select); takes precedence over `value`. */
+  values?: string[];
   onChange: (v: string) => void;
 }) {
   return (
@@ -21,11 +24,13 @@ export function ChipSelect({
       <View>
         <View style={styles.row}>
           {options.map((opt) => {
-            const selected = opt === value;
+            const selected = values ? values.includes(opt) : opt === value;
             return (
               <Pressable
                 key={opt}
                 onPress={() => onChange(opt)}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
                 style={[styles.chip, selected && styles.chipSelected]}
               >
                 {selected ? <Check size={16} color={colors.text} strokeWidth={2.6} /> : null}
