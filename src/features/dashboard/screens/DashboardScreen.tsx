@@ -14,7 +14,6 @@ import {
   LineChart,
   Handshake,
   Tractor,
-  Users,
   ShoppingCart,
   Store,
   RefreshCw,
@@ -23,8 +22,8 @@ import {
   ChevronDown,
   ChevronUp,
   TrendingUp,
+  Sprout,
 } from "lucide-react-native";
-import type { RecentAd } from "../../../types/api";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { LoadingView } from "../../../components/StateViews";
@@ -36,6 +35,7 @@ import { useSessionStore } from "../../../store/sessionStore";
 import { useSyncStore } from "../../../store/syncStore";
 import { HomeHeader } from "../components/HomeHeader";
 import { getDashboardSummary, getRecentAds } from "../../../api/endpoints/dashboard";
+import { AD_BOARD_STYLE, timeAgo } from "../../shop/ads";
 import { getFarmProfile } from "../../../api/endpoints/estates";
 import { getPlanTasks } from "../../../api/endpoints/yearPlan";
 import { useEstateStore } from "../../estate/store/estateStore";
@@ -59,15 +59,14 @@ function moreTools(t: (k: string) => string): ToolItem[] {
     { icon: Tractor, chipBg: "#E4F2FB", chipColor: "#4FA8D8", title: t("more.rentMachines"), desc: "", screen: "Hire", params: { initialTab: "rental" } },
     { icon: Handshake, chipBg: "#E4F2FB", chipColor: "#4FA8D8", title: t("more.findWorkers"), desc: "", screen: "Hire", params: { initialTab: "job" } },
     { icon: ShoppingCart, chipBg: "#FBEEDD", chipColor: "#D69A4F", title: t("more.shop"), desc: "", screen: "Shop" },
+    { icon: Sprout, chipBg: "#E0F5E9", chipColor: "#4FAE72", title: t("more.nursery"), desc: "", screen: "Nursery" },
     { icon: Store, chipBg: "#E0F5E9", chipColor: "#4FAE72", title: t("more.market"), desc: "", screen: "Marketplace" },
     { icon: Stethoscope, chipBg: "#E3F4EA", chipColor: "#5B6ED6", title: t("more.agriDoctor"), desc: "", screen: "AgriDoctor" },
     { icon: ScanLine, chipBg: "#FBE4E4", chipColor: "#D66B6B", title: t("more.diseaseDetect"), desc: "", screen: "Disease" },
     { icon: BotMessageSquare, chipBg: "#FFF0C2", chipColor: "#8B5BD6", title: t("more.agriAdvisor"), desc: "", screen: "AgriAi" },
-    // No source translation exists for this yet - Year Plan isn't in
-    // chiguru-owner-web's own dictionary (it's a newer feature than that dict).
-    { icon: LineChart, chipBg: "#E4EEFB", chipColor: "#5B8CD6", title: "Year Plan", desc: "", screen: "YearPlan" },
-    // Same as Year Plan above - "Reports" has no source translation in
-    // chiguru-owner-web's dictionary either, so this is a literal string too.
+    // Year Plan is the "Work plan" tile above, so it isn't repeated here.
+    // "Reports" has no source translation in chiguru-owner-web's dictionary,
+    // so this is a literal string.
     { icon: LineChart, chipBg: "#E4EEFB", chipColor: "#5B8CD6", title: "Reports", desc: "", screen: "Reports" },
     { icon: Leaf, chipBg: "#FBF2D9", chipColor: colors.primary, title: t("more.myFarms"), desc: "", screen: "Crops" },
     { icon: RefreshCw, chipBg: "#EAEAEA", chipColor: "#6B6B6B", title: t("more.syncLog"), desc: "", screen: "SyncLog" },
@@ -78,25 +77,6 @@ function currentMonth() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
-
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.round(diff / 60000);
-  if (mins < 1) return "now";
-  if (mins < 60) return `${mins}m`;
-  const hrs = Math.round(mins / 60);
-  if (hrs < 24) return `${hrs}h`;
-  const days = Math.round(hrs / 24);
-  if (days < 7) return `${days}d`;
-  return `${Math.round(days / 7)}w`;
-}
-
-const AD_BOARD_STYLE: Record<RecentAd["board"], { icon: typeof Tractor; screen: string; params?: Record<string, unknown> }> = {
-  hire_job: { icon: Users, screen: "Hire", params: { initialTab: "job" } },
-  hire_rental: { icon: Tractor, screen: "Hire", params: { initialTab: "rental" } },
-  equipment: { icon: Tractor, screen: "Equipment" },
-  produce: { icon: ShoppingCart, screen: "Marketplace" },
-};
 
 export function DashboardScreen({ navigation }: { navigation: any }) {
   const { t } = useT();

@@ -1,34 +1,81 @@
-import React from "react";
-import { ScrollView, StyleSheet } from "react-native";
-import { Handshake, Leaf, Megaphone, Sprout, Store, TrendingUp, Tractor } from "lucide-react-native";
-import { BigTiles } from "../../../components/harvest";
-import { Enter } from "../../../components/motion";
+import React, { useState } from "react";
+import { Alert, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { useQuery } from "@tanstack/react-query";
+import { ChevronRight, Megaphone, Plus } from "lucide-react-native";
+import { Text } from "../../../components/Text";
+import { Button } from "../../../components/Button";
+import { Card } from "../../../components/Card";
+import { LoadingView } from "../../../components/StateViews";
+import { IconChip, ListCard, ListRow } from "../../../components/harvest";
 import { colors, spacing } from "../../../components/theme";
-import { useT } from "../../../lib/i18n";
+import { getRecentAds } from "../../../api/endpoints/dashboard";
+import { AD_BOARD_STYLE, timeAgo } from "../ads";
 
-/** Market hub: sell or buy produce, rent or sell equipment, hire, nursery, market prices and your ads. */
+// The server caps one request; this asks for as many as it allows.
+const ADS_LIMIT = 100;
+
+/** Shop: every live ad - produce, equipment and hire - newest first. */
 export function ShopScreen({ navigation }: { navigation: any }) {
-  const { t } = useT();
-  const go = (screen: string, params?: Record<string, unknown>) => () => navigation.navigate(screen, params);
+  const adsQuery = useQuery({ queryKey: ["ads", "all"], queryFn: () => getRecentAds(ADS_LIMIT) });
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await adsQuery.refetch();
+    setRefreshing(false);
+  }
+
+  function postAd() {
+    Alert.alert("Post an ad", "What do you want to post?", [
+      { text: "Sell produce", onPress: () => navigation.navigate("MarketplaceForm") },
+      { text: "Rent or sell equipment", onPress: () => navigation.navigate("Equipment") },
+      { text: "Workers or machine hire", onPress: () => navigation.navigate("Hire") },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  }
+
+  if (adsQuery.isLoading) return <LoadingView label="Loading ads..." />;
+  const ads = adsQuery.data ?? [];
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
-      <Enter>
-        <BigTiles
-          items={[
-            { icon: Store, title: "Sell produce", sub: "Post your crop", onPress: go("MarketplaceForm") },
-            { icon: Leaf, title: t("more.market"), sub: "Buy from farmers near you", onPress: go("Marketplace") },
-            { icon: Tractor, title: t("more.equipment"), sub: "Rent or sell", onPress: go("Equipment") },
-            { icon: Handshake, title: "Hire board", sub: "Workers & jobs", onPress: go("Hire") },
-            { icon: Sprout, title: t("more.nursery"), sub: "Saplings & seeds", onPress: go("Nursery") },
-            { icon: TrendingUp, title: "Market prices", sub: "Today’s rates", onPress: go("Mandi") },
-            { icon: Megaphone, title: "My ads", sub: "Everything you posted", onPress: go("MyAds") },
-          ]}
-        />
-      </Enter>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
+      <View style={{ flexDirection: "row", gap: 10 }}>
+        <Button title="Post an ad" icon={Plus} onPress={postAd} style={{ flex: 1 }} />
+        <Button title="My ads" variant="secondary" icon={Megaphone} onPress={() => navigation.navigate("MyAds")} />
+      </View>
+
+      {ads.length === 0 ? (
+        <Card style={{ alignItems: "center", gap: spacing.sm }}>
+          <Text style={styles.muted}>No ads yet. Be the first to post one.</Text>
+        </Card>
+      ) : (
+        <ListCard>
+          {ads.map((ad, i) => {
+            const style = AD_BOARD_STYLE[ad.board] ?? AD_BOARD_STYLE.produce;
+            const when = timeAgo(ad.createdAt);
+            return (
+              <ListRow
+                key={ad.id}
+                title={ad.title}
+                subtitle={[style.label, ad.place, when].filter(Boolean).join(" · ")}
+                left={<IconChip icon={style.icon} index={i} />}
+                right={<ChevronRight size={18} color={colors.textMuted} />}
+                divider={i < ads.length - 1}
+                onPress={() => navigation.navigate(style.screen, style.params)}
+              />
+            );
+          })}
+        </ListCard>
+      )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
+  muted: { fontSize: 15, color: colors.textMuted, textAlign: "center" },
 });
