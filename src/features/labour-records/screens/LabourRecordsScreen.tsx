@@ -238,6 +238,26 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   const dueRecords = lastPaymentDate ? folderRecords.filter((r) => r.date > lastPaymentDate) : folderRecords;
   const dueDays = dueRecords.length;
   const dueEarned = dueRecords.reduce((s, r) => s + earnOf(r), 0);
+  // Split what's due into base wages, overtime and picking bonus (same rule
+  // as the worker account) so the extra over "works × rate" is explained.
+  const bonusThreshold = Number(group?.harvestThresholdKg ?? 0);
+  const bonusPerKg = Number(group?.harvestBonusPerKg ?? 0);
+  const dueSplit = dueRecords.reduce(
+    (acc, r) => {
+      const wage = earnOf(r);
+      const otH = Number(r.overtimeHours ?? 0);
+      const ot = Math.min(wage, otH * Number(r.overtimeRate ?? 0));
+      const kgAbove = bonusThreshold > 0 && bonusPerKg > 0 ? Math.max(0, Number(r.harvestedKg ?? 0) - bonusThreshold) : 0;
+      const bonus = Math.min(wage - ot, kgAbove * bonusPerKg);
+      acc.base += wage - ot - bonus;
+      acc.ot += ot;
+      acc.otHours += ot > 0 ? otH : 0;
+      acc.bonus += bonus;
+      acc.kgAbove += bonus > 0 ? kgAbove : 0;
+      return acc;
+    },
+    { base: 0, ot: 0, otHours: 0, bonus: 0, kgAbove: 0 }
+  );
   const dueAdvance = dueDays * advPerDay;
   // Advance-structure groups pay only the advance-per-day now; the rest is
   // held for the Final Account. Other groups pay everything earned since.
@@ -588,16 +608,43 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
               </View>
               <Text style={styles.dueHeaderValue}>{inr(Math.max(0, dueWages))}</Text>
             </View>
-            <View style={styles.simpleRow}>
-              <Text style={styles.simpleRowMutedLabel}>
-                {hasAdvanceStructure
-                  ? `Advance due (${dueDays} × ${inr(advPerDay)})`
-                  : `Wages due (${dueDays} work${dueDays !== 1 ? "s" : ""}${isPerDay && groupRate > 0 ? ` · ${inr(groupRate)}/day` : ""})`}
-              </Text>
-              <Text style={[styles.simpleRowTitle, { color: colors.primary }]}>
-                {inr(hasAdvanceStructure ? dueAdvance : dueEarned)}
-              </Text>
-            </View>
+            {!hasAdvanceStructure && dueSplit.ot + dueSplit.bonus > 0 ? (
+              <>
+                <View style={styles.simpleRow}>
+                  <Text style={styles.simpleRowMutedLabel}>
+                    {`Base wages (${dueDays} work${dueDays !== 1 ? "s" : ""}${isPerDay && groupRate > 0 ? ` × ${inr(groupRate)}` : ""})`}
+                  </Text>
+                  <Text style={styles.simpleRowTitle}>{inr(dueSplit.base)}</Text>
+                </View>
+                {dueSplit.ot > 0 ? (
+                  <View style={[styles.simpleRow, styles.periodRowBorder]}>
+                    <Text style={styles.simpleRowMutedLabel}>{`Overtime (${fmtNum(dueSplit.otHours)} hr)`}</Text>
+                    <Text style={[styles.simpleRowTitle, { color: "#C77A2E" }]}>+ {inr(dueSplit.ot)}</Text>
+                  </View>
+                ) : null}
+                {dueSplit.bonus > 0 ? (
+                  <View style={[styles.simpleRow, styles.periodRowBorder]}>
+                    <Text style={[styles.simpleRowMutedLabel, { flex: 1 }]}>{`Picking bonus (${fmtNum(dueSplit.kgAbove)} kg above target)`}</Text>
+                    <Text style={[styles.simpleRowTitle, { color: "#1F9E5C" }]}>+ {inr(dueSplit.bonus)}</Text>
+                  </View>
+                ) : null}
+                <View style={[styles.simpleRow, styles.periodRowBorder]}>
+                  <Text style={[styles.simpleRowMutedLabel, { fontWeight: "700", color: colors.text }]}>Wages due</Text>
+                  <Text style={[styles.simpleRowTitle, { color: colors.primary }]}>{inr(dueEarned)}</Text>
+                </View>
+              </>
+            ) : (
+              <View style={styles.simpleRow}>
+                <Text style={styles.simpleRowMutedLabel}>
+                  {hasAdvanceStructure
+                    ? `Advance due (${dueDays} × ${inr(advPerDay)})`
+                    : `Wages due (${dueDays} work${dueDays !== 1 ? "s" : ""}${isPerDay && groupRate > 0 ? ` · ${inr(groupRate)}/day` : ""})`}
+                </Text>
+                <Text style={[styles.simpleRowTitle, { color: colors.primary }]}>
+                  {inr(hasAdvanceStructure ? dueAdvance : dueEarned)}
+                </Text>
+              </View>
+            )}
             <View style={[styles.simpleRow, styles.periodRowBorder]}>
               <Text style={styles.simpleRowMutedLabel}>Loan pending</Text>
               <Text style={[styles.simpleRowTitle, { color: loanOutstanding > 0 ? colors.danger : colors.textMuted }]}>
