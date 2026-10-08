@@ -1,9 +1,9 @@
 import React, { useLayoutEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { useInnerBack } from "../../../navigation/useInnerBack";
 import { Text } from "../../../components/Text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft,
   Banknote,
   Calendar,
   CheckCircle2,
@@ -77,6 +77,10 @@ interface PeriodTotals { days: number; wages: number; advances: number; loans: n
 export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   const [openFolder, setOpenFolder] = useState<{ id: number | null; name: string } | null>(null);
   const [openWorker, setOpenWorker] = useState<{ id: number; name: string } | null>(null);
+  // Back from a worker returns to their group, and from a group to the list.
+  useInnerBack(navigation, openWorker != null || openFolder != null, () =>
+    openWorker ? setOpenWorker(null) : setOpenFolder(null)
+  );
   const [view, setView] = useState<ViewMode>("weekly");
   const [showPaySheet, setShowPaySheet] = useState(false);
   const qc = useQueryClient();
@@ -87,17 +91,6 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   useLayoutEffect(() => {
     navigation.setOptions({
       title: openWorker ? openWorker.name : openFolder ? openFolder.name : t("farmAcct.labour"),
-      headerLeft: openWorker || openFolder
-        ? () => (
-            <Pressable
-              onPress={() => (openWorker ? setOpenWorker(null) : setOpenFolder(null))}
-              hitSlop={10}
-              style={{ marginLeft: spacing.sm }}
-            >
-              <ArrowLeft size={22} color={colors.text} />
-            </Pressable>
-          )
-        : undefined,
     });
   }, [navigation, openFolder, openWorker]);
 

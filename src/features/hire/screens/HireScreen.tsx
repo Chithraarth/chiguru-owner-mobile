@@ -24,6 +24,7 @@ import { EmptyState, LoadingView } from "../../../components/StateViews";
 import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { useT } from "../../../lib/i18n";
 import { useHire } from "../hooks/useHire";
+import { useInnerBack } from "../../../navigation/useInnerBack";
 import { getMyHireListings } from "../../../api/endpoints/hire";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { HireListing } from "../../../types/api";
@@ -175,6 +176,8 @@ export function HireScreen({ navigation, route }: { navigation: any; route?: { p
 
   const { t } = useT();
   const [tab, setTab] = useState<Tab | null>(route?.params?.initialTab ?? null);
+  // Opened on the board chooser: back from a board returns to the chooser.
+  const openedOnChooser = !route?.params?.initialTab;
   const [filter, setFilter] = useState("all");
   const [mineOnly, setMineOnly] = useState(false);
   const [districtQ, setDistrictQ] = useState("");
@@ -183,6 +186,14 @@ export function HireScreen({ navigation, route }: { navigation: any; route?: { p
   const [radius, setRadius] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const qc = useQueryClient();
+  useInnerBack(navigation, openedOnChooser && tab != null, () => {
+    setTab(null);
+    setFilter("all");
+    setMineOnly(false);
+    setDistrictQ("");
+    setMyLoc(null);
+    setRadius(null);
+  });
 
   const insets = useSafeAreaInsets();
   const { data: listings = [], isLoading, refetch, deleteListing } = useHire(tab ?? undefined);
@@ -280,20 +291,13 @@ export function HireScreen({ navigation, route }: { navigation: any; route?: { p
         contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <Pressable
-          style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
-          onPress={() => { setTab(null); setFilter("all"); setMineOnly(false); setDistrictQ(""); setMyLoc(null); setRadius(null); }}
-        >
-          <Text style={[styles.backLink, { color: accent }]}>{`← ${t("more.farmManager")}`}</Text>
-        </Pressable>
-
         <View style={[styles.hero, { backgroundColor: accent }]}>
           <View style={styles.heroIconWrap}>
             <AccentIcon size={22} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.heroTitle}>{tab === "rental" ? "Rent Machines & Vehicles" : "Find Workers for Your Estate"}</Text>
-            <Text style={styles.heroSubtitle}>
+            <Text style={[styles.heroTitle, styles.onAccent]}>{tab === "rental" ? "Rent Machines & Vehicles" : "Find Workers for Your Estate"}</Text>
+            <Text style={[styles.heroSubtitle, styles.onAccentSoft]}>
               {tab === "rental"
                 ? "Tractor, JCB, Hitachi, auto, pickup, cutting & weight machines — contact owners directly."
                 : "Post the workers you need — farm labourers, mestri, manager. People contact you directly."}
@@ -376,7 +380,9 @@ const styles = StyleSheet.create({
   landingTitle: { fontSize: 15.5, fontWeight: "700", textAlign: "center" },
   landingSubtitle: { fontSize: 12.5, textAlign: "center", opacity: 0.85 },
 
-  backLink: { fontSize: 14.5, fontWeight: "700" },
+  // Text on the solid green/orange board banner.
+  onAccent: { color: "#FFFFFF" },
+  onAccentSoft: { color: "rgba(255,255,255,0.88)" },
 
   locBtn: { flexDirection: "row", alignItems: "center", gap: 6, ...shadow, backgroundColor: "#fff", borderRadius: radius.pill, paddingHorizontal: spacing.sm + 4, paddingVertical: spacing.xs + 2 },
   locBtnText: { fontSize: 14, fontWeight: "500", color: colors.textMuted },

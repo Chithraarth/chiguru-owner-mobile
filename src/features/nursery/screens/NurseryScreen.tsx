@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from "react";
 import { Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { Text, TextInput } from "../../../components/Text";
+import { useInnerBack } from "../../../navigation/useInnerBack";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, MapPin, Phone, Search, Sprout, Star, Store, X } from "lucide-react-native";
+import { MapPin, Phone, Search, Sprout, Star, Store, X } from "lucide-react-native";
 import { Button } from "../../../components/Button";
 import { Card } from "../../../components/Card";
 import { LoadingView } from "../../../components/StateViews";
@@ -82,7 +83,7 @@ function ListingCard({ listing, vendorName, vendorLocation, vendorPhone, onVendo
   );
 }
 
-function VendorDetail({ vendor, onBack, onContact }: { vendor: NurseryVendor; onBack: () => void; onContact: () => void }) {
+function VendorDetail({ vendor, onContact }: { vendor: NurseryVendor; onContact: () => void }) {
   const qc = useQueryClient();
   const [myRating, setMyRating] = useState(0);
   const [comment, setComment] = useState("");
@@ -110,11 +111,6 @@ function VendorDetail({ vendor, onBack, onContact }: { vendor: NurseryVendor; on
 
   return (
     <ScrollView contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
-      <Pressable onPress={onBack} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-        <ArrowLeft size={16} color={colors.primary} />
-        <Text style={styles.backText}>All Vendors</Text>
-      </Pressable>
-
       <View style={styles.vendorHero}>
         <View style={{ flexDirection: "row", alignItems: "flex-start", gap: spacing.sm }}>
           <View style={styles.vendorHeroIcon}>
@@ -231,10 +227,12 @@ function ContactSheet({ vendor, onClose }: { vendor: NurseryVendor; onClose: () 
   );
 }
 
-export function NurseryScreen() {
+export function NurseryScreen({ navigation }: { navigation: any }) {
   const [catFilter, setCatFilter] = useState("All");
   const [search, setSearch] = useState("");
   const [selectedVendor, setSelectedVendor] = useState<NurseryVendor | null>(null);
+  // Back from a vendor's page returns to the list of vendors.
+  useInnerBack(navigation, selectedVendor != null, () => setSelectedVendor(null));
   const [contactVendor, setContactVendor] = useState<NurseryVendor | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -264,7 +262,7 @@ export function NurseryScreen() {
   if (selectedVendor) {
     return (
       <View style={styles.container}>
-        <VendorDetail vendor={selectedVendor} onBack={() => setSelectedVendor(null)} onContact={() => setContactVendor(selectedVendor)} />
+        <VendorDetail vendor={selectedVendor} onContact={() => setContactVendor(selectedVendor)} />
         {contactVendor ? <ContactSheet vendor={contactVendor} onClose={() => setContactVendor(null)} /> : null}
       </View>
     );
@@ -426,7 +424,6 @@ const styles = StyleSheet.create({
   callBtnText: { color: "#fff", fontSize: 13.5, fontWeight: "700" },
   callSub: { fontSize: 10.5, color: colors.textMuted, maxWidth: 56, textAlign: "center" },
 
-  backText: { fontSize: 15, fontWeight: "700", color: colors.primary },
   vendorHero: { backgroundColor: colors.primary, borderRadius: radius.lg, padding: spacing.md },
   vendorHeroIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center", overflow: "hidden" },
   vendorHeroImg: { width: "100%", height: "100%" },
