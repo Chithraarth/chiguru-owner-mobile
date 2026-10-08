@@ -10,7 +10,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.thechiguru.owner",
       "appleTeamId": "UZKCN9NQ7G",
-      "buildNumber": "9",
+      "buildNumber": "10",
       "usesAppleSignIn": true
     },
     "android": {
@@ -22,7 +22,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "versionCode": 13
+      "versionCode": 14
     },
     "web": {
       "favicon": "./assets/favicon.png"
