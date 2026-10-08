@@ -1,10 +1,11 @@
-import React, { useLayoutEffect, useMemo, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
   Image,
   Modal,
+  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -14,13 +15,13 @@ import { Text, TextInput } from "../../../components/Text";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Banknote,
   Camera,
   Check,
   CheckCircle2,
-  ChevronDown,
-  ChevronUp,
   Clock3,
   CreditCard,
   FileText,
@@ -39,11 +40,14 @@ import {
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { ChipSelect } from "../../../components/ChipSelect";
+import { SelectOrType } from "../../../components/SelectOrType";
 import { TextField } from "../../../components/TextField";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
 import { colors, radius, shadow, spacing } from "../../../components/theme";
 import { Avatar, Pill, RoundButton } from "../../../components/harvest";
-import { useAttendance } from "../hooks/useAttendance";
+import { todayIso, useAttendance } from "../hooks/useAttendance";
+import { getCrops } from "../../../api/endpoints/crops";
+import { useEstateStore } from "../../estate/store/estateStore";
 import { useWorkGroups } from "../../work-groups/hooks/useWorkGroups";
 import { describeDevice } from "../../../lib/device";
 import { useSyncStore } from "../../../store/syncStore";
@@ -71,6 +75,10 @@ const PAY_FREQ_LABELS: Record<string, string> = {
 const REPAY_METHODS = ["cash", "salary deduction", "bank transfer", "installment"];
 
 type Tab = "attendance" | "payments" | "loans";
+
+function fmtDay(iso: string) {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+}
 
 function inr(n: number) {
   return `₹${Math.round(n).toLocaleString("en-IN")}`;
@@ -100,6 +108,9 @@ export function AttendanceScreen({ route }: { route: any }) {
     workGroupId: number;
     workGroupName: string;
   };
+  // Day being marked - today by default, or an earlier day to add or fix it.
+  const [selectedDate, setSelectedDate] = useState(todayIso);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const {
     workers,
     attendance,
@@ -125,7 +136,7 @@ export function AttendanceScreen({ route }: { route: any }) {
     recordLoanRepayment,
     generateSeasonAccount,
     removeWorker,
-  } = useAttendance(workGroupId);
+  } = useAttendance(workGroupId, selectedDate);
   const { data: workGroups } = useWorkGroups();
   const workGroup = workGroups?.find((g) => g.id === workGroupId);
   const rate = Number(workGroup?.rate ?? 0);
@@ -139,10 +150,17 @@ export function AttendanceScreen({ route }: { route: any }) {
   const [search, setSearch] = useState("");
   const navigation = useNavigation<any>();
   const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  // Same day form as the web app: hours, overtime (one per-hour rate, hours
+  // typed next to each person), harvest picking (crop + bonus rule, kg typed
+  // next to each person) and the day's total headcount.
+  const [hours, setHours] = useState("8");
+  const [otMode, setOtMode] = useState(false);
+  const [otRateAll, setOtRateAll] = useState("");
   const [otHours, setOtHours] = useState<Record<number, string>>({});
-  const [otRate, setOtRate] = useState<Record<number, string>>({});
+  const [pickMode, setPickMode] = useState(isHarvestGroup);
+  const [pickCrop, setPickCrop] = useState("");
   const [harvestKg, setHarvestKg] = useState<Record<number, string>>({});
+  const [totalPeople, setTotalPeople] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   // Picking-bonus rule editor (threshold kg + pay/kg above it). Prefilled
   // from the group's saved rule, editable inline like the web app.
@@ -152,6 +170,27 @@ export function AttendanceScreen({ route }: { route: any }) {
   const [pickBonus, setPickBonus] = useState(
     workGroup?.harvestBonusPerKg != null ? String(Number(workGroup.harvestBonusPerKg)) : ""
   );
+  // The group (and its saved bonus rule) may load after the first render.
+  useEffect(() => {
+    if (!workGroup) return;
+    if (workGroup.paymentType === "Per kg") setPickMode(true);
+    setPickThreshold(workGroup.harvestThresholdKg != null ? String(Number(workGroup.harvestThresholdKg)) : "");
+    setPickBonus(workGroup.harvestBonusPerKg != null ? String(Number(workGroup.harvestBonusPerKg)) : "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workGroup?.id]);
+  // "Total people working" starts from the day's saved headcount.
+  useEffect(() => {
+    setTotalPeople(workSession?.headcountIn != null ? String(workSession.headcountIn) : "");
+  }, [selectedDate, workSession?.headcountIn]);
+  const activeEstateId = useEstateStore((s) => s.activeEstateId);
+  const { data: crops = [] } = useQuery({
+    queryKey: ["crops", activeEstateId],
+    queryFn: getCrops,
+    enabled: activeEstateId != null,
+  });
+  const queryClient = useQueryClient();
+  // Home's worker count and today's wages come from the dashboard summary.
+  const refreshDashboard = () => queryClient.invalidateQueries({ queryKey: ["dashboard"] });
   const isOnline = useSyncStore((s) => s.isOnline);
   const insets = useSafeAreaInsets();
 
@@ -215,18 +254,55 @@ export function AttendanceScreen({ route }: { route: any }) {
   const presentIds = markedIds;
 
   function toggle(workerId: number) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(workerId)) next.delete(workerId);
-      else next.add(workerId);
-      return next;
-    });
+    if (selected.has(workerId)) {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        next.delete(workerId);
+        return next;
+      });
+      return;
+    }
+    // Re-selecting someone already marked edits their day: start from what was
+    // saved, so saving again (e.g. just to add the crop) never wipes their kg
+    // or overtime.
+    const saved = attendance.find((a) => a.workGroupId === workGroupId && a.workerId === workerId);
+    if (saved) {
+      const savedOt = Number(saved.overtimeHours ?? 0);
+      const savedKg = Number(saved.harvestedKg ?? 0);
+      if (savedOt > 0) {
+        setOtMode(true);
+        setOtHours((cur) => ({ ...cur, [workerId]: String(savedOt) }));
+        if (!otRateAll && Number(saved.overtimeRate ?? 0) > 0) setOtRateAll(String(Number(saved.overtimeRate)));
+      }
+      if (savedKg > 0) {
+        setPickMode(true);
+        setHarvestKg((cur) => ({ ...cur, [workerId]: String(savedKg) }));
+        if (!pickCrop && saved.harvestCrop) setPickCrop(saved.harvestCrop);
+      }
+      if (Number(saved.hoursWorked) > 0) setHours(String(Number(saved.hoursWorked)));
+    }
+    setSelected((prev) => new Set(prev).add(workerId));
   }
 
+  const num = (v: string | undefined) => Math.max(0, parseFloat(v ?? "") || 0);
+  const hoursNum = num(hours) || 8;
+  const otPerHour = num(otRateAll) || defaultOtRate;
+  const threshold = num(pickThreshold);
+  const bonusPerKg = num(pickBonus);
+
+  /** Day's pay before extras: kg x rate for per-kg groups, else the group rate. */
+  function baseFor(workerId: number): number {
+    if (isHarvestGroup) return num(harvestKg[workerId]) * rate;
+    const base = paymentType === "Per hour" ? rate * hoursNum : rate;
+    return base || Number(workers.find((w) => w.id === workerId)?.wageRate ?? 0);
+  }
+
+  /** Overtime and picking bonus on top of the base pay (same rules as the web app). */
   function extraFor(workerId: number): number {
-    const ot = Number(otHours[workerId] ?? 0) * Number(otRate[workerId] ?? defaultOtRate);
-    const kg = isHarvestGroup ? Number(harvestKg[workerId] ?? 0) * rate : 0;
-    return (Number.isFinite(ot) ? ot : 0) + (Number.isFinite(kg) ? kg : 0);
+    const ot = otMode ? num(otHours[workerId]) * otPerHour : 0;
+    const kg = pickMode ? num(harvestKg[workerId]) : 0;
+    const bonus = kg > 0 && threshold > 0 && bonusPerKg > 0 ? Math.max(0, kg - threshold) * bonusPerKg : 0;
+    return ot + bonus;
   }
 
   async function onRefresh() {
@@ -239,47 +315,56 @@ export function AttendanceScreen({ route }: { route: any }) {
     const deviceLabel = describeDevice();
     // Picking-bonus rule (target kg + pay/kg above it) is owned by the work
     // group, not the attendance row - save it once here if it changed, same
-    // as the web app does right before writing today's attendance.
-    if (isHarvestGroup) {
-      const threshold = Math.max(0, Number(pickThreshold) || 0);
-      const bonusPerKg = Math.max(0, Number(pickBonus) || 0);
+    // as the web app does right before writing the day's attendance.
+    if (pickMode) {
       const savedThreshold = Number(workGroup?.harvestThresholdKg ?? 0);
       const savedBonus = Number(workGroup?.harvestBonusPerKg ?? 0);
       if (threshold !== savedThreshold || bonusPerKg !== savedBonus) {
-        await updateWorkGroup.mutateAsync({
-          harvestThresholdKg: threshold > 0 ? String(threshold) : null,
-          harvestBonusPerKg: bonusPerKg > 0 ? String(bonusPerKg) : null,
-        });
+        try {
+          await updateWorkGroup.mutateAsync({
+            harvestThresholdKg: threshold > 0 ? String(threshold) : null,
+            harvestBonusPerKg: bonusPerKg > 0 ? String(bonusPerKg) : null,
+          });
+        } catch {
+          Alert.alert("Couldn't save the picking bonus rule", "Attendance will still be saved.");
+        }
       }
     }
     // Re-check against the current active-worker list, not just the stale
     // `selected` ids - a worker removed after being selected (but before
     // Save was tapped) must not still get a wage entry written for them.
     const eligibleIds = new Set(eligibleWorkers.map((w) => w.id));
+    const crop = pickCrop.trim();
     for (const workerId of selected) {
       if (!eligibleIds.has(workerId)) continue;
-      const hoursWorked = paymentType === "Per hour" ? 8 : undefined;
-      const baseWage = isHarvestGroup ? Number(harvestKg[workerId] ?? 0) * rate : paymentType === "Per hour" ? rate * 8 : rate;
-      const otH = Number(otHours[workerId] ?? 0);
-      const otR = Number(otRate[workerId] ?? defaultOtRate);
-      const otAmount = otH > 0 ? otH * otR : 0;
+      const otH = otMode ? num(otHours[workerId]) : 0;
+      const kg = pickMode ? num(harvestKg[workerId]) : 0;
       await markAttendance.mutateAsync({
         workGroupId,
         workerId,
         date,
-        hoursWorked,
-        wageAmount: baseWage + otAmount,
+        hoursWorked: hoursNum,
+        wageAmount: Math.round((baseFor(workerId) + extraFor(workerId)) * 100) / 100,
         overtimeHours: otH > 0 ? otH : undefined,
-        overtimeRate: otH > 0 ? otR : undefined,
-        harvestedKg: isHarvestGroup && harvestKg[workerId] ? Number(harvestKg[workerId]) : undefined,
+        overtimeRate: otH > 0 ? Math.round(otPerHour * 100) / 100 : undefined,
+        harvestedKg: kg > 0 ? kg : undefined,
+        harvestCrop: kg > 0 && crop ? crop : undefined,
         deviceLabel,
       });
     }
+    // "Total people working" - the full gang for the day, including people
+    // not in the worker list - is kept on the day's work session.
+    const count = parseInt(totalPeople, 10);
+    if (count > 0 && count !== workSession?.headcountIn) {
+      try {
+        await startOrUpdateSession.mutateAsync({ date, headcountIn: count });
+      } catch {
+        Alert.alert("Attendance saved", "But the total people count could not be saved.");
+      }
+    }
     setSelected(new Set());
     setOtHours({});
-    setOtRate({});
     setHarvestKg({});
-    setExpandedId(null);
     setAiResult(null);
   }
 
@@ -367,10 +452,13 @@ export function AttendanceScreen({ route }: { route: any }) {
     }
   }
 
+  const isToday = date === todayIso();
+
   useLayoutEffect(() => {
     navigation.setOptions({
-      subtitle: [workGroup?.blockName, "Today"].filter(Boolean).join(" · "),
-      headerRight: () => (
+      subtitle: [workGroup?.blockName, isToday ? "Today" : fmtDay(date)].filter(Boolean).join(" · "),
+      // Nothing to edit until the group has workers.
+      headerRight: () => eligibleWorkers.length === 0 && !editMode ? null : (
         <RoundButton
           icon={editMode ? Check : Pencil}
           label={editMode ? "Done editing" : "Edit workers"}
@@ -390,10 +478,7 @@ export function AttendanceScreen({ route }: { route: any }) {
   const presentCount = new Set([...selected, ...markedIds]).size;
   const absentCount = Math.max(0, eligibleWorkers.length - presentCount);
 
-  const totalDue = [...selected].reduce((sum, id) => {
-    const base = isHarvestGroup ? Number(harvestKg[id] ?? 0) * rate : paymentType === "Per hour" ? rate * 8 : rate;
-    return sum + base + extraFor(id);
-  }, 0);
+  const totalDue = [...selected].reduce((sum, id) => sum + baseFor(id) + extraFor(id), 0);
 
   const todayWage = attendance
     .filter((a) => a.workGroupId === workGroupId)
@@ -521,6 +606,7 @@ export function AttendanceScreen({ route }: { route: any }) {
       });
       setEditingWorkerId(null);
       refetch();
+      refreshDashboard();
     } catch {
       Alert.alert("Could not save", "Please try again.");
     } finally {
@@ -583,6 +669,7 @@ export function AttendanceScreen({ route }: { route: any }) {
         return;
       }
       await refetch();
+      refreshDashboard();
       // They're usually being added because they came today - tick them.
       setSelected((prev) => new Set(prev).add(w.id));
     } catch {
@@ -693,6 +780,7 @@ export function AttendanceScreen({ route }: { route: any }) {
 
       {tab === "attendance" ? (
         <FlatList
+          keyboardShouldPersistTaps="handled"
           data={visibleWorkers}
           keyExtractor={(w) => String(w.id)}
           contentContainerStyle={{ padding: 20, paddingBottom: 150 }}
@@ -703,7 +791,7 @@ export function AttendanceScreen({ route }: { route: any }) {
                   attendance lives on the header's scan button. */}
               <View style={{ flexDirection: "row", gap: 10 }}>
                 <Button
-                  title={aiScanning ? "Counting…" : workSession ? (workSession.checkOutAt ? "Work done" : "Photo taken") : "Count from photo"}
+                  title={aiScanning ? "Counting…" : workSession ? (workSession.checkOutAt ? "Work done" : workSession.checkInPhoto ? "Photo taken" : "Work started") : "Count from photo"}
                   variant="light"
                   icon={workSession ? CheckCircle2 : Camera}
                   onPress={handleGroupAttendanceScan}
@@ -739,6 +827,8 @@ export function AttendanceScreen({ route }: { route: any }) {
                   <Text style={styles.formTitle}>New worker</Text>
                   <TextField
                     label="Name *"
+                    autoCorrect={false}
+                    autoCapitalize="words"
                     placeholder="e.g. Ramesh Jadhav"
                     value={newWorkerName}
                     onChangeText={setNewWorkerName}
@@ -764,6 +854,159 @@ export function AttendanceScreen({ route }: { route: any }) {
                   <Button title="Save worker" onPress={saveNewWorker} loading={addingWorker} disabled={!newWorkerName.trim()} />
                 </Card>
               ) : null}
+              {editMode ? (
+                <View style={styles.editBanner}>
+                  <Pencil size={16} color="#92600E" />
+                  <Text style={styles.editBannerText}>
+                    Tap a worker to change their name, phone or wage, mark them absent, or remove them. Tap ✓ above when done.
+                  </Text>
+                </View>
+              ) : null}
+
+              {!editMode ? (
+              <Card style={{ gap: spacing.sm }}>
+                <Text style={styles.fieldLabel}>Date</Text>
+                <Pressable style={styles.dateInput} onPress={() => setShowDatePicker(true)} accessibilityRole="button">
+                  <Text style={styles.dateText}>{fmtDay(date)}{isToday ? " · Today" : ""}</Text>
+                </Pressable>
+                {showDatePicker ? (
+                  <DateTimePicker
+                    value={new Date(`${date}T00:00:00`)}
+                    mode="date"
+                    display={Platform.OS === "ios" ? "inline" : "default"}
+                    maximumDate={new Date()}
+                    onChange={(event, picked) => {
+                      setShowDatePicker(false);
+                      if (event.type === "set" && picked) {
+                        const d = new Date(picked.getTime() - picked.getTimezoneOffset() * 60_000);
+                        setSelectedDate(d.toISOString().slice(0, 10));
+                        setSelected(new Set());
+                        setOtHours({});
+                        setHarvestKg({});
+                      }
+                    }}
+                  />
+                ) : null}
+
+                <TextField
+                  label="Hours worked"
+                  keyboardType="decimal-pad"
+                  value={hours}
+                  onChangeText={setHours}
+                  containerStyle={{ marginBottom: 0 }}
+                />
+
+                <View style={[styles.modeBox, otMode && styles.modeBoxOt]}>
+                  <Pressable
+                    style={styles.modeHeader}
+                    onPress={() => {
+                      const on = !otMode;
+                      setOtMode(on);
+                      if (!on) {
+                        setOtHours({});
+                        setOtRateAll("");
+                      }
+                    }}
+                    accessibilityRole="switch"
+                    accessibilityState={{ checked: otMode }}
+                  >
+                    <Text style={styles.modeTitle}>Overtime today?</Text>
+                    <View style={[styles.modePill, otMode && { backgroundColor: "#D9861F" }]}>
+                      <Text style={[styles.modePillText, otMode && { color: "#fff" }]}>{otMode ? "Yes" : "No"}</Text>
+                    </View>
+                  </Pressable>
+                  {otMode ? (
+                    <View style={{ gap: spacing.xs, marginTop: spacing.sm }}>
+                      <TextField
+                        label="Overtime pay (per hour)"
+                        keyboardType="decimal-pad"
+                        placeholder={String(Math.round(defaultOtRate * 100) / 100)}
+                        value={otRateAll}
+                        onChangeText={setOtRateAll}
+                        containerStyle={{ marginBottom: 0 }}
+                      />
+                      <Text style={[styles.modeHint, { color: "#95530F" }]}>
+                        Type the overtime hours next to each person who stayed longer - only they get the extra pay. Others stay at normal wage.
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+
+                <View style={[styles.modeBox, pickMode && styles.modeBoxPick]}>
+                  <Pressable
+                    style={styles.modeHeader}
+                    onPress={() => {
+                      // Per-kg groups are always weighed - kg is their pay.
+                      if (isHarvestGroup) return;
+                      const on = !pickMode;
+                      setPickMode(on);
+                      if (!on) setHarvestKg({});
+                    }}
+                    accessibilityRole="switch"
+                    accessibilityState={{ checked: pickMode, disabled: isHarvestGroup }}
+                  >
+                    <Text style={styles.modeTitle}>Harvest picking today?</Text>
+                    <View style={[styles.modePill, pickMode && { backgroundColor: "#1F9E5C" }]}>
+                      <Text style={[styles.modePillText, pickMode && { color: "#fff" }]}>{pickMode ? "Yes - weighing" : "No"}</Text>
+                    </View>
+                  </Pressable>
+                  {pickMode ? (
+                    <View style={{ gap: spacing.xs, marginTop: spacing.sm }}>
+                      <SelectOrType
+                        label="Which crop did they pick?"
+                        options={crops.map((c) => c.name)}
+                        value={pickCrop}
+                        onChange={setPickCrop}
+                      />
+                      <View style={{ flexDirection: "row", gap: spacing.sm }}>
+                        <View style={{ flex: 1 }}>
+                          <TextField
+                            label="Target per person (kg)"
+                            keyboardType="decimal-pad"
+                            placeholder="e.g. 80"
+                            value={pickThreshold}
+                            onChangeText={setPickThreshold}
+                            containerStyle={{ marginBottom: 0 }}
+                          />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <TextField
+                            label="Extra pay per kg above (₹)"
+                            keyboardType="decimal-pad"
+                            placeholder="e.g. 5"
+                            value={pickBonus}
+                            onChangeText={setPickBonus}
+                            containerStyle={{ marginBottom: 0 }}
+                          />
+                        </View>
+                      </View>
+                      <Text style={[styles.modeHint, { color: "#1F7A4A" }]}>
+                        Type each person's weighed kg next to their name below. Anyone above{" "}
+                        {threshold > 0 ? `${threshold} kg` : "the target"} gets the extra pay added automatically.
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+
+                <TextField
+                  label="Total people working"
+                  keyboardType="number-pad"
+                  placeholder="e.g. 12"
+                  value={totalPeople}
+                  onChangeText={(v) => setTotalPeople(v.replace(/[^0-9]/g, ""))}
+                  containerStyle={{ marginBottom: 0 }}
+                />
+                <Text style={styles.modeHint}>Full gang size for the day - including people not in the worker list</Text>
+              </Card>
+
+              ) : null}
+
+              {!editMode ? (
+              <Text style={styles.modeHint}>
+                Already-marked workers can be selected again to update their day - e.g. add picked kg or overtime after work is done. The new values replace the old ones.
+              </Text>
+              ) : null}
+
               {aiResult ? (
                 <Card style={styles.aiResultCard}>
                   <View style={{ flexDirection: "row", gap: spacing.sm, alignItems: "center" }}>
@@ -885,12 +1128,12 @@ export function AttendanceScreen({ route }: { route: any }) {
               {todayCount > 0 ? (
                 <Card style={styles.summaryCard}>
                   <View style={{ alignItems: "flex-start" }}>
-                    <Text style={styles.summaryLabel}>Workers today</Text>
+                    <Text style={styles.summaryLabel}>{isToday ? "Workers today" : "Workers"}</Text>
                     <Text style={styles.summaryValue}>{todayCount}</Text>
                   </View>
-                  {isHarvestGroup && todayKg > 0 ? (
+                  {todayKg > 0 ? (
                     <View style={{ alignItems: "center" }}>
-                      <Text style={styles.summaryLabel}>Picked today</Text>
+                      <Text style={styles.summaryLabel}>{isToday ? "Picked today" : "Picked"}</Text>
                       <Text style={[styles.summaryValue, { color: "#1F9E5C" }]}>{todayKg.toLocaleString("en-IN")} kg</Text>
                     </View>
                   ) : null}
@@ -901,38 +1144,8 @@ export function AttendanceScreen({ route }: { route: any }) {
                 </Card>
               ) : null}
 
-              {isHarvestGroup ? (
-                <Card>
-                  <Text style={styles.ruleTitle}>Picking bonus rule</Text>
-                  <Text style={styles.ruleSubtitle}>
-                    Pay extra for every kg picked above the daily target - applies to this whole group.
-                  </Text>
-                  <View style={{ flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm }}>
-                    <View style={{ flex: 1 }}>
-                      <TextField
-                        label="Target/person (kg)"
-                        keyboardType="decimal-pad"
-                        placeholder="e.g. 80"
-                        value={pickThreshold}
-                        onChangeText={setPickThreshold}
-                        containerStyle={{ marginBottom: 0 }}
-                      />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <TextField
-                        label="Bonus/kg above (₹)"
-                        keyboardType="decimal-pad"
-                        placeholder="e.g. 5"
-                        value={pickBonus}
-                        onChangeText={setPickBonus}
-                        containerStyle={{ marginBottom: 0 }}
-                      />
-                    </View>
-                  </View>
-                </Card>
-              ) : null}
 
-              {!isHarvestGroup && overtimeSummary && overtimeSummary.pendingAmount + overtimeSummary.clearedAmount > 0 ? (
+              {overtimeSummary && overtimeSummary.pendingAmount + overtimeSummary.clearedAmount > 0 ? (
                 <Card style={{ padding: 0, overflow: "hidden" }}>
                   <View style={styles.settleHeader}>
                     <Clock3 size={14} color="#fff" />
@@ -969,7 +1182,7 @@ export function AttendanceScreen({ route }: { route: any }) {
                 </Card>
               ) : null}
 
-              {isHarvestGroup && harvestBonusSummary && harvestBonusSummary.pendingAmount + harvestBonusSummary.clearedAmount > 0 ? (
+              {harvestBonusSummary && harvestBonusSummary.pendingAmount + harvestBonusSummary.clearedAmount > 0 ? (
                 <Card style={{ padding: 0, overflow: "hidden" }}>
                   <View style={[styles.settleHeader, { backgroundColor: "#7CB342" }]}>
                     <Wheat size={14} color="#fff" />
@@ -1013,7 +1226,6 @@ export function AttendanceScreen({ route }: { route: any }) {
           renderItem={({ item, index }) => {
             const marked = markedIds.has(item.id);
             const isSelected = selected.has(item.id);
-            const expanded = expandedId === item.id;
             const first = index === 0;
             const last = index === visibleWorkers.length - 1;
             return (
@@ -1055,7 +1267,7 @@ export function AttendanceScreen({ route }: { route: any }) {
                 </View>
                 {editMode && editingWorkerId === item.id ? (
                   <View style={styles.extraFields}>
-                    <TextField label="Name" value={editName} onChangeText={setEditName} containerStyle={{ marginBottom: 0 }} />
+                    <TextField label="Name" value={editName} onChangeText={setEditName} autoCorrect={false} autoCapitalize="words" containerStyle={{ marginBottom: 0 }} />
                     <TextField
                       label="Phone"
                       keyboardType="phone-pad"
@@ -1072,56 +1284,38 @@ export function AttendanceScreen({ route }: { route: any }) {
                     />
                     <Button title="Save changes" onPress={() => saveWorkerEdit(item)} loading={savingEdit} disabled={!editName.trim()} />
                     {marked ? (
-                      <Button title="Mark absent today" variant="secondary" icon={UserX} onPress={() => confirmMarkAbsent(item)} />
+                      <Button title={isToday ? "Mark absent today" : "Mark absent this day"} variant="secondary" icon={UserX} onPress={() => confirmMarkAbsent(item)} />
                     ) : null}
                     <Button title="Remove worker" variant="secondary" icon={UserMinus} onPress={() => confirmRemoveWorker(item)} />
                   </View>
                 ) : null}
-                {isSelected && !editMode ? (
-                  <>
-                    <Pressable style={styles.extraToggle} onPress={() => setExpandedId(expanded ? null : item.id)}>
-                      <Text style={styles.extraToggleText}>
-                        {isHarvestGroup ? "Kg picked" : "+ Overtime"}
-                        {extraFor(item.id) > 0 ? ` (+₹${extraFor(item.id).toFixed(0)})` : ""}
-                      </Text>
-                      {expanded ? <ChevronUp size={14} color={colors.primary} /> : <ChevronDown size={14} color={colors.primary} />}
-                    </Pressable>
-                    {expanded ? (
-                      <View style={styles.extraFields}>
-                        {isHarvestGroup ? (
-                          <TextField
-                            label="Kg picked"
-                            keyboardType="decimal-pad"
-                            value={harvestKg[item.id] ?? ""}
-                            onChangeText={(v) => setHarvestKg((cur) => ({ ...cur, [item.id]: v }))}
-                            containerStyle={{ marginBottom: 0 }}
-                          />
-                        ) : (
-                          <View style={{ flexDirection: "row", gap: spacing.sm }}>
-                            <View style={{ flex: 1 }}>
-                              <TextField
-                                label="OT hours"
-                                keyboardType="decimal-pad"
-                                value={otHours[item.id] ?? ""}
-                                onChangeText={(v) => setOtHours((cur) => ({ ...cur, [item.id]: v }))}
-                                containerStyle={{ marginBottom: 0 }}
-                              />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                              <TextField
-                                label="OT rate/hr"
-                                keyboardType="decimal-pad"
-                                placeholder={defaultOtRate.toFixed(0)}
-                                value={otRate[item.id] ?? ""}
-                                onChangeText={(v) => setOtRate((cur) => ({ ...cur, [item.id]: v }))}
-                                containerStyle={{ marginBottom: 0 }}
-                              />
-                            </View>
-                          </View>
-                        )}
+                {isSelected && !editMode && (pickMode || otMode) ? (
+                  <View style={[styles.extraFields, { flexDirection: "row", gap: spacing.sm }]}>
+                    {pickMode ? (
+                      <View style={{ flex: 1 }}>
+                        <TextField
+                          label="Kg picked"
+                          keyboardType="decimal-pad"
+                          placeholder="kg"
+                          value={harvestKg[item.id] ?? ""}
+                          onChangeText={(v) => setHarvestKg((cur) => ({ ...cur, [item.id]: v }))}
+                          containerStyle={{ marginBottom: 0 }}
+                        />
                       </View>
                     ) : null}
-                  </>
+                    {otMode ? (
+                      <View style={{ flex: 1 }}>
+                        <TextField
+                          label="OT hours"
+                          keyboardType="decimal-pad"
+                          placeholder="OT hr"
+                          value={otHours[item.id] ?? ""}
+                          onChangeText={(v) => setOtHours((cur) => ({ ...cur, [item.id]: v }))}
+                          containerStyle={{ marginBottom: 0 }}
+                        />
+                      </View>
+                    ) : null}
+                  </View>
                 ) : null}
               </View>
             );
@@ -1131,6 +1325,7 @@ export function AttendanceScreen({ route }: { route: any }) {
 
       {tab === "payments" ? (
         <FlatList
+          keyboardShouldPersistTaps="handled"
           data={advancePayments}
           keyExtractor={(p) => String(p.id)}
           contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: spacing.xl }}
@@ -1343,6 +1538,7 @@ export function AttendanceScreen({ route }: { route: any }) {
 
       {tab === "loans" ? (
         <FlatList
+          keyboardShouldPersistTaps="handled"
           data={groupLoans}
           keyExtractor={(l) => String(l.id)}
           contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: spacing.xl }}
@@ -1731,19 +1927,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   checkboxSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  extraToggle: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: spacing.sm,
-    paddingTop: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  extraToggleText: { fontSize: 14.5, color: colors.primary, fontWeight: "600" },
+  fieldLabel: { fontSize: 15.5, fontWeight: "500", color: colors.text },
+  dateInput: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md, backgroundColor: "#fff", minHeight: 48, justifyContent: "center" },
+  dateText: { fontSize: 16, color: colors.text },
+  modeBox: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm + 4 },
+  modeBoxOt: { backgroundColor: "#FFF8EC", borderColor: "#FBD9AE" },
+  modeBoxPick: { backgroundColor: "#EEF8F2", borderColor: "#BFE5CF" },
+  modeHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 36 },
+  modeTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text },
+  modePill: { backgroundColor: "#EFEFF2", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
+  modePillText: { fontSize: 13, fontWeight: "700", color: colors.textMuted },
+  editBanner: { flexDirection: "row", gap: spacing.sm, alignItems: "flex-start", backgroundColor: "#FEF3C7", borderRadius: radius.md, padding: spacing.sm + 4 },
+  editBannerText: { flex: 1, fontSize: 14, color: "#92600E", lineHeight: 19, fontWeight: "600" },
+  modeHint: { fontSize: 12.5, color: colors.textMuted, lineHeight: 17 },
   extraFields: { marginTop: spacing.sm },
   footer: { padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
-  ruleTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text },
   ruleSubtitle: { fontSize: 14, color: colors.textMuted, marginTop: 2 },
   settleHeader: {
     flexDirection: "row",
