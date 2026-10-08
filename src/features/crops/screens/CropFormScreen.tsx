@@ -4,7 +4,7 @@ import { Text } from "../../../components/Text";
 import { PlusCircle, X } from "lucide-react-native";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
-import { SelectOrType } from "../../../components/SelectOrType";
+import { ComboField } from "../../../components/ComboField";
 import { FormFooter } from "../../../components/harvest";
 import { colors, radius, spacing } from "../../../components/theme";
 import { useCrops } from "../hooks/useCrops";
@@ -100,7 +100,7 @@ export function CropFormScreen({ navigation, route }: { navigation: any; route: 
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 110 }}>
+    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 20, paddingBottom: 110 }}>
       <TextField
         label="Crop name *"
         value={customName}
@@ -140,7 +140,7 @@ export function CropFormScreen({ navigation, route }: { navigation: any; route: 
       ) : null}
       <TextField label="Variety" value={variety} onChangeText={setVariety} />
       <TextField label="Acres" keyboardType="decimal-pad" value={acres} onChangeText={setAcres} />
-      <SelectOrType label="Season" options={SEASONS} value={season} onChange={setSeason} />
+      <ComboField label="Season" options={SEASONS} value={season} onChange={setSeason} placeholder="Pick or type a season" />
       <TextField label="Block / plot name" value={blockName} onChangeText={setBlockName} />
       <TextField label="Notes" multiline numberOfLines={2} value={notes} onChangeText={setNotes} />
       {error ? <Text style={styles.error}>{error}</Text> : null}
