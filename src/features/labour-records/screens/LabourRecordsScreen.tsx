@@ -46,8 +46,13 @@ function formatDate(dateStr: string) {
 function fmtRecordedAt(iso: string) {
   return new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 }
+/** Rupees, with paise only when there are any (₹350, ₹512.50). */
 function inr(n: number) {
-  return `₹${Math.round(n).toLocaleString("en-IN")}`;
+  const whole = Math.abs(n - Math.round(n)) < 0.005;
+  return `₹${n.toLocaleString("en-IN", whole ? { maximumFractionDigits: 0 } : { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+function fmtNum(n: number) {
+  return n.toLocaleString("en-IN", { maximumFractionDigits: 2 });
 }
 function weekStart(dateStr: string) {
   const d = new Date(dateStr + "T00:00:00");
@@ -382,13 +387,47 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
                   </View>
                   <Text style={styles.simpleRowTitle}>{m.totalDays}</Text>
                 </View>
-                <View style={[styles.simpleRow, styles.periodRowBorder]}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                    <Banknote size={14} color={colors.primary} />
-                    <Text style={styles.simpleRowMutedLabel}>Wages earned</Text>
+                {m.totalBaseWage != null ? (
+                  <>
+                    <View style={[styles.simpleRow, styles.periodRowBorder]}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                        <Banknote size={14} color={colors.primary} />
+                        <Text style={styles.simpleRowMutedLabel}>Base wages ({m.totalDays} {m.totalDays === 1 ? "day" : "days"})</Text>
+                      </View>
+                      <Text style={styles.simpleRowTitle}>{inr(m.totalBaseWage)}</Text>
+                    </View>
+                    {(m.totalOvertimePaid ?? 0) > 0 ? (
+                      <View style={[styles.simpleRow, styles.periodRowBorder]}>
+                        <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 6 }}>
+                          <Clock3 size={14} color="#C77A2E" />
+                          <Text style={styles.simpleRowMutedLabel}>Overtime ({fmtNum(m.totalOvertimeHours)} hr)</Text>
+                        </View>
+                        <Text style={[styles.simpleRowTitle, { color: "#C77A2E" }]}>+ {inr(m.totalOvertimePaid ?? 0)}</Text>
+                      </View>
+                    ) : null}
+                    {(m.totalBonusAmount ?? 0) > 0 ? (
+                      <View style={[styles.simpleRow, styles.periodRowBorder]}>
+                        <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 6 }}>
+                          <Wheat size={14} color="#1F9E5C" />
+                          <Text style={styles.simpleRowMutedLabel}>Picking bonus ({fmtNum(m.totalKgAboveTarget ?? 0)} kg above target)</Text>
+                        </View>
+                        <Text style={[styles.simpleRowTitle, { color: "#1F9E5C" }]}>+ {inr(m.totalBonusAmount ?? 0)}</Text>
+                      </View>
+                    ) : null}
+                    <View style={[styles.simpleRow, styles.periodRowBorder]}>
+                      <Text style={[styles.simpleRowMutedLabel, { fontWeight: "700", color: colors.text }]}>Wages earned</Text>
+                      <Text style={styles.simpleRowTitle}>{inr(m.totalWage)}</Text>
+                    </View>
+                  </>
+                ) : (
+                  <View style={[styles.simpleRow, styles.periodRowBorder]}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <Banknote size={14} color={colors.primary} />
+                      <Text style={styles.simpleRowMutedLabel}>Wages earned</Text>
+                    </View>
+                    <Text style={styles.simpleRowTitle}>{inr(m.totalWage)}</Text>
                   </View>
-                  <Text style={styles.simpleRowTitle}>{inr(m.totalWage)}</Text>
-                </View>
+                )}
                 <View style={[styles.simpleRow, styles.periodRowBorder]}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                     <CreditCard size={14} color={colors.danger} />
@@ -417,6 +456,50 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
                   </Text>
                 </View>
               </Card>
+
+              {m.days && m.days.length > 0 ? (
+                <Card style={{ padding: 0, overflow: "hidden" }}>
+                  <Text style={styles.blockTitle}>DAY BY DAY</Text>
+                  {m.days.map((d, i) => (
+                    <View key={`${d.date}-${i}`} style={[styles.dayRow, i > 0 && styles.periodRowBorder]}>
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                        <Text style={styles.simpleRowTitle}>
+                          {formatDate(d.date)}
+                          {d.groupName ? <Text style={styles.simpleRowMeta}>{`  ·  ${d.groupName}`}</Text> : null}
+                        </Text>
+                        <Text style={styles.simpleRowTitle}>{inr(d.total)}</Text>
+                      </View>
+                      <View style={styles.dayLine}>
+                        <Text style={styles.simpleRowMeta}>Base wage</Text>
+                        <Text style={styles.simpleRowMeta}>{inr(d.baseWage)}</Text>
+                      </View>
+                      {d.overtimeAmount > 0 ? (
+                        <View style={styles.dayLine}>
+                          <Text style={styles.simpleRowMeta}>
+                            Overtime {fmtNum(d.overtimeHours)} hr × {inr(d.overtimeRate)}
+                          </Text>
+                          <Text style={[styles.simpleRowMeta, { color: "#C77A2E" }]}>+ {inr(d.overtimeAmount)}</Text>
+                        </View>
+                      ) : null}
+                      {d.harvestedKg > 0 ? (
+                        <View style={styles.dayLine}>
+                          <Text style={[styles.simpleRowMeta, { flex: 1 }]}>
+                            {`Picked ${fmtNum(d.harvestedKg)} kg${d.harvestCrop ? ` ${d.harvestCrop}` : ""}`}
+                            {d.targetKg != null
+                              ? d.kgAboveTarget > 0
+                                ? ` · ${fmtNum(d.kgAboveTarget)} kg above ${fmtNum(d.targetKg)} kg × ${inr(d.bonusPerKg ?? 0)}`
+                                : ` · target ${fmtNum(d.targetKg)} kg not crossed`
+                              : ""}
+                          </Text>
+                          {d.bonusAmount > 0 ? (
+                            <Text style={[styles.simpleRowMeta, { color: "#1F9E5C" }]}>+ {inr(d.bonusAmount)}</Text>
+                          ) : null}
+                        </View>
+                      ) : null}
+                    </View>
+                  ))}
+                </Card>
+              ) : null}
 
               <Pressable style={styles.payButton} onPress={() => setShowPaySheet(true)}>
                 <Send size={16} color="#fff" />
@@ -894,6 +977,8 @@ const styles = StyleSheet.create({
   simpleRowMutedLabel: { fontSize: 14.5, color: colors.textMuted },
   simpleRowMeta: { fontSize: 13, color: colors.textMuted, marginTop: 1 },
   simpleRowValue: { fontSize: 14.5, fontWeight: "700" },
+  dayRow: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, gap: 3 },
+  dayLine: { flexDirection: "row", justifyContent: "space-between", gap: spacing.sm },
 
   // "Payment due now" card
   dueHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, borderBottomWidth: 1, borderBottomColor: colors.bg },

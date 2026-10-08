@@ -1178,6 +1178,23 @@ export interface WorkerWages {
 
 // All-time per-worker money summary from GET /workers/:id/money — days worked,
 // wages + overtime earned, loans, direct payments, and one net-due balance.
+export interface WorkerPayDay {
+  date: string;
+  groupName: string | null;
+  hoursWorked: number;
+  overtimeHours: number;
+  overtimeRate: number;
+  harvestedKg: number;
+  harvestCrop: string | null;
+  targetKg: number | null;
+  bonusPerKg: number | null;
+  kgAboveTarget: number;
+  baseWage: number;
+  overtimeAmount: number;
+  bonusAmount: number;
+  total: number;
+}
+
 export interface WorkerMoney {
   workerId: number;
   workerName: string;
@@ -1188,6 +1205,12 @@ export interface WorkerMoney {
   totalOvertimeAmount: number;
   totalHarvestedKg: number;
   totalEarned: number;
+  /** Pay split into its parts (servers before the breakdown omit these). */
+  totalBaseWage?: number;
+  totalOvertimePaid?: number;
+  totalBonusAmount?: number;
+  totalKgAboveTarget?: number;
+  days?: WorkerPayDay[];
   lastWorkedDate: string | null;
   loanTaken: number;
   loanRepaid: number;
