@@ -1,9 +1,8 @@
 import React, { useState } from "react";
-import { Alert, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { RefreshControl, ScrollView, StyleSheet } from "react-native";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Megaphone, Plus } from "lucide-react-native";
+import { ChevronRight } from "lucide-react-native";
 import { Text } from "../../../components/Text";
-import { Button } from "../../../components/Button";
 import { Card } from "../../../components/Card";
 import { LoadingView } from "../../../components/StateViews";
 import { IconChip, ListCard, ListRow } from "../../../components/harvest";
@@ -25,15 +24,6 @@ export function ShopScreen({ navigation }: { navigation: any }) {
     setRefreshing(false);
   }
 
-  function postAd() {
-    Alert.alert("Post an ad", "What do you want to post?", [
-      { text: "Sell produce", onPress: () => navigation.navigate("MarketplaceForm") },
-      { text: "Rent or sell equipment", onPress: () => navigation.navigate("Equipment") },
-      { text: "Workers or machine hire", onPress: () => navigation.navigate("Hire") },
-      { text: "Cancel", style: "cancel" },
-    ]);
-  }
-
   if (adsQuery.isLoading) return <LoadingView label="Loading ads..." />;
   const ads = adsQuery.data ?? [];
 
@@ -43,14 +33,9 @@ export function ShopScreen({ navigation }: { navigation: any }) {
       contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <View style={{ flexDirection: "row", gap: 10 }}>
-        <Button title="Post an ad" icon={Plus} onPress={postAd} style={{ flex: 1 }} />
-        <Button title="My ads" variant="secondary" icon={Megaphone} onPress={() => navigation.navigate("MyAds")} />
-      </View>
-
       {ads.length === 0 ? (
         <Card style={{ alignItems: "center", gap: spacing.sm }}>
-          <Text style={styles.muted}>No ads yet. Be the first to post one.</Text>
+          <Text style={styles.muted}>No ads yet.</Text>
         </Card>
       ) : (
         <ListCard>
