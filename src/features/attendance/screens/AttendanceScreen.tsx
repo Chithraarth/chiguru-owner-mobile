@@ -8,6 +8,7 @@ import {
   Platform,
   Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   View,
 } from "react-native";
@@ -36,6 +37,7 @@ import {
   UserPlus,
   Pencil,
   UserX,
+  CalendarDays,
 } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
@@ -53,7 +55,7 @@ import { describeDevice } from "../../../lib/device";
 import { useSyncStore } from "../../../store/syncStore";
 import { countWorkersFromPhoto, type SeasonEndResult } from "../../../api/endpoints/workGroups";
 import { createWorker, updateWorker } from "../../../api/endpoints/workers";
-import { deleteAttendance } from "../../../api/endpoints/attendance";
+import { deleteAttendance, getAttendanceByGroup } from "../../../api/endpoints/attendance";
 import { compressToDataUrl } from "../../../lib/imageCompression";
 import type { GroupLoan, Worker } from "../../../types/api";
 import { isGateError } from "../../../api/errors";
@@ -74,7 +76,7 @@ const PAY_FREQ_LABELS: Record<string, string> = {
 
 const REPAY_METHODS = ["cash", "salary deduction", "bank transfer", "installment"];
 
-type Tab = "attendance" | "payments" | "loans";
+type Tab = "attendance" | "history" | "payments" | "loans";
 
 function fmtDay(iso: string) {
   return new Date(`${iso}T00:00:00`).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
@@ -196,6 +198,14 @@ export function AttendanceScreen({ route }: { route: any }) {
   const queryClient = useQueryClient();
   // Home's worker count and today's wages come from the dashboard summary.
   const refreshDashboard = () => queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+  // Every day this group worked, newest first - shown as "Attendance history"
+  // so earlier days can be opened, checked and corrected.
+  const historyQuery = useQuery({
+    queryKey: ["attendance-history", workGroupId],
+    queryFn: () => getAttendanceByGroup(workGroupId),
+    enabled: !!workGroupId,
+  });
+  const [historyShown, setHistoryShown] = useState(7);
   const isOnline = useSyncStore((s) => s.isOnline);
   const insets = useSafeAreaInsets();
 
@@ -493,6 +503,19 @@ export function AttendanceScreen({ route }: { route: any }) {
     .reduce((s, a) => s + Number(a.harvestedKg ?? 0), 0);
   const todayCount = attendance.filter((a) => a.workGroupId === workGroupId).length;
 
+  const historyDays = (() => {
+    const byDate = new Map<string, { date: string; count: number; kg: number; otHours: number; cost: number }>();
+    for (const a of historyQuery.data ?? []) {
+      const d = byDate.get(a.date) ?? { date: a.date, count: 0, kg: 0, otHours: 0, cost: 0 };
+      d.count += 1;
+      d.kg += Number(a.harvestedKg ?? 0);
+      d.otHours += Number(a.overtimeHours ?? 0);
+      d.cost += Number(a.wageAmount ?? 0);
+      byDate.set(a.date, d);
+    }
+    return [...byDate.values()].sort((x, y) => (x.date < y.date ? 1 : -1));
+  })();
+
   const advancePerDay = workGroup?.advancePerUnit ? Number(workGroup.advancePerUnit) : 0;
   const remainingPerDay = advancePerDay > 0 ? rate - advancePerDay : 0;
   const totalAdvancePaid = advancePayments.reduce((s, p) => s + Number(p.totalAdvancePaid), 0);
@@ -642,6 +665,7 @@ export function AttendanceScreen({ route }: { route: any }) {
               });
               setEditingWorkerId(null);
               refetch();
+              historyQuery.refetch();
             } catch {
               Alert.alert("Could not mark absent", "Please try again.");
             }
@@ -772,6 +796,10 @@ export function AttendanceScreen({ route }: { route: any }) {
         <Pressable style={[styles.tabBtn, tab === "attendance" && styles.tabBtnActive]} onPress={() => setTab("attendance")}>
           <Banknote size={16} color={tab === "attendance" ? colors.primary : colors.textMuted} />
           <Text style={[styles.tabText, tab === "attendance" && styles.tabTextActive]}>Attend</Text>
+        </Pressable>
+        <Pressable style={[styles.tabBtn, tab === "history" && styles.tabBtnActive]} onPress={() => setTab("history")}>
+          <CalendarDays size={16} color={tab === "history" ? colors.primary : colors.textMuted} />
+          <Text style={[styles.tabText, tab === "history" && styles.tabTextActive]}>History</Text>
         </Pressable>
         <Pressable style={[styles.tabBtn, tab === "payments" && styles.tabBtnActive]} onPress={() => setTab("payments")}>
           <Wallet size={16} color={tab === "payments" ? colors.primary : colors.textMuted} />
@@ -1332,6 +1360,56 @@ export function AttendanceScreen({ route }: { route: any }) {
             );
           }}
         />
+      ) : null}
+
+      {tab === "history" ? (
+        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 150, gap: 12 }} refreshControl={<RefreshControl refreshing={historyQuery.isRefetching} onRefresh={() => historyQuery.refetch()} />}>
+          <Text style={styles.modeHint}>Every day this group worked. Tap a day to open it and see or change who came.</Text>
+              {/* Attendance history: one row per day worked; tap to open that day. */}
+              {historyDays.length > 0 ? (
+                <Card style={{ padding: 0, overflow: "hidden" }}>
+                  <Text style={styles.historyTitle}>ATTENDANCE HISTORY</Text>
+                  {historyDays.slice(0, historyShown).map((d, i) => {
+                    const open = d.date === date;
+                    return (
+                      <Pressable
+                        key={d.date}
+                        onPress={() => {
+                          setSelectedDate(d.date);
+                          setSelected(new Set());
+                          setOtHours({});
+                          setHarvestKg({});
+                          setTab("attendance");
+                        }}
+                        style={({ pressed }) => [styles.historyRow, i > 0 && styles.historyDivider, open && { backgroundColor: colors.tint }, pressed && { opacity: 0.7 }]}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Open ${fmtDay(d.date)}`}
+                      >
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={styles.historyDate}>{fmtDay(d.date)}{d.date === todayIso() ? " · Today" : ""}</Text>
+                          <Text style={styles.historyMeta} numberOfLines={1}>
+                            {d.count} {d.count === 1 ? "worker" : "workers"}
+                            {d.kg > 0 ? ` · ${d.kg.toLocaleString("en-IN")} kg` : ""}
+                            {d.otHours > 0 ? ` · ${d.otHours} hr OT` : ""}
+                          </Text>
+                        </View>
+                        <Text style={styles.historyAmount}>{inr(d.cost)}</Text>
+                        {open ? <Check size={18} color={colors.primary} /> : null}
+                      </Pressable>
+                    );
+                  })}
+                  {historyDays.length > historyShown ? (
+                    <Pressable style={styles.historyMore} onPress={() => setHistoryShown((n) => n + 14)} accessibilityRole="button">
+                      <Text style={styles.historyMoreText}>Show earlier days ({historyDays.length - historyShown} more)</Text>
+                    </Pressable>
+                  ) : null}
+                </Card>
+              ) : null}
+
+          {historyDays.length === 0 && !historyQuery.isLoading ? (
+            <EmptyState title="No attendance yet" subtitle="Days you mark will show here." />
+          ) : null}
+        </ScrollView>
       ) : null}
 
       {tab === "payments" ? (
@@ -1948,6 +2026,14 @@ const styles = StyleSheet.create({
   modeTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text },
   modePill: { backgroundColor: "#EFEFF2", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
   modePillText: { fontSize: 13, fontWeight: "700", color: colors.textMuted },
+  historyTitle: { fontSize: 13, fontWeight: "800", letterSpacing: 0.6, color: colors.textMuted, paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.xs },
+  historyRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, minHeight: 56 },
+  historyDivider: { borderTopWidth: 1, borderTopColor: colors.border },
+  historyDate: { fontSize: 15.5, fontWeight: "700", color: colors.text },
+  historyMeta: { fontSize: 13.5, color: colors.textMuted, marginTop: 1 },
+  historyAmount: { fontSize: 15.5, fontWeight: "700", color: colors.primary },
+  historyMore: { paddingVertical: spacing.sm + 2, alignItems: "center", borderTopWidth: 1, borderTopColor: colors.border },
+  historyMoreText: { fontSize: 14.5, fontWeight: "700", color: colors.primary },
   editBanner: { flexDirection: "row", gap: spacing.sm, alignItems: "flex-start", backgroundColor: "#FEF3C7", borderRadius: radius.md, padding: spacing.sm + 4 },
   editBannerText: { flex: 1, fontSize: 14, color: "#92600E", lineHeight: 19, fontWeight: "600" },
   modeHint: { fontSize: 12.5, color: colors.textMuted, lineHeight: 17 },

@@ -68,6 +68,7 @@ export function useAttendance(workGroupId: number, selectedDate?: string) {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["attendance", activeEstateId, date] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["attendance-history", workGroupId] });
       // Overtime and picking-bonus totals are summed from these rows.
       queryClient.invalidateQueries({ queryKey: ["overtime-summary", workGroupId] });
       queryClient.invalidateQueries({ queryKey: ["harvest-bonus-summary", workGroupId] });
