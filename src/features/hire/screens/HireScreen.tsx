@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useLayoutEffect } from "react";
+import React, { useEffect, useMemo, useState, useLayoutEffect } from "react";
 import { Alert, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { Text } from "../../../components/Text";
 import * as Location from "expo-location";
@@ -176,6 +176,10 @@ export function HireScreen({ navigation, route }: { navigation: any; route?: { p
 
   const { t } = useT();
   const [tab, setTab] = useState<Tab | null>(route?.params?.initialTab ?? null);
+  // Coming back here after posting an ad opens that ad's board.
+  useEffect(() => {
+    if (route?.params?.initialTab) setTab(route.params.initialTab);
+  }, [route?.params?.initialTab]);
   // Opened on the board chooser: back from a board returns to the chooser.
   const openedOnChooser = !route?.params?.initialTab;
   const [filter, setFilter] = useState("all");

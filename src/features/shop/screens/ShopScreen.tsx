@@ -13,7 +13,7 @@ import { AD_BOARD_STYLE, timeAgo } from "../ads";
 // The server caps one request; this asks for as many as it allows.
 const ADS_LIMIT = 100;
 
-/** Shop: every live ad - produce, equipment and hire - newest first. */
+/** Shop: farm equipment for sale, newest first. */
 export function ShopScreen({ navigation }: { navigation: any }) {
   const adsQuery = useQuery({ queryKey: ["ads", "all"], queryFn: () => getRecentAds(ADS_LIMIT) });
   const [refreshing, setRefreshing] = useState(false);
@@ -25,7 +25,9 @@ export function ShopScreen({ navigation }: { navigation: any }) {
   }
 
   if (adsQuery.isLoading) return <LoadingView label="Loading ads..." />;
-  const ads = adsQuery.data ?? [];
+  // Shop is farm equipment for sale. Rentals are on Rent Machines, worker
+  // posts on Find Workers, produce on Market and plants in Nursery.
+  const ads = (adsQuery.data ?? []).filter((a) => a.board === "equipment");
 
   return (
     <ScrollView
@@ -35,7 +37,7 @@ export function ShopScreen({ navigation }: { navigation: any }) {
     >
       {ads.length === 0 ? (
         <Card style={{ alignItems: "center", gap: spacing.sm }}>
-          <Text style={styles.muted}>No ads yet.</Text>
+          <Text style={styles.muted}>No equipment for sale yet.</Text>
         </Card>
       ) : (
         <ListCard>

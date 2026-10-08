@@ -61,7 +61,8 @@ export function EquipmentFormScreen({ navigation }: { navigation: any }) {
         description: description.trim() || undefined,
         photoUrl: photoDataUrl ?? undefined,
       },
-      { onSuccess: () => navigation.goBack() }
+      // Equipment for sale shows in the Shop.
+      { onSuccess: () => navigation.popTo("Shop") }
     );
   }
 

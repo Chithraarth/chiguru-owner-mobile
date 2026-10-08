@@ -63,7 +63,8 @@ export function MarketplaceFormScreen({ navigation }: { navigation: any }) {
         description: description.trim() || undefined,
         photoUrl: photoDataUrl ?? undefined,
       },
-      { onSuccess: () => navigation.goBack() }
+      // Produce for sale shows on the Market board.
+      { onSuccess: () => navigation.popTo("Marketplace") }
     );
   }
 

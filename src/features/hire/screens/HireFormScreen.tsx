@@ -97,7 +97,8 @@ export function HireFormScreen({ navigation, route }: { navigation: any; route: 
     if (isEdit && editListing) {
       updateListing.mutate({ id: editListing.id, data: body }, { onSuccess: () => navigation.goBack() });
     } else {
-      createListing.mutate(body, { onSuccess: () => navigation.goBack() });
+      // Land on the board the new ad shows on: Rent Machines or Find Workers.
+      createListing.mutate(body, { onSuccess: () => navigation.popTo("Hire", { initialTab: listingType }) });
     }
   }
 
