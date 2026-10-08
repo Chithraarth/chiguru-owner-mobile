@@ -170,14 +170,19 @@ export function AttendanceScreen({ route }: { route: any }) {
   const [pickBonus, setPickBonus] = useState(
     workGroup?.harvestBonusPerKg != null ? String(Number(workGroup.harvestBonusPerKg)) : ""
   );
-  // The group (and its saved bonus rule) may load after the first render.
+  // The group's saved bonus rule can arrive after the first render (or be
+  // refreshed from the server), so follow it until the owner types their own.
+  const savedThreshold = workGroup?.harvestThresholdKg != null ? String(Number(workGroup.harvestThresholdKg)) : "";
+  const savedBonus = workGroup?.harvestBonusPerKg != null ? String(Number(workGroup.harvestBonusPerKg)) : "";
+  const [ruleEdited, setRuleEdited] = useState(false);
   useEffect(() => {
-    if (!workGroup) return;
-    if (workGroup.paymentType === "Per kg") setPickMode(true);
-    setPickThreshold(workGroup.harvestThresholdKg != null ? String(Number(workGroup.harvestThresholdKg)) : "");
-    setPickBonus(workGroup.harvestBonusPerKg != null ? String(Number(workGroup.harvestBonusPerKg)) : "");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workGroup?.id]);
+    if (workGroup?.paymentType === "Per kg") setPickMode(true);
+  }, [workGroup?.paymentType]);
+  useEffect(() => {
+    if (ruleEdited) return;
+    setPickThreshold(savedThreshold);
+    setPickBonus(savedBonus);
+  }, [savedThreshold, savedBonus, ruleEdited]);
   // "Total people working" starts from the day's saved headcount.
   useEffect(() => {
     setTotalPeople(workSession?.headcountIn != null ? String(workSession.headcountIn) : "");
@@ -965,7 +970,10 @@ export function AttendanceScreen({ route }: { route: any }) {
                             keyboardType="decimal-pad"
                             placeholder="e.g. 80"
                             value={pickThreshold}
-                            onChangeText={setPickThreshold}
+                            onChangeText={(v) => {
+                              setRuleEdited(true);
+                              setPickThreshold(v);
+                            }}
                             containerStyle={{ marginBottom: 0 }}
                           />
                         </View>
@@ -975,7 +983,10 @@ export function AttendanceScreen({ route }: { route: any }) {
                             keyboardType="decimal-pad"
                             placeholder="e.g. 5"
                             value={pickBonus}
-                            onChangeText={setPickBonus}
+                            onChangeText={(v) => {
+                              setRuleEdited(true);
+                              setPickBonus(v);
+                            }}
                             containerStyle={{ marginBottom: 0 }}
                           />
                         </View>
