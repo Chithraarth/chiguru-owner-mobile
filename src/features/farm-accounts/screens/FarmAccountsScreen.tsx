@@ -12,12 +12,12 @@ import { useT } from "../../../lib/i18n";
 
 function getAccounts(t: (key: string) => string) {
   return [
+    { screen: "LabourRecords", label: t("farmAcct.labour"), icon: Users, sub: "Wages & advances" },
+    { screen: "EmployeeAttendance", label: "Employee Attendance", icon: CalendarCheck, sub: "Days worked" },
     { screen: "ExpenseList", label: t("home.expenses"), icon: Banknote, sub: "Bills & receipts" },
     { screen: "Harvests", label: t("home.harvest"), icon: Leaf, sub: "Sales & income" },
-    { screen: "LabourRecords", label: t("farmAcct.labour"), icon: Users, sub: "Wages & advances" },
-    { screen: "Loans", label: t("more.loans"), icon: Landmark, sub: "Given & taken" },
     { screen: "Reports", label: t("home.reports"), icon: LineChart, sub: "Season totals" },
-    { screen: "EmployeeAttendance", label: "Employee Attendance", icon: CalendarCheck, sub: "Days worked" },
+    { screen: "Loans", label: t("more.loans"), icon: Landmark, sub: "Given & taken" },
     { screen: "OldLedger", label: "Old Ledger", icon: Archive, sub: "Past seasons" },
   ];
 }
