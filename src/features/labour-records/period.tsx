@@ -304,7 +304,7 @@ function PayCycleSheet({
   onClose: () => void;
   onSave: (c: PayCycle | null) => void;
 }) {
-  const [kind, setKind] = useState<PayCycle["cycle"] | null>(initialKind);
+  const kind = initialKind;
   const now = resolvePeriod({ kind: "cycle", anchor: todayIso() }, initial);
   const [from, setFrom] = useState<string | null>(null);
   const [to, setTo] = useState<string | null>(null);
@@ -317,11 +317,6 @@ function PayCycleSheet({
     else if (step === "to") setTo(v);
   }
 
-  function choose(k: PayCycle["cycle"]) {
-    setKind(k);
-    setFrom(null);
-    setTo(null);
-  }
   const result: PayCycle | null =
     kind && from && to
       ? kind === "weekly"
@@ -345,7 +340,7 @@ function PayCycleSheet({
       <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close" />
       <View style={styles.sheet}>
         <View style={styles.sheetHead}>
-          <Text style={styles.sheetTitle}>Pay cycle for this group</Text>
+          <Text style={styles.sheetTitle}>{kind === "monthly" ? "Monthly pay dates" : "Weekly pay days"}</Text>
           <Pressable onPress={onClose} hitSlop={10} accessibilityLabel="Close"><X size={22} color={colors.textMuted} /></Pressable>
         </View>
         <ScrollView contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.lg }}>
@@ -357,19 +352,6 @@ function PayCycleSheet({
               <Text style={styles.dayText}>Same as farm ({payCycleLabel(farm)})</Text>
             </Pressable>
           ) : null}
-          <View style={{ flexDirection: "row", gap: spacing.sm }}>
-            {(["weekly", "monthly"] as const).map((k) => (
-              <Pressable
-                key={k}
-                onPress={() => choose(k)}
-                style={[styles.cycleBtn, kind === k && styles.cycleBtnOn]}
-                accessibilityRole="button"
-                accessibilityState={{ selected: kind === k }}
-              >
-                <Text style={[styles.cycleBtnText, kind === k && { color: "#fff" }]}>{k === "weekly" ? "Weekly" : "Monthly"}</Text>
-              </Pressable>
-            ))}
-          </View>
           {kind ? (
             <>
               <Text style={styles.pickTitle}>
