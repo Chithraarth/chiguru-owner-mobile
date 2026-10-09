@@ -1,6 +1,7 @@
-import React, { useLayoutEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useInnerBack } from "../../../navigation/useInnerBack";
+import { DateBar } from "../../../components/DateBar";
 import { Text } from "../../../components/Text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -87,6 +88,9 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
     openWorker ? setOpenWorker(null) : setOpenFolder(null)
   );
   const [view, setView] = useState<ViewMode>("weekly");
+  // Daily records: one chosen day, or null for every day.
+  const [recordDay, setRecordDay] = useState<string | null>(null);
+  useEffect(() => setRecordDay(null), [openFolder?.id]);
   const [showPaySheet, setShowPaySheet] = useState(false);
   const qc = useQueryClient();
   const { t } = useT();
@@ -920,10 +924,18 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
         ) : null}
 
         {(!groupOpen || view === "final") && sortedDates.length > 0 ? (
-          <Text style={styles.sectionLabel}>DAILY RECORDS</Text>
+          <>
+            <Text style={styles.sectionLabel}>DAILY RECORDS</Text>
+            <DateBar dates={sortedDates} value={recordDay} onChange={setRecordDay} />
+            {recordDay && !byDate[recordDay] ? (
+              <Card>
+                <Text style={styles.entryMeta}>No one was recorded on {formatDate(recordDay)}.</Text>
+              </Card>
+            ) : null}
+          </>
         ) : null}
 
-        {(!groupOpen || view === "final") && sortedDates.map((date) => {
+        {(!groupOpen || view === "final") && (recordDay ? sortedDates.filter((d) => d === recordDay) : sortedDates).map((date) => {
           const entries = byDate[date];
           const totalWage = entries.reduce((s, e) => s + Number(e.wageAmount ?? 0), 0);
           return (
