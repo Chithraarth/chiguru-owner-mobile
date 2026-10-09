@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../../components/Text";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import * as FileSystem from "expo-file-system/legacy";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Video as VideoIcon } from "lucide-react-native";
+import { Video as VideoIcon, Camera, Video } from "lucide-react-native";
 import { Button } from "../../../../components/Button";
 import { TextField } from "../../../../components/TextField";
 import { colors, radius, spacing } from "../../../../components/theme";
@@ -100,7 +101,7 @@ export function WorkUpdateScreen({ navigation }: { navigation: any }) {
     try {
       const { count } = await countWorkersInUpdatePhoto(dataUrl);
       setAttendanceCount(String(count));
-      setAiHint(`🤖 AI detected ${count} workers`);
+      setAiHint(`AI detected ${count} workers`);
     } catch {
       // best-effort only
     }
@@ -154,7 +155,7 @@ export function WorkUpdateScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: spacing.xl }}>
       {photoUri ? (
         <View>
           <Image source={{ uri: photoUri }} style={styles.preview} />
@@ -169,10 +170,10 @@ export function WorkUpdateScreen({ navigation }: { navigation: any }) {
       ) : (
         <View style={{ flexDirection: "row", gap: spacing.sm }}>
           <View style={{ flex: 1 }}>
-            <Button title="📷 Take a photo" variant="secondary" onPress={takePhoto} />
+            <Button title="Take a photo" icon={Camera} variant="light" onPress={takePhoto} />
           </View>
           <View style={{ flex: 1 }}>
-            <Button title="🎥 Record video" variant="secondary" onPress={recordVideo} loading={recordingVideo} />
+            <Button title="Record video" icon={Video} variant="light" onPress={recordVideo} loading={recordingVideo} />
           </View>
         </View>
       )}
@@ -221,9 +222,9 @@ export function WorkUpdateScreen({ navigation }: { navigation: any }) {
       <TextField label="Notes" multiline numberOfLines={2} value={notes} onChangeText={setNotes} />
 
       <Text style={styles.locationStatus}>
-        {locationStatus === "locating" && "📍 Getting location..."}
-        {locationStatus === "attached" && "📍 Location attached"}
-        {locationStatus === "none" && "📍 Location not available"}
+        {locationStatus === "locating" && "Getting location..."}
+        {locationStatus === "attached" && "Location attached"}
+        {locationStatus === "none" && "Location not available"}
       </Text>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -235,7 +236,7 @@ export function WorkUpdateScreen({ navigation }: { navigation: any }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  preview: { width: "100%", height: 220, borderRadius: 12, marginBottom: spacing.sm },
+  preview: { width: "100%", height: 200, borderRadius: 24, marginBottom: spacing.sm },
   videoPreview: {
     flexDirection: "row",
     alignItems: "center",
@@ -246,19 +247,20 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   videoPreviewText: { flex: 1, color: colors.text, fontWeight: "600" },
-  aiHint: { color: colors.primary, fontSize: 13, marginTop: spacing.xs },
-  fieldLabel: { fontSize: 14, fontWeight: "500", color: colors.text, marginBottom: spacing.xs },
+  aiHint: { color: colors.primary, fontSize: 15, fontWeight: "800", marginTop: spacing.xs },
+  fieldLabel: { fontSize: 14, fontWeight: "600", color: colors.textMuted, marginBottom: 6 },
   chip: {
-    paddingVertical: spacing.sm,
+    minHeight: 48,
+    justifyContent: "center",
     paddingHorizontal: spacing.md,
-    borderRadius: radius.lg,
-    borderWidth: 1,
+    borderRadius: radius.pill,
+    borderWidth: 2.5,
     borderColor: colors.border,
     backgroundColor: "#fff",
   },
-  chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { color: colors.text, fontSize: 13 },
-  chipTextSelected: { color: "#fff", fontWeight: "600" },
-  locationStatus: { color: colors.textMuted, fontSize: 12, marginBottom: spacing.md },
+  chipSelected: { backgroundColor: colors.tint, borderColor: colors.primary },
+  chipText: { color: colors.text, fontSize: 16, fontWeight: "700" },
+  chipTextSelected: { color: colors.text, fontWeight: "800" },
+  locationStatus: { color: colors.textMuted, fontSize: 14, marginBottom: spacing.md },
   error: { color: colors.danger, marginBottom: spacing.md },
 });

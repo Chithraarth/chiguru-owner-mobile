@@ -1,7 +1,10 @@
-import React, { useState } from "react";
-import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import React, { useState, useLayoutEffect } from "react";
+import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
+import { Plus, Trash2, Droplets } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Card } from "../../../components/Card";
+import { HeaderAddButton, IconChip } from "../../../components/harvest";
 import { Button } from "../../../components/Button";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
 import { NoEstateNotice } from "../../../components/NoEstateNotice";
@@ -17,6 +20,12 @@ export function SpraysScreen({ navigation }: { navigation: any }) {
   const { data, isLoading, refetch, deleteSpray } = useSprays();
   const [refreshing, setRefreshing] = useState(false);
   const insets = useSafeAreaInsets();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => <HeaderAddButton label="Log spray" onPress={() => navigation.navigate("SprayForm")} />,
+    });
+  });
 
   if (activeEstateId == null) return <NoEstateNotice />;
 
@@ -40,11 +49,12 @@ export function SpraysScreen({ navigation }: { navigation: any }) {
       <FlatList
         data={data ?? []}
         keyExtractor={(s) => String(s.id)}
-        contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+        contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: spacing.xl }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={<EmptyState title="No spray records yet" subtitle="Log fertilizer/pesticide applications here." />}
-        renderItem={({ item }) => (
+        renderItem={({ item, index }) => (
           <Card style={styles.row}>
+            <IconChip icon={Droplets} index={index} size={44} />
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>{item.productName}</Text>
               <Text style={styles.meta}>
@@ -54,23 +64,20 @@ export function SpraysScreen({ navigation }: { navigation: any }) {
               </Text>
             </View>
             <Pressable onPress={() => confirmDelete(item)} hitSlop={10}>
-              <Text style={styles.delete}>Delete</Text>
+              <Trash2 size={18} color={colors.danger} />
             </Pressable>
           </Card>
         )}
       />
-      <View style={[styles.footer, { paddingBottom: spacing.md + insets.bottom }]}>
-        <Button title="+ Log spray" onPress={() => navigation.navigate("SprayForm")} />
-      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  row: { flexDirection: "row", alignItems: "center" },
-  name: { fontSize: 15, fontWeight: "600", color: colors.text },
-  meta: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
-  delete: { color: colors.danger, fontSize: 13 },
+  row: { flexDirection: "row", alignItems: "center", gap: 12 },
+  name: { fontSize: 16.5, fontWeight: "800", color: colors.text },
+  meta: { fontSize: 14, color: colors.textMuted, marginTop: 2 },
+  delete: { color: colors.danger, fontSize: 14.5 },
   footer: { padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
 });

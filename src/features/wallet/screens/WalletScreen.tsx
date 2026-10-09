@@ -1,16 +1,21 @@
 import React, { useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, View, Pressable } from "react-native";
+import { Text } from "../../../components/Text";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Wallet as WalletIcon, Sparkles, Zap } from "lucide-react-native";
+import { Wallet as WalletIcon, Sparkles, Zap, Check } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { LoadingView } from "../../../components/StateViews";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { createRechargeOrder, getWallet, verifyRecharge } from "../../../api/endpoints/wallet";
 import { RazorpayCheckoutModal } from "../components/RazorpayCheckoutModal";
 import { ApiError } from "../../../api/errors";
 import type { WalletRechargeOrderResponse } from "../../../types/api";
+import { isIOS, buyWithApple, useAppleIapStore } from "../../iap/appleIap";
+
+// Must match App Store Connect; the server's list (GET /wallet) wins when present.
+const DEFAULT_APPLE_PACKS = [599].map((amount) => ({ productId: `com.thechiguru.owner.wallet.${amount}`, amount }));
 
 function inr(n: number) {
   return `₹${Math.round(n).toLocaleString("en-IN")}`;
@@ -24,6 +29,8 @@ const TXN_LABELS: Record<string, string> = {
   recharge: "Wallet recharge",
   share_reward: "Share reward",
   ai_charge: "AI feature use",
+  consultation: "Agri Doctor consultation",
+  doctor_contacts: "Agri Doctor numbers",
 };
 
 export function WalletScreen() {
@@ -33,6 +40,9 @@ export function WalletScreen() {
   const [order, setOrder] = useState<WalletRechargeOrderResponse | null>(null);
   const [checkoutVisible, setCheckoutVisible] = useState(false);
   const [verifying, setVerifying] = useState(false);
+
+  const applePendingSku = useAppleIapStore((s) => s.pendingSku);
+  const appleVerifying = useAppleIapStore((s) => s.verifying === "wallet");
 
   const walletQuery = useQuery({ queryKey: ["wallet"], queryFn: getWallet });
 
@@ -108,24 +118,51 @@ export function WalletScreen() {
   const transactions = data?.transactions ?? [];
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       <View style={styles.balanceCard}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
-          <WalletIcon size={18} color="#fff" />
+          <WalletIcon size={20} color={colors.textMuted} />
           <Text style={styles.balanceTitle}>Wallet balance</Text>
         </View>
         <Text style={styles.balanceValue}>{inr(balance)}</Text>
         <Text style={styles.balanceDesc}>Used to pay for AI features, on top of your subscription.</Text>
       </View>
 
-      {verifying ? (
+      {verifying || appleVerifying ? (
         <Card style={{ backgroundColor: "#FFF8E6", borderColor: "#F0DFA6" }}>
-          <Text style={{ color: "#8A6D1D", fontSize: 12.5 }}>Payment received. Verifying your recharge...</Text>
+          <Text style={{ color: "#8A6D1D", fontSize: 14.5 }}>Payment received. Verifying your recharge...</Text>
         </Card>
       ) : null}
 
       <View>
         <Text style={styles.sectionTitle}>Recharge wallet</Text>
+        {isIOS ? (
+          // iPhone: fixed packs through Apple In-App Purchase.
+          <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
+            {(data?.applePacks?.length ? data.applePacks : DEFAULT_APPLE_PACKS).map((pack) => (
+              <Button
+                key={pack.productId}
+                title={`Add ${inr(pack.amount)}`}
+                variant="secondary"
+                onPress={() => buyWithApple(pack.productId)}
+                loading={applePendingSku === pack.productId}
+                disabled={applePendingSku !== null || appleVerifying}
+              />
+            ))}
+          </View>
+        ) : (
+        <>
+        <View style={styles.amountRow}>
+          {[100, 250, 500, 1000].filter((a) => a >= minRechargeAmount).map((a) => {
+            const on = rechargeInput === String(a);
+            return (
+              <Pressable key={a} onPress={() => setRechargeInput(String(a))} style={[styles.amountChip, on && styles.amountChipOn]} accessibilityRole="button">
+                {on ? <Check size={15} color={colors.text} strokeWidth={2.6} /> : null}
+                <Text style={styles.amountChipText}>{inr(a)}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
         <View style={{ flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm, alignItems: "flex-start" }}>
           <View style={{ flex: 1 }}>
             <TextField
@@ -144,6 +181,8 @@ export function WalletScreen() {
           />
         </View>
         <Text style={styles.minRechargeNote}>Minimum {inr(minRechargeAmount)}</Text>
+        </>
+        )}
       </View>
 
       <View>
@@ -152,7 +191,7 @@ export function WalletScreen() {
           {aiPrices.map(([key, cfg], i) => (
             <View key={key} style={[styles.priceRow, i > 0 && styles.priceRowBorder]}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs, flex: 1 }}>
-                <Sparkles size={14} color={colors.accent} />
+                <Sparkles size={14} color={colors.primary} />
                 <Text style={styles.priceLabel}>{cfg.label}</Text>
               </View>
               <Text style={styles.priceValue}>{inr(cfg.price)}</Text>
@@ -179,7 +218,7 @@ export function WalletScreen() {
                       <Zap size={14} color={isCredit ? "#2F9E67" : colors.danger} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.txnLabel}>{txn.feature ?? TXN_LABELS[txn.type] ?? txn.type}</Text>
+                      <Text style={styles.txnLabel}>{(txn.type === "ai_charge" ? txn.feature : null) ?? TXN_LABELS[txn.type] ?? txn.feature ?? txn.type}</Text>
                       <Text style={styles.txnDate}>{fmtDate(txn.createdAt)}</Text>
                     </View>
                   </View>
@@ -208,24 +247,28 @@ export function WalletScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
-  balanceCard: { backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md },
-  balanceTitle: { color: "#fff", fontSize: 15, fontWeight: "700" },
-  balanceValue: { color: "#fff", fontSize: 30, fontWeight: "700", marginTop: spacing.sm },
-  balanceDesc: { color: "rgba(255,255,255,0.85)", fontSize: 12.5, marginTop: spacing.xs, lineHeight: 17 },
+  balanceCard: { backgroundColor: colors.card, borderRadius: 28, padding: 18, gap: 4, ...shadow },
+  balanceTitle: { color: colors.textMuted, fontSize: 16, fontWeight: "700" },
+  balanceValue: { color: colors.primary, fontSize: 44, fontWeight: "800", lineHeight: 52 },
+  balanceDesc: { color: colors.textMuted, fontSize: 14.5, lineHeight: 20 },
 
-  sectionTitle: { fontSize: 14.5, fontWeight: "700", color: colors.text },
-  minRechargeNote: { fontSize: 11, color: colors.textMuted, marginTop: spacing.xs },
+  sectionTitle: { fontSize: 20, fontWeight: "800", color: colors.text },
+  amountRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: spacing.sm },
+  amountChip: { minHeight: 48, paddingHorizontal: 16, borderRadius: 999, borderWidth: 2.5, borderColor: colors.border, backgroundColor: colors.card, flexDirection: "row", alignItems: "center", gap: 6 },
+  amountChipOn: { borderColor: colors.primary, backgroundColor: colors.tint },
+  amountChipText: { fontSize: 16, fontWeight: "700", color: colors.text },
+  minRechargeNote: { fontSize: 13, color: colors.textMuted, marginTop: spacing.xs },
 
   priceRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: spacing.xs },
   priceRowBorder: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.sm },
-  priceLabel: { fontSize: 13, color: colors.text, flex: 1 },
-  priceValue: { fontSize: 13, fontWeight: "700", color: colors.text },
+  priceLabel: { fontSize: 14.5, color: colors.text, flex: 1 },
+  priceValue: { fontSize: 14.5, fontWeight: "700", color: colors.text },
 
-  emptyText: { fontSize: 13, color: colors.textMuted },
-  txnIconWrap: { width: 30, height: 30, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
+  emptyText: { fontSize: 14.5, color: colors.textMuted },
+  txnIconWrap: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
   txnIconCredit: { backgroundColor: "#E5F7EC" },
   txnIconDebit: { backgroundColor: "#FBEAEE" },
-  txnLabel: { fontSize: 13, fontWeight: "600", color: colors.text, textTransform: "capitalize" },
-  txnDate: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
-  txnAmount: { fontSize: 14, fontWeight: "700" },
+  txnLabel: { fontSize: 14.5, fontWeight: "600", color: colors.text, textTransform: "capitalize" },
+  txnDate: { fontSize: 13, color: colors.textMuted, marginTop: 1 },
+  txnAmount: { fontSize: 15.5, fontWeight: "700" },
 });

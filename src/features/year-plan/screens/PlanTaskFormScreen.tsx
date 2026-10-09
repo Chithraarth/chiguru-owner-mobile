@@ -1,8 +1,11 @@
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { ChipSelect } from "../../../components/ChipSelect";
+import { FormFooter } from "../../../components/harvest";
+import { Check, Trash2 } from "lucide-react-native";
 import { colors, spacing } from "../../../components/theme";
 import { useYearPlan } from "../hooks/useYearPlan";
 import type { PlanTask, PlanTaskCategory } from "../../../types/api";
@@ -74,7 +77,8 @@ export function PlanTaskFormScreen({ navigation, route }: { navigation: any; rou
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: task ? 180 : 110 }}>
       <TextField label="Task title *" value={title} onChangeText={setTitle} placeholder="e.g. Apply NPK fertilizer" />
       <TextField
         label="Details"
@@ -94,13 +98,12 @@ export function PlanTaskFormScreen({ navigation, route }: { navigation: any; rou
         onChange={(v) => setCropId(v === "Whole farm" ? "" : String(crops.find((c) => c.name === v)?.id ?? ""))}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Button title={task ? "Save changes" : "Add task"} onPress={submit} loading={saveTask.isPending} />
-      {task ? (
-        <View style={{ marginTop: spacing.sm }}>
-          <Button title="Delete task" variant="danger" onPress={onDelete} loading={removeTask.isPending} />
-        </View>
-      ) : null}
     </ScrollView>
+    <FormFooter>
+      <Button title={task ? "Save changes" : "Add task"} icon={Check} onPress={submit} loading={saveTask.isPending} />
+      {task ? <Button title="Delete task" variant="secondary" icon={Trash2} onPress={onDelete} loading={removeTask.isPending} /> : null}
+    </FormFooter>
+    </View>
   );
 }
 

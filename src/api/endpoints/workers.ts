@@ -7,8 +7,13 @@ import type { Worker } from "../../types/api";
 // clientId lets a retried request (offline queue, or a dropped response on a
 // flaky connection) return the already-created worker instead of a
 // duplicate - matches the same pattern as worker-payments/estate-updates.
-export function createWorker(name: string) {
-  return apiMutate<Worker>("POST", "/workers", { name, isActive: true, clientId: newClientId() });
+export function createWorker(name: string, details: { phone?: string; wageRate?: string } = {}) {
+  return apiMutate<Worker>("POST", "/workers", { name, isActive: true, clientId: newClientId(), ...details });
+}
+
+/** Edits a worker's name, phone or daily wage. */
+export function updateWorker(id: number, details: { name?: string; phone?: string | null; wageRate?: string }) {
+  return apiMutate<Worker>("PATCH", `/workers/${id}`, details);
 }
 
 // Soft-deletes the worker (recoverable from BinScreen). Matches web's

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../../components/Text";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { Card } from "../../../../components/Card";
@@ -114,7 +115,7 @@ export function WorkPlanScreen() {
             </Pressable>
           </Card>
 
-          <Text style={styles.sectionLabel}>PENDING</Text>
+          <Text style={styles.sectionLabel}>Pending</Text>
           {pending.length === 0 && overdue.length === 0 ? (
             <Text style={styles.muted}>Nothing pending this month.</Text>
           ) : (
@@ -138,26 +139,29 @@ export function WorkPlanScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  subtitle: { fontSize: 13, color: colors.textMuted, marginBottom: spacing.md },
+  subtitle: { fontSize: 14.5, color: colors.textMuted, marginBottom: spacing.md },
   pagerCard: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: spacing.md,
   },
-  pagerMonth: { fontSize: 17, fontWeight: "700", color: colors.text },
-  pagerSub: { fontSize: 12, color: colors.accent, fontWeight: "600", marginTop: 2 },
-  sectionLabel: { fontSize: 11, fontWeight: "700", color: colors.primary, letterSpacing: 0.6, marginBottom: spacing.sm },
-  muted: { color: colors.textMuted, fontSize: 13, paddingVertical: spacing.sm },
+  pagerMonth: { fontSize: 22, fontWeight: "800", color: colors.text },
+  pagerSub: { fontSize: 14, color: colors.primary, fontWeight: "600", marginTop: 2 },
+  sectionLabel: { fontSize: 20, fontWeight: "800", color: colors.text, marginBottom: spacing.sm },
+  muted: { color: colors.textMuted, fontSize: 14.5, paddingVertical: spacing.sm },
   taskCard: {
     backgroundColor: colors.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderRadius: 22,
     padding: spacing.md,
+    shadowColor: "#5A4600",
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
   },
   overdueTag: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: "700",
     color: "#B7791F",
     backgroundColor: "#FEF3C7",
@@ -167,7 +171,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     marginBottom: 4,
   },
-  taskTitle: { fontSize: 15, fontWeight: "600", color: colors.text },
-  taskDetails: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
-  taskMeta: { fontSize: 11.5, color: colors.textMuted, marginTop: spacing.xs, textTransform: "uppercase", letterSpacing: 0.3 },
+  taskTitle: { fontSize: 17, fontWeight: "800", color: colors.text },
+  taskDetails: { fontSize: 14.5, color: colors.textMuted, marginTop: 2 },
+  taskMeta: { fontSize: 14, color: colors.textMuted, marginTop: spacing.xs },
 });

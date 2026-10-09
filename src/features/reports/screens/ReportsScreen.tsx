@@ -1,15 +1,17 @@
 import React, { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text, TextInput } from "../../../components/Text";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight } from "lucide-react-native";
+import { ChevronLeft, ChevronRight, Check } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { LoadingView, EmptyState } from "../../../components/StateViews";
 import { NoEstateNotice } from "../../../components/NoEstateNotice";
-import { colors, radius, spacing } from "../../../components/theme";
+import { StatTiles, shortRupees } from "../../../components/harvest";
+import { colors, radius, shadow, spacing } from "../../../components/theme";
 import { getMonthlyReport, getSeasonReport, getWeeklyReport } from "../../../api/endpoints/reports";
 import { useEstateStore } from "../../estate/store/estateStore";
 
-const PIE_COLORS = ["#2d6a2d", "#4caf50", "#8bc34a", "#cddc39", "#ffc107", "#ff9800", "#ff5722", "#9c27b0", "#3f51b5"];
+const PIE_COLORS = ["#2F6B1F", "#F4B400", "#9ED27B", "#FF9F80", "#9FD8EA", "#D7B8F3", "#F7B7C9", "#FFD166", "#5E9E32"];
 
 function inr(n: number) {
   return `₹${Math.round(n).toLocaleString("en-IN")}`;
@@ -41,20 +43,13 @@ type Tab = "season" | "monthly" | "weekly";
 
 function StatRow({ income, expenses, net, netLabel = "Net P&L" }: { income: number; expenses: number; net: number; netLabel?: string }) {
   return (
-    <View style={{ flexDirection: "row", gap: spacing.sm }}>
-      <View style={[styles.statBox, { backgroundColor: colors.bg, borderColor: colors.border }]}>
-        <Text style={[styles.statLabel, { color: colors.primary }]}>Income</Text>
-        <Text style={[styles.statValue, { color: colors.primary }]}>{inr(income)}</Text>
-      </View>
-      <View style={[styles.statBox, { backgroundColor: "#FDEAEA", borderColor: "#F5C6C6" }]}>
-        <Text style={[styles.statLabel, { color: colors.danger }]}>Expenses</Text>
-        <Text style={[styles.statValue, { color: colors.danger }]}>{inr(expenses)}</Text>
-      </View>
-      <View style={[styles.statBox, net >= 0 ? { backgroundColor: "#E4EEFB", borderColor: "#C7DCF5" } : { backgroundColor: "#FFF3E6", borderColor: "#FBD9AE" }]}>
-        <Text style={[styles.statLabel, { color: net >= 0 ? "#3E6FB0" : "#95530F" }]}>{netLabel}</Text>
-        <Text style={[styles.statValue, { color: net >= 0 ? "#3E6FB0" : "#95530F" }]}>{inr(net)}</Text>
-      </View>
-    </View>
+    <StatTiles
+      items={[
+        { label: "Income", value: shortRupees(income), sub: inr(income) },
+        { label: "Expenses", value: shortRupees(expenses), sub: inr(expenses) },
+        { label: netLabel, value: shortRupees(net), sub: net >= 0 ? "profit" : "loss" },
+      ]}
+    />
   );
 }
 
@@ -67,7 +62,7 @@ function BarComparisonChart({ data }: { data: { label: string; income: number; e
         <View key={d.label} style={{ flex: 1, alignItems: "center", gap: 4 }}>
           <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 2, height: 110 }}>
             <View style={[styles.bar, { height: Math.max(3, (d.income / max) * 110), backgroundColor: colors.primary }]} />
-            <View style={[styles.bar, { height: Math.max(3, (d.expenses / max) * 110), backgroundColor: colors.danger }]} />
+            <View style={[styles.bar, { height: Math.max(3, (d.expenses / max) * 110), backgroundColor: colors.accent }]} />
           </View>
           <Text style={styles.barLabel} numberOfLines={1}>{d.label}</Text>
         </View>
@@ -107,15 +102,17 @@ export function ReportsScreen() {
   });
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
-      <View style={styles.tabs}>
-        {(["season", "monthly", "weekly"] as Tab[]).map((t) => (
-          <Pressable key={t} onPress={() => setTab(t)} style={[styles.tab, tab === t && styles.tabActive]}>
-            <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-              {t === "season" ? "Season P&L" : t.charAt(0).toUpperCase() + t.slice(1)}
-            </Text>
-          </Pressable>
-        ))}
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
+      <View style={styles.chips}>
+        {(["weekly", "monthly", "season"] as Tab[]).map((t) => {
+          const on = tab === t;
+          return (
+            <Pressable key={t} onPress={() => setTab(t)} style={[styles.chip, on && styles.chipOn]} accessibilityRole="tab" accessibilityState={{ selected: on }}>
+              {on ? <Check size={16} color={colors.text} strokeWidth={2.6} /> : null}
+              <Text style={styles.chipText}>{t === "season" ? "Season" : t === "monthly" ? "Month" : "Week"}</Text>
+            </Pressable>
+          );
+        })}
       </View>
 
       {tab === "season" ? (
@@ -178,7 +175,7 @@ export function ReportsScreen() {
                         .map((item, i) => (
                           <View key={item.category} style={styles.pieRow}>
                             <View style={[styles.pieDot, { backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }]} />
-                            <Text style={{ flex: 1, fontSize: 13, color: colors.text }}>{item.category}</Text>
+                            <Text style={{ flex: 1, fontSize: 14.5, color: colors.text }}>{item.category}</Text>
                             <Text style={styles.pieAmount}>{inr(item.amount)}</Text>
                             <Text style={styles.piePercent}>{item.percentage.toFixed(1)}%</Text>
                           </View>
@@ -225,9 +222,9 @@ export function ReportsScreen() {
                   <Card key={d.date} style={styles.dayRow}>
                     <Text style={styles.dayLabel}>{dayLabel(d.date)}</Text>
                     <View style={{ flexDirection: "row", gap: spacing.md }}>
-                      <Text style={{ color: colors.primary, fontWeight: "600", fontSize: 12 }}>{inr(d.income)}</Text>
-                      <Text style={{ color: colors.danger, fontWeight: "600", fontSize: 12 }}>{inr(d.expenses)}</Text>
-                      <Text style={{ color: d.income - d.expenses >= 0 ? "#3E6FB0" : "#95530F", fontWeight: "700", fontSize: 12 }}>
+                      <Text style={{ color: colors.primary, fontWeight: "600", fontSize: 14 }}>{inr(d.income)}</Text>
+                      <Text style={{ color: colors.danger, fontWeight: "600", fontSize: 14 }}>{inr(d.expenses)}</Text>
+                      <Text style={{ color: d.income - d.expenses >= 0 ? colors.success : colors.danger, fontWeight: "700", fontSize: 14 }}>
                         {inr(d.income - d.expenses)}
                       </Text>
                     </View>
@@ -243,34 +240,38 @@ export function ReportsScreen() {
 }
 
 const styles = StyleSheet.create({
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  chip: { minHeight: 48, paddingHorizontal: 16, borderRadius: 999, borderWidth: 2.5, borderColor: colors.border, backgroundColor: colors.card, flexDirection: "row", alignItems: "center", gap: 6 },
+  chipOn: { borderColor: colors.primary, backgroundColor: colors.tint },
+  chipText: { fontSize: 16, fontWeight: "700", color: colors.text },
   container: { flex: 1, backgroundColor: colors.bg },
 
-  tabs: { flexDirection: "row", backgroundColor: colors.muted, borderRadius: radius.sm, padding: 4, gap: 2 },
-  tab: { flex: 1, paddingVertical: spacing.sm - 2, borderRadius: radius.sm - 2, alignItems: "center" },
-  tabActive: { backgroundColor: "#fff" },
-  tabText: { fontSize: 11.5, fontWeight: "600", color: colors.textMuted },
-  tabTextActive: { color: colors.primary },
+  tabs: { flexDirection: "row", backgroundColor: colors.muted, borderRadius: radius.pill, padding: 4, gap: 2 },
+  tab: { flex: 1, minHeight: 44, justifyContent: "center", borderRadius: radius.pill, alignItems: "center" },
+  tabActive: { backgroundColor: "#fff", ...shadow },
+  tabText: { fontSize: 13.5, fontWeight: "600", color: colors.textMuted },
+  tabTextActive: { color: colors.text, fontWeight: "800" },
 
-  filterLabel: { fontSize: 11.5, color: colors.textMuted, marginBottom: spacing.sm },
-  filterSubLabel: { fontSize: 10.5, color: colors.textMuted, marginBottom: 2 },
-  dateInput: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs + 2, fontSize: 13, color: colors.text },
+  filterLabel: { fontSize: 13.5, color: colors.textMuted, marginBottom: spacing.sm },
+  filterSubLabel: { fontSize: 12.5, color: colors.textMuted, marginBottom: 2 },
+  dateInput: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs + 2, fontSize: 14.5, color: colors.text },
 
   statBox: { flex: 1, borderWidth: 1, borderRadius: radius.md, padding: spacing.sm + 2 },
-  statLabel: { fontSize: 10.5, fontWeight: "600" },
-  statValue: { fontSize: 14, fontWeight: "700", marginTop: 2 },
+  statLabel: { fontSize: 12.5, fontWeight: "600" },
+  statValue: { fontSize: 15.5, fontWeight: "700", marginTop: 2 },
 
-  blockTitle: { fontSize: 13.5, fontWeight: "700", color: colors.text, marginBottom: spacing.sm },
+  blockTitle: { fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: spacing.sm },
   bar: { width: 10, borderRadius: 3 },
-  barLabel: { fontSize: 9.5, color: colors.textMuted, textAlign: "center" },
+  barLabel: { fontSize: 11.5, color: colors.textMuted, textAlign: "center" },
 
   pieRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   pieDot: { width: 10, height: 10, borderRadius: 5 },
-  pieAmount: { fontSize: 12.5, fontWeight: "700", color: colors.text },
-  piePercent: { fontSize: 10.5, color: colors.textMuted, width: 40, textAlign: "right" },
+  pieAmount: { fontSize: 14.5, fontWeight: "700", color: colors.text },
+  piePercent: { fontSize: 12.5, color: colors.textMuted, width: 40, textAlign: "right" },
 
   weekNav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  weekLabel: { fontSize: 13, fontWeight: "600", color: colors.text },
+  weekLabel: { fontSize: 14.5, fontWeight: "600", color: colors.text },
 
   dayRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  dayLabel: { fontSize: 13, color: colors.text, width: 90 },
+  dayLabel: { fontSize: 14.5, color: colors.text, width: 90 },
 });

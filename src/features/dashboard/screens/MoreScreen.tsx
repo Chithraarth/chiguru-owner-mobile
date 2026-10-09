@@ -1,5 +1,6 @@
 import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { colors, spacing } from "../../../components/theme";
@@ -12,40 +13,40 @@ function sections(t: (k: string) => string) {
     {
       title: "Farm records",
       items: [
-        { label: `🌾 ${t("more.crops")}`, screen: "Crops" },
-        { label: "🧪 Sprays", screen: "Sprays" },
-        { label: "📅 Year Plan", screen: "YearPlan" },
-        { label: `📊 ${t("home.reports")}`, screen: "Reports" },
+        { label: `${t("more.crops")}`, screen: "Crops" },
+        { label: "Sprays", screen: "Sprays" },
+        { label: "Year Plan", screen: "YearPlan" },
+        { label: `${t("home.reports")}`, screen: "Reports" },
       ],
     },
     {
       title: "Advisory",
       items: [
-        { label: `🤖 ${t("more.agriAdvisor")} (AI chat)`, screen: "AgriAi" },
-        { label: `🩺 ${t("more.diseaseDetect")}`, screen: "Disease" },
-        { label: `👨‍⚕️ ${t("more.agriDoctor")}`, screen: "AgriDoctor" },
+        { label: `${t("more.agriAdvisor")} (AI chat)`, screen: "AgriAi" },
+        { label: `${t("more.diseaseDetect")}`, screen: "Disease" },
+        { label: `${t("more.agriDoctor")}`, screen: "AgriDoctor" },
       ],
     },
     {
       title: "Market",
       items: [
-        { label: `🛍️ ${t("more.shop")}`, screen: "Shop" },
-        { label: "📈 Market prices", screen: "Mandi" },
-        { label: "📢 My ads", screen: "MyAds" },
+        { label: `${t("more.shop")}`, screen: "Shop" },
+        { label: "Market prices", screen: "Mandi" },
+        { label: "My ads", screen: "MyAds" },
       ],
     },
     {
       title: "Account",
       items: [
-        { label: `👤 ${t("profile.title")}`, screen: "Profile" },
-        { label: `💳 ${t("more.subscription")}`, screen: "Subscription" },
-        { label: "👛 Wallet", screen: "Wallet" },
-        { label: `🧑‍🤝‍🧑 ${t("more.managerDevices")}`, screen: "ManagerDevices" },
-        { label: `🗑️ ${t("bin.title")}`, screen: "Bin" },
-        { label: `🔄 ${t("more.syncLog")}`, screen: "SyncLog" },
-        { label: `⚙️ ${t("more.settings")}`, screen: "Settings" },
-        { label: "❓ Help", screen: "Help" },
-        { label: "🌱 How Chiguru works", screen: "Welcome" },
+        { label: `${t("profile.title")}`, screen: "Profile" },
+        { label: `${t("more.subscription")}`, screen: "Subscription" },
+        { label: "Wallet", screen: "Wallet" },
+        { label: `${t("more.managerDevices")}`, screen: "ManagerDevices" },
+        { label: `${t("bin.title")}`, screen: "Bin" },
+        { label: `${t("more.syncLog")}`, screen: "SyncLog" },
+        { label: `${t("more.settings")}`, screen: "Settings" },
+        { label: "Help", screen: "Help" },
+        { label: "How Chiguru works", screen: "Welcome" },
       ],
     },
   ];
@@ -54,7 +55,7 @@ function sections(t: (k: string) => string) {
 export function MoreScreen({ navigation }: { navigation: any }) {
   const { t } = useT();
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: spacing.xl }}>
       {sections(t).map((section) => (
         <View key={section.title} style={{ marginBottom: spacing.lg }}>
           <Text style={styles.sectionTitle}>{section.title}</Text>
@@ -76,5 +77,5 @@ export function MoreScreen({ navigation }: { navigation: any }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  sectionTitle: { fontSize: 14, fontWeight: "700", color: colors.textMuted, marginBottom: spacing.sm, textTransform: "uppercase" },
+  sectionTitle: { fontSize: 15.5, fontWeight: "700", color: colors.textMuted, marginBottom: spacing.sm, textTransform: "uppercase" },
 });

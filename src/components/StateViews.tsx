@@ -1,5 +1,6 @@
 import React from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { Text } from "./Text";
 import { Button } from "./Button";
 import { colors, spacing } from "./theme";
 
@@ -63,10 +64,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: spacing.lg,
   },
-  title: { fontSize: 16, fontWeight: "600", color: colors.text, textAlign: "center" },
+  title: { fontSize: 20, fontWeight: "800", color: colors.text, textAlign: "center" },
   mutedText: {
     marginTop: spacing.xs,
     color: colors.textMuted,
+    fontSize: 16,
     textAlign: "center",
   },
 });

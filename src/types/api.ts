@@ -44,6 +44,11 @@ export interface DeviceLimitError {
 export interface Estate {
   id: number;
   farmName: string;
+  /** Pay cycle: weekly (from/to weekdays 0-6) or monthly (from/to days 1-31). */
+  payCycle?: "weekly" | "monthly";
+  payFrom?: number;
+  payTo?: number;
+  payToNextMonth?: boolean;
 }
 
 /** An estate as returned by /me/estates — tagged with how this person relates to it. */
@@ -128,6 +133,13 @@ export interface WorkGroup {
   estateId: number;
   name: string;
   cropId: number | null;
+  /** This group's own pay cycle, or payCycle null to follow the farm. */
+  payCycle?: "weekly" | "monthly" | null;
+  payFrom?: number | null;
+  payTo?: number | null;
+  payToNextMonth?: boolean | null;
+  /** Name of the group's crop (joined by GET /work-groups). */
+  cropName?: string | null;
   blockName: string | null;
   category: string | null;
   labourType: string | null;
@@ -817,6 +829,13 @@ export interface SubscriptionPlan {
   billingPeriod: string;
   managerLimit: number;
   googlePlayProductId: string | null;
+  /** App Store auto-renewable subscription id — what the iPhone app buys. */
+  appleProductId?: string | null;
+}
+
+/** StoreKit 2's JWS for a purchase (react-native-iap's purchase.purchaseToken on iOS). */
+export interface AppleVerifyRequest {
+  signedTransaction: string;
 }
 
 export interface SubscriptionPlansResponse {
@@ -913,6 +932,8 @@ export interface WalletTransaction {
 export interface WalletMeResponse {
   balance: number;
   minRechargeAmount: number;
+  /** Fixed credit packs sold through Apple In-App Purchase on iPhone. */
+  applePacks?: { productId: string; amount: number }[];
   aiPrices: Record<string, WalletAiPrice>;
   share: {
     target: number;
@@ -1081,42 +1102,15 @@ export interface Agronomist {
   experience: string | null;
   location: string;
   languages: string | null;
+  /** Only once this account has unlocked doctors' numbers. */
   contactPhone?: string | null;
+  /** The doctor has a number, hidden until unlocked. */
+  contactLocked?: boolean;
+  /** Same district (or taluk) as the active farm; the list comes nearest first. */
+  nearby?: boolean;
   rating: string;
-  ratePer15Min: string;
-  consultationPlan?: string | null;
   bio: string | null;
   isOnline: boolean;
-  payoutReady: boolean;
-}
-
-export interface AgronomistPayout {
-  id: number;
-  amount: string;
-  method: string;
-  reference: string | null;
-  status: string;
-  notes: string | null;
-  createdAt: string;
-  paidAt: string | null;
-}
-
-export interface AgronomistEarnings {
-  id: number;
-  name: string;
-  totalEarnings: number;
-  paidOut: number;
-  pending: number;
-  available: number;
-  payoutReady: boolean;
-  payoutMethod: {
-    accountHolderName: string | null;
-    bankAccountNumber: string | null;
-    ifscCode: string | null;
-    upiId: string | null;
-    panNumber: string | null;
-  };
-  payouts: AgronomistPayout[];
 }
 
 export interface RegisterAgronomistRequest {
@@ -1128,37 +1122,8 @@ export interface RegisterAgronomistRequest {
   workplace?: string;
   location?: string;
   languages?: string;
-  contactPhone?: string;
-  ratePer15Min?: number;
+  contactPhone: string;
   bio?: string;
-  consultationPlan?: string;
-  accountHolderName?: string;
-  bankAccountNumber?: string;
-  ifscCode?: string;
-  upiId?: string;
-  panNumber?: string;
-}
-
-export interface Consultation {
-  id: number;
-  agronomistId: number;
-  mode: "chat" | "call";
-  status: string;
-  topic: string | null;
-  startedAt: string;
-  endedAt: string | null;
-  durationMinutes: number;
-  cost: string;
-}
-
-export interface ConsultationMessage {
-  id: number;
-  consultationId: number;
-  sender: "farmer" | "doctor";
-  text: string;
-  mediaType: "image" | "audio" | null;
-  mediaUrl: string | null;
-  createdAt: string;
 }
 
 export interface AppSettings {
@@ -1166,14 +1131,8 @@ export interface AppSettings {
   trialActive: boolean;
   trialDaysLeft: number;
   canUseAgriDoctor: boolean;
-}
-
-export interface AgriDoctorEndResult {
-  cost: number;
-  minutes: number;
-  doctorEarning: number;
-  platformFee: number;
-  walletBalance: number;
+  doctorContactsUnlocked?: boolean;
+  doctorContactsFee?: number;
 }
 
 // Normalized error shape. Backend actually returns either {message, code?} or {error}.
@@ -1231,6 +1190,23 @@ export interface WorkerWages {
 
 // All-time per-worker money summary from GET /workers/:id/money — days worked,
 // wages + overtime earned, loans, direct payments, and one net-due balance.
+export interface WorkerPayDay {
+  date: string;
+  groupName: string | null;
+  hoursWorked: number;
+  overtimeHours: number;
+  overtimeRate: number;
+  harvestedKg: number;
+  harvestCrop: string | null;
+  targetKg: number | null;
+  bonusPerKg: number | null;
+  kgAboveTarget: number;
+  baseWage: number;
+  overtimeAmount: number;
+  bonusAmount: number;
+  total: number;
+}
+
 export interface WorkerMoney {
   workerId: number;
   workerName: string;
@@ -1241,6 +1217,12 @@ export interface WorkerMoney {
   totalOvertimeAmount: number;
   totalHarvestedKg: number;
   totalEarned: number;
+  /** Pay split into its parts (servers before the breakdown omit these). */
+  totalBaseWage?: number;
+  totalOvertimePaid?: number;
+  totalBonusAmount?: number;
+  totalKgAboveTarget?: number;
+  days?: WorkerPayDay[];
   lastWorkedDate: string | null;
   loanTaken: number;
   loanRepaid: number;

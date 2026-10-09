@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Clock, HelpCircle, LifeBuoy, Lightbulb, MessageCircleQuestion, Sparkles } from "lucide-react-native";
 import { Card } from "../../../components/Card";
@@ -37,10 +38,10 @@ export function HelpScreen() {
   const messages = query.data ?? [];
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       <View style={styles.intro}>
         <View style={styles.introIconWrap}>
-          <LifeBuoy size={20} color="#fff" />
+          <LifeBuoy size={24} color={colors.primary} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.introTitle}>We're here to help</Text>
@@ -63,7 +64,7 @@ export function HelpScreen() {
             active={type === "suggestion"}
             icon={Lightbulb}
             label="Give a suggestion"
-            color={colors.accent}
+            color={colors.primary}
             onPress={() => setType("suggestion")}
           />
         </View>
@@ -109,7 +110,7 @@ export function HelpScreen() {
           messages.map((m) => (
             <Card key={m.id}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                {m.type === "suggestion" ? <Lightbulb size={15} color={colors.accent} /> : <HelpCircle size={15} color={colors.primary} />}
+                {m.type === "suggestion" ? <Lightbulb size={15} color={colors.primary} /> : <HelpCircle size={15} color={colors.primary} />}
                 <Text style={styles.msgType}>{m.type === "suggestion" ? "Suggestion" : "Question"}</Text>
                 <Text style={styles.msgDate}>{fmtDate(m.createdAt)}</Text>
               </View>
@@ -144,11 +145,13 @@ function TypeTile({ active, icon: Icon, label, color, onPress }: { active: boole
       onPress={onPress}
       style={[
         styles.tile,
-        active ? { borderColor: color, backgroundColor: color + "0D" } : { borderColor: colors.border },
+        active ? { borderColor: color, backgroundColor: colors.tint } : { borderColor: colors.border },
       ]}
     >
-      <Icon size={22} color={active ? color : colors.textMuted} />
-      <Text style={[styles.tileLabel, active && { color }]}>{label}</Text>
+      <View style={styles.tileIcon}>
+        <Icon size={24} color={colors.primary} />
+      </View>
+      <Text style={[styles.tileLabel, active && { color: colors.text }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -156,24 +159,25 @@ function TypeTile({ active, icon: Icon, label, color, onPress }: { active: boole
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
-  intro: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm, backgroundColor: colors.primary + "0D", borderWidth: 1, borderColor: colors.primary + "1A", borderRadius: radius.lg, padding: spacing.md },
-  introIconWrap: { width: 36, height: 36, borderRadius: radius.sm, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
-  introTitle: { fontSize: 14.5, fontWeight: "700", color: colors.primary },
-  introSubtitle: { fontSize: 12, color: colors.primary, opacity: 0.8, marginTop: 3, lineHeight: 17 },
+  intro: { flexDirection: "row", alignItems: "center", gap: spacing.md, backgroundColor: colors.accent, borderRadius: 28, padding: 18 },
+  introIconWrap: { width: 52, height: 52, borderRadius: 26, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
+  introTitle: { color: colors.accentInk, fontSize: 19, fontWeight: "800" },
+  introSubtitle: { color: colors.accentInkSoft, fontSize: 14.5, marginTop: 2, lineHeight: 20 },
 
-  tile: { flex: 1, alignItems: "center", gap: spacing.xs, paddingVertical: spacing.sm + 4, borderWidth: 2, borderRadius: radius.md },
-  tileLabel: { fontSize: 12.5, fontWeight: "600", color: colors.textMuted, textAlign: "center" },
+  tile: { flex: 1, alignItems: "center", gap: 8, paddingVertical: 14, paddingHorizontal: 8, borderRadius: 24, borderWidth: 2.5, backgroundColor: colors.card },
+  tileIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#FFD166", alignItems: "center", justifyContent: "center" },
+  tileLabel: { fontSize: 16, fontWeight: "800", color: colors.textMuted, textAlign: "center" },
 
-  sectionTitle: { fontSize: 13.5, fontWeight: "700", color: colors.text, paddingHorizontal: 2 },
-  emptyText: { fontSize: 12.5, color: colors.textMuted, marginTop: spacing.xs, textAlign: "center" },
+  sectionTitle: { fontSize: 20, fontWeight: "800", color: colors.text },
+  emptyText: { fontSize: 14.5, color: colors.textMuted, marginTop: spacing.xs, textAlign: "center" },
 
-  msgType: { fontSize: 10.5, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.4, textTransform: "uppercase" },
-  msgDate: { marginLeft: "auto", fontSize: 10.5, color: colors.textMuted },
-  msgBody: { fontSize: 13.5, color: colors.text, marginTop: spacing.sm },
+  msgType: { fontSize: 12.5, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.4, textTransform: "uppercase" },
+  msgDate: { marginLeft: "auto", fontSize: 12.5, color: colors.textMuted },
+  msgBody: { fontSize: 15, color: colors.text, marginTop: spacing.sm },
 
   replyBox: { marginTop: spacing.sm, backgroundColor: colors.primary + "0D", borderWidth: 1, borderColor: colors.primary + "33", borderRadius: radius.sm, padding: spacing.sm + 4 },
-  replyLabel: { fontSize: 11, fontWeight: "700", color: colors.primary },
-  replyBody: { fontSize: 13, color: colors.primary, marginTop: 5 },
+  replyLabel: { fontSize: 13, fontWeight: "700", color: colors.primary },
+  replyBody: { fontSize: 14.5, color: colors.primary, marginTop: 5 },
 
-  pendingText: { fontSize: 11.5, color: colors.textMuted, flex: 1 },
+  pendingText: { fontSize: 13.5, color: colors.textMuted, flex: 1 },
 });

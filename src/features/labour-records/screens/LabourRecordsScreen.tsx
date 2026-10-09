@@ -1,8 +1,12 @@
 import React, { useLayoutEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { useInnerBack } from "../../../navigation/useInnerBack";
+import { DEFAULT_PAY_CYCLE, PayCycleChip, PeriodBar, inPeriod, pastPeriods, resolvePeriod, todayIso, type PayCycle, type Period } from "../period";
+import { useMyEstates } from "../../estate/hooks/useMyEstates";
+import { useEstateStore } from "../../estate/store/estateStore";
+import { Text } from "../../../components/Text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft,
   Banknote,
   Calendar,
   CheckCircle2,
@@ -12,12 +16,13 @@ import {
   Scale,
   Send,
   Trash2,
-  Wheat,
+  Wheat, ClipboardList, Users
 } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { LoadingView, EmptyState } from "../../../components/StateViews";
-import { colors, radius, spacing } from "../../../components/theme";
+import { Avatar, IconChip, ListCard, ListRow, Pill, SectionLabel, StatTiles, shortRupees } from "../../../components/harvest";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { getAllAttendance, getAdvancePayments, getWorkerMoney } from "../../../api/endpoints/attendance";
 import {
   clearWorkGroup,
@@ -26,6 +31,7 @@ import {
   getWorkGroups,
   settleHarvestBonus,
   settleOvertime,
+  updateWorkGroup,
 } from "../../../api/endpoints/workGroups";
 import { getGroupLoans } from "../../../api/endpoints/loans";
 import { getWorkerPayments, deleteWorkerPayment } from "../../../api/endpoints/workerPayments";
@@ -34,7 +40,6 @@ import { newClientId } from "../../../lib/idempotency";
 import { useT } from "../../../lib/i18n";
 import type { AttendanceRecord, WorkerMoney } from "../../../types/api";
 
-type ViewMode = "weekly" | "monthly" | "yearly" | "final";
 
 function formatDate(dateStr: string) {
   return new Date(dateStr + "T00:00:00").toLocaleDateString("en-IN", {
@@ -44,38 +49,31 @@ function formatDate(dateStr: string) {
 function fmtRecordedAt(iso: string) {
   return new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 }
+/** Rupees, with paise only when there are any (₹350, ₹512.50). */
 function inr(n: number) {
-  return `₹${Math.round(n).toLocaleString("en-IN")}`;
+  const whole = Math.abs(n - Math.round(n)) < 0.005;
+  return `₹${n.toLocaleString("en-IN", whole ? { maximumFractionDigits: 0 } : { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
-function weekStart(dateStr: string) {
-  const d = new Date(dateStr + "T00:00:00");
-  const day = (d.getDay() + 6) % 7;
-  d.setDate(d.getDate() - day);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+function fmtNum(n: number) {
+  return n.toLocaleString("en-IN", { maximumFractionDigits: 2 });
 }
-function weekLabel(startStr: string) {
-  const s = new Date(startStr + "T00:00:00");
-  const e = new Date(s);
-  e.setDate(e.getDate() + 6);
-  const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" };
-  return `${s.toLocaleDateString("en-IN", opts)} – ${e.toLocaleDateString("en-IN", opts)}`;
-}
-function monthKey(dateStr: string) {
-  return dateStr.slice(0, 7);
-}
-function monthLabel(key: string) {
-  return new Date(key + "-01T00:00:00").toLocaleDateString("en-IN", { month: "long", year: "numeric" });
-}
-function yearKey(dateStr: string) {
-  return dateStr.slice(0, 4);
-}
-
-interface PeriodTotals { days: number; wages: number; advances: number; loans: number }
 
 export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   const [openFolder, setOpenFolder] = useState<{ id: number | null; name: string } | null>(null);
   const [openWorker, setOpenWorker] = useState<{ id: number; name: string } | null>(null);
-  const [view, setView] = useState<ViewMode>("weekly");
+  // Back from a worker returns to their group, and from a group to the list.
+  useInnerBack(navigation, openWorker != null || openFolder != null, () =>
+    openWorker ? setOpenWorker(null) : setOpenFolder(null)
+  );
+  // Which dates the screen shows: this pay week by default. Chosen on the
+  // group list and kept when a group is opened.
+  const [period, setPeriod] = useState<Period>({ kind: "cycle", anchor: todayIso() });
+  const view = period.kind === "all" ? "final" : "period";
+  const activeEstateId = useEstateStore((s) => s.activeEstateId);
+  const myEstate = (useMyEstates().data ?? []).find((e) => e.id === activeEstateId);
+  const farmCycle: PayCycle = myEstate?.payCycle
+    ? { cycle: myEstate.payCycle, from: myEstate.payFrom ?? 6, to: myEstate.payTo ?? 5, toNextMonth: !!myEstate.payToNextMonth }
+    : DEFAULT_PAY_CYCLE;
   const [showPaySheet, setShowPaySheet] = useState(false);
   const qc = useQueryClient();
   const { t } = useT();
@@ -85,17 +83,6 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   useLayoutEffect(() => {
     navigation.setOptions({
       title: openWorker ? openWorker.name : openFolder ? openFolder.name : t("farmAcct.labour"),
-      headerLeft: openWorker || openFolder
-        ? () => (
-            <Pressable
-              onPress={() => (openWorker ? setOpenWorker(null) : setOpenFolder(null))}
-              hitSlop={10}
-              style={{ marginLeft: spacing.sm }}
-            >
-              <ArrowLeft size={22} color={colors.text} />
-            </Pressable>
-          )
-        : undefined,
     });
   }, [navigation, openFolder, openWorker]);
 
@@ -104,6 +91,23 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
     queryFn: getAllAttendance,
   });
   const { data: workGroups = [] } = useQuery({ queryKey: ["work-groups"], queryFn: getWorkGroups });
+  const groupPayCycle = useMutation({
+    mutationFn: (v: { id: number; c: PayCycle | null }) =>
+      updateWorkGroup(
+        v.id,
+        v.c
+          ? { payCycle: v.c.cycle, payFrom: v.c.from, payTo: v.c.to, payToNextMonth: v.c.toNextMonth }
+          : { payCycle: null }
+      ),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["work-groups"] }),
+    onError: () => Alert.alert("Couldn't save the pay week", "Please try again."),
+  });
+  // A group's own pay cycle, or null when it follows the farm's.
+  const ownCycleOf = (groupId: number | null): PayCycle | null => {
+    const g = workGroups.find((x) => x.id === groupId);
+    return g?.payCycle ? { cycle: g.payCycle, from: g.payFrom ?? 1, to: g.payTo ?? 6, toNextMonth: !!g.payToNextMonth } : null;
+  };
+  const startOf = (groupId: number | null): PayCycle => ownCycleOf(groupId) ?? farmCycle;
 
   const groupOpen = openFolder != null && openFolder.id != null;
 
@@ -138,7 +142,6 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   const { data: allPayments = [] } = useQuery({
     queryKey: ["worker-payments"],
     queryFn: () => getWorkerPayments(),
-    enabled: openFolder != null,
   });
   const payments = openFolder != null ? allPayments.filter((pm) => (pm.workGroupId ?? null) === openFolder.id) : [];
   const paymentsTotal = payments.reduce((s, pm) => s + Number(pm.amount), 0);
@@ -195,19 +198,26 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
     ...groupList.map((g) => {
       const recs = records.filter((r) => r.workGroupId === g.id);
       const wage = recs.reduce((s, r) => s + Number(r.wageAmount ?? 0), 0);
-      return { id: g.id as number | null, name: g.name, subtitle: recs.length === 0 ? "No records yet" : wage > 0 ? `${inr(wage)} wages` : `${recs.length} entries`, count: recs.length };
+      const subtitle = recs.length === 0 ? "No records yet" : `${inr(wage)} wages`;
+      return { id: g.id as number | null, name: g.name, subtitle, count: recs.length };
     }),
     {
       id: null,
       name: "General Records",
-      subtitle: generalRecords.length === 0
-        ? "Records without a group"
-        : (() => { const wage = generalRecords.reduce((s, r) => s + Number(r.wageAmount ?? 0), 0); return wage > 0 ? `${inr(wage)} wages` : `${generalRecords.length} entries`; })(),
+      subtitle: (() => {
+        if (generalRecords.length === 0) return "Records without a group";
+        const wage = generalRecords.reduce((s, r) => s + Number(r.wageAmount ?? 0), 0);
+        return wage > 0 ? `${inr(wage)} wages` : `${generalRecords.length} entries`;
+      })(),
       count: generalRecords.length,
     },
   ];
 
-  const folderRecords = openFolder ? records.filter((r) => (r.workGroupId ?? null) === openFolder.id) : records;
+  const allFolderRecords = openFolder ? records.filter((r) => (r.workGroupId ?? null) === openFolder.id) : records;
+  const groupStart = startOf(openFolder?.id ?? null);
+  const range = resolvePeriod(period, groupStart);
+  // Everything below shows only the chosen dates.
+  const folderRecords = allFolderRecords.filter((r) => inPeriod(r.date, range));
 
   const group = groupOpen ? workGroups.find((g) => g.id === openFolder!.id) : undefined;
   const isCleared = group?.clearedAt != null;
@@ -227,53 +237,47 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   const loanOutstanding = groupLoans.reduce((s, l) => s + Math.max(0, Number(l.totalDue) - Number(l.repaidAmount)), 0);
   const finalPayable = totalEarned - totalAdvances - loanOutstanding - paymentsTotal;
 
-  // ── "Payment due now" — owner pays on whichever day they choose (Sat, Wed…).
-  // Everything earned after the last recorded payment is what's due now. A
-  // payment covers all work up to and including its date, so only work AFTER
-  // the last payment date counts.
-  const lastPaymentDate = [
-    ...payments.map((pm) => pm.paymentDate),
-    ...advances.map((a) => a.paymentDate),
-  ].sort().pop() ?? null;
-  const dueRecords = lastPaymentDate ? folderRecords.filter((r) => r.date > lastPaymentDate) : folderRecords;
+  // ── What's due for the chosen dates: earned in them, plus anything still
+  // unpaid from before, less what was paid in them.
+  const moneyOut = [
+    ...payments.map((pm) => ({ date: pm.paymentDate, amount: Number(pm.amount) })),
+    ...advances.map((a) => ({ date: a.paymentDate, amount: Number(a.totalAdvancePaid) })),
+  ];
+  const dueRecords = folderRecords;
+  const paidInPeriod = moneyOut.filter((m) => inPeriod(m.date, range)).reduce((s, m) => s + m.amount, 0);
+  const earlierPending = range.from
+    ? Math.max(
+        0,
+        allFolderRecords.filter((r) => r.date < range.from!).reduce((s, r) => s + earnOf(r), 0) -
+          moneyOut.filter((m) => m.date < range.from!).reduce((s, m) => s + m.amount, 0)
+      )
+    : 0;
   const dueDays = dueRecords.length;
   const dueEarned = dueRecords.reduce((s, r) => s + earnOf(r), 0);
+  // Split what's due into base wages, overtime and picking bonus (same rule
+  // as the worker account) so the extra over "works × rate" is explained.
+  const bonusThreshold = Number(group?.harvestThresholdKg ?? 0);
+  const bonusPerKg = Number(group?.harvestBonusPerKg ?? 0);
+  const dueSplit = dueRecords.reduce(
+    (acc, r) => {
+      const wage = earnOf(r);
+      const otH = Number(r.overtimeHours ?? 0);
+      const ot = Math.min(wage, otH * Number(r.overtimeRate ?? 0));
+      const kgAbove = bonusThreshold > 0 && bonusPerKg > 0 ? Math.max(0, Number(r.harvestedKg ?? 0) - bonusThreshold) : 0;
+      const bonus = Math.min(wage - ot, kgAbove * bonusPerKg);
+      acc.base += wage - ot - bonus;
+      acc.ot += ot;
+      acc.otHours += ot > 0 ? otH : 0;
+      acc.bonus += bonus;
+      acc.kgAbove += bonus > 0 ? kgAbove : 0;
+      return acc;
+    },
+    { base: 0, ot: 0, otHours: 0, bonus: 0, kgAbove: 0 }
+  );
   const dueAdvance = dueDays * advPerDay;
   // Advance-structure groups pay only the advance-per-day now; the rest is
   // held for the Final Account. Other groups pay everything earned since.
-  const dueWages = hasAdvanceStructure ? dueAdvance : dueEarned;
-
-  const emptyPeriod = (): PeriodTotals => ({ days: 0, wages: 0, advances: 0, loans: 0 });
-  const weekly = new Map<string, PeriodTotals>();
-  const monthly = new Map<string, PeriodTotals>();
-  const yearly = new Map<string, PeriodTotals>();
-  const bump = (map: Map<string, PeriodTotals>, key: string, fn: (t: PeriodTotals) => void) => {
-    const t = map.get(key) ?? emptyPeriod();
-    fn(t);
-    map.set(key, t);
-  };
-  for (const r of folderRecords) {
-    const add = (t: PeriodTotals) => { t.days += 1; t.wages += earnOf(r); };
-    bump(weekly, weekStart(r.date), add);
-    bump(monthly, monthKey(r.date), add);
-    bump(yearly, yearKey(r.date), add);
-  }
-  for (const a of advances) {
-    const add = (t: PeriodTotals) => { t.advances += Number(a.totalAdvancePaid); };
-    bump(weekly, weekStart(a.paymentDate), add);
-    bump(monthly, monthKey(a.paymentDate), add);
-    bump(yearly, yearKey(a.paymentDate), add);
-  }
-  for (const l of groupLoans) {
-    if (!l.issuedDate) continue;
-    const add = (t: PeriodTotals) => { t.loans += Number(l.amount); };
-    bump(weekly, weekStart(l.issuedDate), add);
-    bump(monthly, monthKey(l.issuedDate), add);
-    bump(yearly, yearKey(l.issuedDate), add);
-  }
-  const weeklyRows = [...weekly.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-  const monthlyRows = [...monthly.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-  const yearlyRows = [...yearly.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+  const dueWages = hasAdvanceStructure ? dueAdvance : Math.max(0, dueEarned + earlierPending - paidInPeriod);
 
   const byDate = folderRecords.reduce<Record<string, AttendanceRecord[]>>((acc, r) => {
     (acc[r.date] = acc[r.date] || []).push(r);
@@ -295,38 +299,47 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   })();
 
   if (openFolder === null) {
+    const shown = records;
+    const allWages = shown.reduce((sum, r) => sum + (r.wageAmount != null && r.wageAmount !== "" ? Number(r.wageAmount) : 0), 0);
+    const workerCount = new Set(shown.map((r) => r.workerId).filter((id) => id != null)).size;
     return (
-      <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
-        <View>
-          <Text style={styles.sectionLabel}>👥 YOUR WORK GROUPS</Text>
-          <View style={{ gap: spacing.sm }}>
-            {folders.map((f) => (
-              <Pressable key={f.id ?? "general"} onPress={() => { setView("weekly"); setOpenFolder({ id: f.id, name: f.name }); }}>
-                <Card style={styles.folderRow}>
-                  <View style={styles.folderIcon}>
-                    <Text style={{ fontSize: 20 }}>{f.id == null ? "📋" : "👥"}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.folderName}>{f.name}</Text>
-                    <Text style={styles.folderSubtitle}>{f.subtitle}</Text>
-                  </View>
-                  {f.count > 0 ? (
-                    <View style={styles.countBadge}>
-                      <Text style={styles.countBadgeText}>{f.count}</Text>
-                    </View>
-                  ) : null}
-                </Card>
-              </Pressable>
-            ))}
-          </View>
-        </View>
+      <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
+        <StatTiles
+          items={[
+            { label: "Workers", value: String(workerCount), sub: "on record" },
+            { label: "Wages", value: shortRupees(allWages), sub: "season" },
+            { label: "Groups", value: String(groupList.length), sub: "active" },
+          ]}
+        />
+        <SectionLabel>Your work groups</SectionLabel>
+        <ListCard>
+          {folders.map((f, i) => (
+            <ListRow
+              key={f.id ?? "general"}
+              title={f.name}
+              subtitle={f.subtitle}
+              left={<IconChip icon={f.id == null ? ClipboardList : Users} index={i} size={46} />}
+              right={
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  {f.count > 0 ? <Pill text={String(f.count)} /> : null}
+                  <ChevronRight size={18} color={colors.textMuted} />
+                </View>
+              }
+              divider={i < folders.length - 1}
+              onPress={() => {
+                setPeriod({ kind: "cycle", anchor: todayIso() });
+                setOpenFolder({ id: f.id, name: f.name });
+              }}
+            />
+          ))}
+        </ListCard>
 
         {clearedGroups.length > 0 ? (
           <View>
-            <Text style={styles.sectionLabel}>✅ ACCOUNTS HISTORY</Text>
+            <SectionLabel style={{ marginBottom: spacing.sm }}>Accounts history</SectionLabel>
             <View style={{ gap: spacing.sm }}>
               {clearedGroups.map((g) => (
-                <Pressable key={g.id} onPress={() => { setView("final"); setOpenFolder({ id: g.id, name: g.name }); }}>
+                <Pressable key={g.id} onPress={() => { setPeriod({ kind: "all" }); setOpenFolder({ id: g.id, name: g.name }); }}>
                   <Card style={styles.folderRow}>
                     <View style={[styles.folderIcon, { backgroundColor: "#D8F3E6" }]}>
                       <CheckCircle2 size={20} color="#1F9E5C" />
@@ -353,7 +366,7 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
     const m = workerMoney;
     return (
       <View style={styles.container}>
-        <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+        <ScrollView contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
           {moneyLoading ? <LoadingView label="Loading account..." /> : null}
 
           {m ? (
@@ -379,13 +392,47 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
                   </View>
                   <Text style={styles.simpleRowTitle}>{m.totalDays}</Text>
                 </View>
-                <View style={[styles.simpleRow, styles.periodRowBorder]}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                    <Banknote size={14} color={colors.primary} />
-                    <Text style={styles.simpleRowMutedLabel}>Wages earned</Text>
+                {m.totalBaseWage != null ? (
+                  <>
+                    <View style={[styles.simpleRow, styles.periodRowBorder]}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                        <Banknote size={14} color={colors.primary} />
+                        <Text style={styles.simpleRowMutedLabel}>Base wages ({m.totalDays} {m.totalDays === 1 ? "day" : "days"})</Text>
+                      </View>
+                      <Text style={styles.simpleRowTitle}>{inr(m.totalBaseWage)}</Text>
+                    </View>
+                    {(m.totalOvertimePaid ?? 0) > 0 ? (
+                      <View style={[styles.simpleRow, styles.periodRowBorder]}>
+                        <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 6 }}>
+                          <Clock3 size={14} color="#C77A2E" />
+                          <Text style={styles.simpleRowMutedLabel}>Overtime ({fmtNum(m.totalOvertimeHours)} hr)</Text>
+                        </View>
+                        <Text style={[styles.simpleRowTitle, { color: "#C77A2E" }]}>+ {inr(m.totalOvertimePaid ?? 0)}</Text>
+                      </View>
+                    ) : null}
+                    {(m.totalBonusAmount ?? 0) > 0 ? (
+                      <View style={[styles.simpleRow, styles.periodRowBorder]}>
+                        <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 6 }}>
+                          <Wheat size={14} color="#1F9E5C" />
+                          <Text style={styles.simpleRowMutedLabel}>Picking bonus ({fmtNum(m.totalKgAboveTarget ?? 0)} kg above target)</Text>
+                        </View>
+                        <Text style={[styles.simpleRowTitle, { color: "#1F9E5C" }]}>+ {inr(m.totalBonusAmount ?? 0)}</Text>
+                      </View>
+                    ) : null}
+                    <View style={[styles.simpleRow, styles.periodRowBorder]}>
+                      <Text style={[styles.simpleRowMutedLabel, { fontWeight: "700", color: colors.text }]}>Wages earned</Text>
+                      <Text style={styles.simpleRowTitle}>{inr(m.totalWage)}</Text>
+                    </View>
+                  </>
+                ) : (
+                  <View style={[styles.simpleRow, styles.periodRowBorder]}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <Banknote size={14} color={colors.primary} />
+                      <Text style={styles.simpleRowMutedLabel}>Wages earned</Text>
+                    </View>
+                    <Text style={styles.simpleRowTitle}>{inr(m.totalWage)}</Text>
                   </View>
-                  <Text style={styles.simpleRowTitle}>{inr(m.totalWage)}</Text>
-                </View>
+                )}
                 <View style={[styles.simpleRow, styles.periodRowBorder]}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                     <CreditCard size={14} color={colors.danger} />
@@ -414,6 +461,50 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
                   </Text>
                 </View>
               </Card>
+
+              {m.days && m.days.length > 0 ? (
+                <Card style={{ padding: 0, overflow: "hidden" }}>
+                  <Text style={styles.blockTitle}>DAY BY DAY</Text>
+                  {m.days.map((d, i) => (
+                    <View key={`${d.date}-${i}`} style={[styles.dayRow, i > 0 && styles.periodRowBorder]}>
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                        <Text style={styles.simpleRowTitle}>
+                          {formatDate(d.date)}
+                          {d.groupName ? <Text style={styles.simpleRowMeta}>{`  ·  ${d.groupName}`}</Text> : null}
+                        </Text>
+                        <Text style={styles.simpleRowTitle}>{inr(d.total)}</Text>
+                      </View>
+                      <View style={styles.dayLine}>
+                        <Text style={styles.simpleRowMeta}>Base wage</Text>
+                        <Text style={styles.simpleRowMeta}>{inr(d.baseWage)}</Text>
+                      </View>
+                      {d.overtimeAmount > 0 ? (
+                        <View style={styles.dayLine}>
+                          <Text style={styles.simpleRowMeta}>
+                            Overtime {fmtNum(d.overtimeHours)} hr × {inr(d.overtimeRate)}
+                          </Text>
+                          <Text style={[styles.simpleRowMeta, { color: "#C77A2E" }]}>+ {inr(d.overtimeAmount)}</Text>
+                        </View>
+                      ) : null}
+                      {d.harvestedKg > 0 ? (
+                        <View style={styles.dayLine}>
+                          <Text style={[styles.simpleRowMeta, { flex: 1 }]}>
+                            {`Picked ${fmtNum(d.harvestedKg)} kg${d.harvestCrop ? ` ${d.harvestCrop}` : ""}`}
+                            {d.targetKg != null
+                              ? d.kgAboveTarget > 0
+                                ? ` · ${fmtNum(d.kgAboveTarget)} kg above ${fmtNum(d.targetKg)} kg × ${inr(d.bonusPerKg ?? 0)}`
+                                : ` · target ${fmtNum(d.targetKg)} kg not crossed`
+                              : ""}
+                          </Text>
+                          {d.bonusAmount > 0 ? (
+                            <Text style={[styles.simpleRowMeta, { color: "#1F9E5C" }]}>+ {inr(d.bonusAmount)}</Text>
+                          ) : null}
+                        </View>
+                      ) : null}
+                    </View>
+                  ))}
+                </Card>
+              ) : null}
 
               <Pressable style={styles.payButton} onPress={() => setShowPaySheet(true)}>
                 <Send size={16} color="#fff" />
@@ -480,38 +571,82 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
         {groupOpen ? (
-          <View style={styles.tabs}>
-            {([["weekly", "Weekly"], ["monthly", "Monthly"], ["yearly", "Yearly"], ["final", "Final Account"]] as [ViewMode, string][]).map(([key, label]) => (
-              <Pressable key={key} onPress={() => setView(key)} style={[styles.tab, view === key && styles.tabActive]}>
-                <Text style={[styles.tabText, view === key && styles.tabTextActive]}>{label}</Text>
-              </Pressable>
-            ))}
-          </View>
-        ) : null}
+          <>
+            <PayCycleChip
+              value={groupStart}
+              farm={farmCycle}
+              editable={!isCleared}
+              onChange={(c) => groupPayCycle.mutate({ id: openFolder!.id as number, c })}
+            />
+            <PeriodBar period={period} cycle={groupStart} onChange={setPeriod} />
+          </>
+        ) : (
+          <PeriodBar period={period} cycle={groupStart} onChange={setPeriod} />
+        )}
 
         {groupOpen && !isCleared ? (
           <Card style={{ padding: 0, overflow: "hidden" }}>
             <View style={styles.dueHeader}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.blockTitleLight}>PAYMENT DUE NOW</Text>
+                <Text style={styles.blockTitleLight}>{period.kind === "cycle" ? "PAY PERIOD" : "PAYMENT FOR THESE DATES"}</Text>
                 <Text style={styles.dueSubtitle}>
-                  {lastPaymentDate ? `for work after ${formatDate(lastPaymentDate)}` : "no payment made yet"}
+                  {range.label}
+                  {period.kind === "cycle" && range.to ? (range.to === todayIso() ? " · pay today" : ` · pay on ${formatDate(range.to)}`) : ""}
                 </Text>
               </View>
               <Text style={styles.dueHeaderValue}>{inr(Math.max(0, dueWages))}</Text>
             </View>
-            <View style={styles.simpleRow}>
-              <Text style={styles.simpleRowMutedLabel}>
-                {hasAdvanceStructure
-                  ? `Advance due (${dueDays} × ${inr(advPerDay)})`
-                  : `Wages due (${dueDays} work${dueDays !== 1 ? "s" : ""}${isPerDay && groupRate > 0 ? ` · ${inr(groupRate)}/day` : ""})`}
-              </Text>
-              <Text style={[styles.simpleRowTitle, { color: colors.primary }]}>
-                {inr(hasAdvanceStructure ? dueAdvance : dueEarned)}
-              </Text>
-            </View>
+            {!hasAdvanceStructure && dueSplit.ot + dueSplit.bonus > 0 ? (
+              <>
+                <View style={styles.simpleRow}>
+                  <Text style={styles.simpleRowMutedLabel}>
+                    {`Base wages (${dueDays} work${dueDays !== 1 ? "s" : ""}${isPerDay && groupRate > 0 ? ` × ${inr(groupRate)}` : ""})`}
+                  </Text>
+                  <Text style={styles.simpleRowTitle}>{inr(dueSplit.base)}</Text>
+                </View>
+                {dueSplit.ot > 0 ? (
+                  <View style={[styles.simpleRow, styles.periodRowBorder]}>
+                    <Text style={styles.simpleRowMutedLabel}>{`Overtime (${fmtNum(dueSplit.otHours)} hr)`}</Text>
+                    <Text style={[styles.simpleRowTitle, { color: "#C77A2E" }]}>+ {inr(dueSplit.ot)}</Text>
+                  </View>
+                ) : null}
+                {dueSplit.bonus > 0 ? (
+                  <View style={[styles.simpleRow, styles.periodRowBorder]}>
+                    <Text style={[styles.simpleRowMutedLabel, { flex: 1 }]}>{`Picking bonus (${fmtNum(dueSplit.kgAbove)} kg above target)`}</Text>
+                    <Text style={[styles.simpleRowTitle, { color: "#1F9E5C" }]}>+ {inr(dueSplit.bonus)}</Text>
+                  </View>
+                ) : null}
+                <View style={[styles.simpleRow, styles.periodRowBorder]}>
+                  <Text style={[styles.simpleRowMutedLabel, { fontWeight: "700", color: colors.text }]}>Wages due</Text>
+                  <Text style={[styles.simpleRowTitle, { color: colors.primary }]}>{inr(dueEarned)}</Text>
+                </View>
+              </>
+            ) : (
+              <View style={styles.simpleRow}>
+                <Text style={styles.simpleRowMutedLabel}>
+                  {hasAdvanceStructure
+                    ? `Advance due (${dueDays} × ${inr(advPerDay)})`
+                    : `Wages due (${dueDays} work${dueDays !== 1 ? "s" : ""}${isPerDay && groupRate > 0 ? ` · ${inr(groupRate)}/day` : ""})`}
+                </Text>
+                <Text style={[styles.simpleRowTitle, { color: colors.primary }]}>
+                  {inr(hasAdvanceStructure ? dueAdvance : dueEarned)}
+                </Text>
+              </View>
+            )}
+            {!hasAdvanceStructure && earlierPending > 0 ? (
+              <View style={[styles.simpleRow, styles.periodRowBorder]}>
+                <Text style={styles.simpleRowMutedLabel}>Still unpaid from earlier</Text>
+                <Text style={[styles.simpleRowTitle, { color: colors.warning }]}>+ {inr(earlierPending)}</Text>
+              </View>
+            ) : null}
+            {!hasAdvanceStructure && paidInPeriod > 0 ? (
+              <View style={[styles.simpleRow, styles.periodRowBorder]}>
+                <Text style={styles.simpleRowMutedLabel}>Already paid in these dates</Text>
+                <Text style={[styles.simpleRowTitle, { color: "#1F9E92" }]}>− {inr(paidInPeriod)}</Text>
+              </View>
+            ) : null}
             <View style={[styles.simpleRow, styles.periodRowBorder]}>
               <Text style={styles.simpleRowMutedLabel}>Loan pending</Text>
               <Text style={[styles.simpleRowTitle, { color: loanOutstanding > 0 ? colors.danger : colors.textMuted }]}>
@@ -519,7 +654,7 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
               </Text>
             </View>
             <View style={[styles.finalTotal, { backgroundColor: colors.bg }]}>
-              <Text style={[styles.finalTotalLabel, { color: colors.primary }]}>To pay this time</Text>
+              <Text style={[styles.finalTotalLabel, { color: colors.primary }]}>To pay</Text>
               <Text style={[styles.finalTotalValue, { color: colors.primary }]}>{inr(Math.max(0, dueWages))}</Text>
             </View>
             {loanOutstanding > 0 && dueWages > 0 ? (
@@ -541,6 +676,50 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
           </Pressable>
         ) : null}
 
+        {groupOpen && allFolderRecords.length > 0 ? (() => {
+          // Every pay period since this group's first record: wages, paid
+          // and what's left, newest first. Tap one to open it above.
+          const first = allFolderRecords.reduce((m, r) => (r.date < m ? r.date : m), allFolderRecords[0].date);
+          const rows = pastPeriods(groupStart, first)
+            .map((pp) => {
+              const recs = allFolderRecords.filter((r) => r.date >= pp.from && r.date <= pp.to);
+              const wages = recs.reduce((s2, r) => s2 + earnOf(r), 0);
+              const paid = moneyOut.filter((m) => m.date >= pp.from && m.date <= pp.to).reduce((s2, m) => s2 + m.amount, 0);
+              return { ...pp, works: recs.length, wages, paid };
+            })
+            .filter((r) => r.works > 0 || r.paid > 0);
+          if (rows.length === 0) return null;
+          return (
+            <Card style={{ padding: 0, overflow: "hidden" }}>
+              <Text style={styles.blockTitle}>PAY HISTORY</Text>
+              {rows.map((r, i) => {
+                const open = period.kind === "cycle" && range.from === r.from;
+                const left = Math.max(0, r.wages - r.paid);
+                return (
+                  <Pressable
+                    key={r.from}
+                    onPress={() => setPeriod({ kind: "cycle", anchor: r.anchor })}
+                    style={[styles.periodRow, i > 0 && styles.periodRowBorder, open && { backgroundColor: colors.tint }]}
+                    accessibilityRole="button"
+                  >
+                    <View style={styles.periodRowTop}>
+                      <Text style={styles.periodLabel}>{r.label}</Text>
+                      <Text style={[styles.periodValue, { color: left > 0 ? colors.primary : "#1F9E5C" }]}>
+                        {left > 0 ? inr(left) : "✓ Paid"}
+                      </Text>
+                    </View>
+                    <View style={styles.periodMetaRow}>
+                      <Text style={styles.periodMeta}>{r.works} work{r.works !== 1 ? "s" : ""}</Text>
+                      <Text style={[styles.periodMeta, { color: colors.primary }]}>earned {inr(r.wages)}</Text>
+                      {r.paid > 0 ? <Text style={[styles.periodMeta, { color: "#1F9E92" }]}>paid {inr(r.paid)}</Text> : null}
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </Card>
+          );
+        })() : null}
+
         {openFolder !== null && folderWorkers.length > 0 ? (
           <Card style={{ padding: 0, overflow: "hidden" }}>
             <View style={[styles.dueHeader, { paddingVertical: spacing.sm + 2 }]}>
@@ -553,9 +732,7 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
                 style={[styles.employeeRow, idx > 0 && styles.periodRowBorder]}
                 onPress={() => setOpenWorker({ id: w.id, name: w.name })}
               >
-                <View style={styles.employeeAvatar}>
-                  <Text style={styles.employeeAvatarText}>{w.name.charAt(0).toUpperCase()}</Text>
-                </View>
+                <Avatar name={w.name} index={idx} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.simpleRowTitle}>{w.name}</Text>
                   <Text style={styles.simpleRowMeta}>{w.days} day{w.days !== 1 ? "s" : ""} worked</Text>
@@ -650,42 +827,6 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
           )
         ) : null}
 
-        {groupOpen && view !== "final" ? (() => {
-          const rows = view === "weekly" ? weeklyRows : view === "monthly" ? monthlyRows : yearlyRows;
-          const labelOf = (key: string) => (view === "weekly" ? weekLabel(key) : view === "monthly" ? monthLabel(key) : key);
-          if (rows.length === 0) {
-            return <EmptyState title="No records yet for this view" />;
-          }
-          return (
-            <Card style={{ padding: 0, overflow: "hidden" }}>
-              {rows.map(([key, v], idx) => {
-                const advanceDue = v.days * advPerDay;
-                const held = v.wages - advanceDue;
-                const toPay = hasAdvanceStructure ? advanceDue : v.wages - v.advances;
-                return (
-                  <View key={key} style={[styles.periodRow, idx > 0 && styles.periodRowBorder]}>
-                    <View style={styles.periodRowTop}>
-                      <Text style={styles.periodLabel}>{labelOf(key)}</Text>
-                      <Text style={[styles.periodValue, { color: toPay >= 0 ? colors.primary : colors.danger }]}>
-                        {toPay >= 0 ? inr(toPay) : `− ${inr(Math.abs(toPay))}`}
-                      </Text>
-                    </View>
-                    <View style={styles.periodMetaRow}>
-                      <Text style={styles.periodMeta}>{v.days} work{v.days !== 1 ? "s" : ""} done</Text>
-                      <Text style={[styles.periodMeta, { color: colors.primary }]}>earned {inr(v.wages)}</Text>
-                      {hasAdvanceStructure ? (
-                        held > 0 ? <Text style={[styles.periodMeta, { color: colors.warning }]}>{inr(held)} held for final</Text> : null
-                      ) : v.advances > 0 ? (
-                        <Text style={[styles.periodMeta, { color: colors.warning }]}>advance − {inr(v.advances)}</Text>
-                      ) : null}
-                      {v.loans > 0 ? <Text style={[styles.periodMeta, { color: colors.danger }]}>loan given {inr(v.loans)}</Text> : null}
-                    </View>
-                  </View>
-                );
-              })}
-            </Card>
-          );
-        })() : null}
 
         {groupOpen && view === "final" && overtimeSummary && overtimeSummary.pendingAmount + overtimeSummary.clearedAmount > 0 ? (
           <Card style={{ padding: 0, overflow: "hidden" }}>
@@ -785,14 +926,19 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
         ) : null}
 
         {folderRecords.length === 0 ? (
-          <EmptyState title={`No labour records for ${openFolder.name} yet`} subtitle="Records will appear here after attendance is marked" />
+          <EmptyState
+            title={allFolderRecords.length === 0 ? `No labour records for ${openFolder.name} yet` : "No work in these dates"}
+            subtitle={allFolderRecords.length === 0 ? "Records will appear here after attendance is marked" : "Use ‹ › or tap the dates to see other weeks."}
+          />
         ) : null}
 
-        {(!groupOpen || view === "final") && sortedDates.length > 0 ? (
-          <Text style={styles.sectionLabel}>DAILY RECORDS</Text>
+        {sortedDates.length > 0 ? (
+          <>
+            <Text style={styles.sectionLabel}>DAILY RECORDS</Text>
+          </>
         ) : null}
 
-        {(!groupOpen || view === "final") && sortedDates.map((date) => {
+        {sortedDates.map((date) => {
           const entries = byDate[date];
           const totalWage = entries.reduce((s, e) => s + Number(e.wageAmount ?? 0), 0);
           return (
@@ -846,88 +992,90 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  sectionLabel: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.6, marginBottom: spacing.sm },
+  sectionLabel: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.6, marginBottom: spacing.sm },
   folderRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  folderIcon: { width: 44, height: 44, borderRadius: radius.sm, backgroundColor: "#E4EEFB", alignItems: "center", justifyContent: "center" },
-  folderName: { fontSize: 15, fontWeight: "700", color: colors.text },
-  folderSubtitle: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
-  countBadge: { backgroundColor: "#E9E6FB", borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
-  countBadgeText: { fontSize: 12, fontWeight: "700", color: colors.accent },
+  folderIcon: { width: 46, height: 46, borderRadius: 23, backgroundColor: "#9FD8EA", alignItems: "center", justifyContent: "center" },
+  folderName: { fontSize: 16.5, fontWeight: "700", color: colors.text },
+  folderSubtitle: { fontSize: 14, color: colors.textMuted, marginTop: 2 },
+  countBadge: { backgroundColor: "#FFF0C2", borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
+  countBadgeText: { fontSize: 14, fontWeight: "700", color: colors.primary },
 
-  tabs: { flexDirection: "row", backgroundColor: colors.muted, borderRadius: radius.sm, padding: 4, gap: 2 },
-  tab: { flex: 1, paddingVertical: spacing.sm, borderRadius: radius.sm - 2, alignItems: "center" },
-  tabActive: { backgroundColor: "#fff" },
-  tabText: { fontSize: 11, fontWeight: "600", color: colors.textMuted },
-  tabTextActive: { color: colors.primary },
+  tabs: { flexDirection: "row", backgroundColor: colors.muted, borderRadius: radius.pill, padding: 4, gap: 2 },
+  tab: { flex: 1, minHeight: 44, justifyContent: "center", borderRadius: radius.pill, alignItems: "center" },
+  tabActive: { backgroundColor: "#fff", ...shadow },
+  tabText: { fontSize: 13, fontWeight: "600", color: colors.textMuted },
+  tabTextActive: { color: colors.text, fontWeight: "800" },
 
-  payButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.xs, backgroundColor: colors.primary, borderRadius: radius.lg, paddingVertical: spacing.md },
-  payButtonText: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  payButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.xs, backgroundColor: colors.primary, borderRadius: radius.pill, minHeight: 58 },
+  payButtonText: { color: "#fff", fontWeight: "700", fontSize: 18 },
 
   finalHeader: { flexDirection: "row", alignItems: "center", gap: spacing.xs, backgroundColor: colors.primary, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
-  finalHeaderText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  finalHeaderText: { color: "#fff", fontWeight: "700", fontSize: 14.5 },
   finalRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, borderBottomWidth: 1, borderBottomColor: colors.bg },
   finalRowLeft: { flexDirection: "row", alignItems: "center", gap: 6, flex: 1 },
-  finalRowLabel: { fontSize: 13, color: colors.textMuted, flexShrink: 1 },
-  finalRowValue: { fontSize: 13, fontWeight: "700", color: colors.text },
-  finalNote: { fontSize: 11, color: colors.textMuted, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
+  finalRowLabel: { fontSize: 14.5, color: colors.textMuted, flexShrink: 1 },
+  finalRowValue: { fontSize: 14.5, fontWeight: "700", color: colors.text },
+  finalNote: { fontSize: 13, color: colors.textMuted, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   finalTotal: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: spacing.md },
-  finalTotalLabel: { fontSize: 13, fontWeight: "600", flexShrink: 1 },
-  finalTotalValue: { fontSize: 16, fontWeight: "700" },
+  finalTotalLabel: { fontSize: 14.5, fontWeight: "600", flexShrink: 1 },
+  finalTotalValue: { fontSize: 17, fontWeight: "700" },
 
   settleHeader: { flexDirection: "row", alignItems: "center", gap: spacing.xs, backgroundColor: "#B7791F", paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
-  settleHeaderText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  settleHeaderText: { color: "#fff", fontWeight: "700", fontSize: 14.5 },
   settleBody: {},
 
   periodRow: { padding: spacing.md },
   periodRowBorder: { borderTopWidth: 1, borderTopColor: colors.bg },
   periodRowTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  periodLabel: { fontSize: 14, fontWeight: "700", color: colors.text },
-  periodValue: { fontSize: 14, fontWeight: "700" },
+  periodLabel: { fontSize: 15.5, fontWeight: "700", color: colors.text },
+  periodValue: { fontSize: 15.5, fontWeight: "700" },
   periodMetaRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: 4 },
-  periodMeta: { fontSize: 11, color: colors.textMuted },
+  periodMeta: { fontSize: 13, color: colors.textMuted },
 
-  blockTitle: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, padding: spacing.md, paddingBottom: spacing.xs },
-  blockTitleLight: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5 },
+  blockTitle: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, padding: spacing.md, paddingBottom: spacing.xs },
+  blockTitleLight: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5 },
   simpleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
-  simpleRowTitle: { fontSize: 13, fontWeight: "600", color: colors.text },
-  simpleRowMutedLabel: { fontSize: 13, color: colors.textMuted },
-  simpleRowMeta: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
-  simpleRowValue: { fontSize: 13, fontWeight: "700" },
+  simpleRowTitle: { fontSize: 14.5, fontWeight: "600", color: colors.text },
+  simpleRowMutedLabel: { fontSize: 14.5, color: colors.textMuted },
+  simpleRowMeta: { fontSize: 13, color: colors.textMuted, marginTop: 1 },
+  simpleRowValue: { fontSize: 14.5, fontWeight: "700" },
+  dayRow: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, gap: 3 },
+  dayLine: { flexDirection: "row", justifyContent: "space-between", gap: spacing.sm },
 
   // "Payment due now" card
   dueHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, borderBottomWidth: 1, borderBottomColor: colors.bg },
-  dueSubtitle: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
-  dueHeaderValue: { fontSize: 17, fontWeight: "700", color: colors.primary },
+  dueSubtitle: { fontSize: 13, color: colors.textMuted, marginTop: 1 },
+  dueHeaderValue: { fontSize: 18, fontWeight: "700", color: colors.primary },
 
   // Employees list
   employeeRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 4 },
-  employeeAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#E9E6FB", alignItems: "center", justifyContent: "center" },
-  employeeAvatarText: { fontSize: 14, fontWeight: "700", color: colors.accent },
+  employeeAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#FFF0C2", alignItems: "center", justifyContent: "center" },
+  employeeAvatarText: { fontSize: 15.5, fontWeight: "700", color: colors.primary },
 
   // Per-employee net-due summary card
   netDueCard: { alignItems: "center", padding: spacing.lg },
-  netDuePositive: { backgroundColor: "#EEF0FB", borderColor: "#D8DCF3" },
+  netDuePositive: { backgroundColor: "#E3F4EA", borderColor: "#CDEBD8" },
   netDueNegative: { backgroundColor: "#FDEAEA", borderColor: "#F6D2D9" },
-  netDueLabel: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, textTransform: "uppercase" },
-  netDueValue: { fontSize: 28, fontWeight: "700", marginTop: 4 },
-  netDueMeta: { fontSize: 11, color: colors.textMuted, marginTop: 4 },
+  netDueLabel: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, textTransform: "uppercase" },
+  netDueValue: { fontSize: 34, fontWeight: "800", marginTop: 4 },
+  netDueMeta: { fontSize: 13, color: colors.textMuted, marginTop: 4 },
 
   // Account cleared (archival)
   clearedBanner: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: "#D8F3E6", borderWidth: 1, borderColor: "#B7E4CB", borderRadius: radius.md, padding: spacing.md },
-  clearedBannerTitle: { fontSize: 14, fontWeight: "700", color: "#1F9E5C" },
-  clearedBannerSubtitle: { fontSize: 12, color: "#1F9E5C", marginTop: 2 },
-  clearButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.xs, backgroundColor: "#1F9E5C", borderRadius: radius.lg, paddingVertical: spacing.md },
-  clearButtonText: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  clearedBannerTitle: { fontSize: 15.5, fontWeight: "700", color: "#1F9E5C" },
+  clearedBannerSubtitle: { fontSize: 14, color: "#1F9E5C", marginTop: 2 },
+  clearButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.xs, backgroundColor: colors.success, borderRadius: radius.pill, minHeight: 58 },
+  clearButtonText: { color: "#fff", fontWeight: "700", fontSize: 15.5 },
 
   dateHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: colors.primary, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
-  dateHeaderText: { color: "#fff", fontWeight: "700", fontSize: 13 },
-  dateHeaderMeta: { color: "rgba(255,255,255,0.8)", fontSize: 11 },
+  dateHeaderText: { color: "#fff", fontWeight: "700", fontSize: 14.5 },
+  dateHeaderMeta: { color: "rgba(255,255,255,0.8)", fontSize: 13 },
   dateHeaderBadge: { backgroundColor: "rgba(255,255,255,0.2)", borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 2 },
-  dateHeaderBadgeText: { color: "#fff", fontWeight: "700", fontSize: 11 },
+  dateHeaderBadgeText: { color: "#fff", fontWeight: "700", fontSize: 13 },
   entryRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", padding: spacing.md, gap: spacing.sm },
-  entryName: { fontSize: 14, fontWeight: "600", color: colors.text },
-  entryMeta: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
-  entryNotes: { fontSize: 12, color: colors.textMuted, marginTop: 4 },
-  entryRecordedAt: { fontSize: 10, color: colors.textMuted, marginTop: 2 },
-  entryWage: { fontSize: 14, fontWeight: "700", color: colors.primary, marginTop: 2 },
+  entryName: { fontSize: 15.5, fontWeight: "600", color: colors.text },
+  entryMeta: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
+  entryNotes: { fontSize: 14, color: colors.textMuted, marginTop: 4 },
+  entryRecordedAt: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  entryWage: { fontSize: 15.5, fontWeight: "700", color: colors.primary, marginTop: 2 },
 });

@@ -1,6 +1,8 @@
 import React, { useEffect } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useEstateStore } from "../estate/store/estateStore";
+import { harvestHeaderOptions } from "../../components/HarvestHeader";
+import { Pill } from "../../components/harvest";
 import { useCurrencyStore } from "./currency";
 import { HomeScreen } from "./home/screens/HomeScreen";
 import { WorkPlanScreen } from "./home/screens/WorkPlanScreen";
@@ -25,8 +27,8 @@ export function InviteeStack() {
   }, [activeEstateId, refreshCurrency]);
 
   return (
-    <Stack.Navigator>
-      <Stack.Screen name="Home" component={HomeScreen} options={{ title: "Chiguru" }} />
+    <Stack.Navigator screenOptions={{ ...harvestHeaderOptions, headerRight: () => <Pill text="Invited" tone="on" /> }}>
+      <Stack.Screen name="Home" component={HomeScreen} options={{ title: "Chiguru", headerShown: false }} />
       <Stack.Screen name="WorkPlan" component={WorkPlanScreen} options={{ title: "Work Plan" }} />
       <Stack.Screen name="Attendance" component={AttendanceGroupsScreen} options={{ title: "Attendance" }} />
       <Stack.Screen name="CreateWorkGroup" component={CreateWorkGroupScreen} options={{ title: "New Work Group" }} />

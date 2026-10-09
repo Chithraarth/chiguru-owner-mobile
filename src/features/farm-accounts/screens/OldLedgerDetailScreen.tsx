@@ -1,8 +1,10 @@
 import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "../../../components/Card";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
+import { StatTiles, shortRupees } from "../../../components/harvest";
 import { colors, spacing } from "../../../components/theme";
 import { getOldLedgerYear } from "../../../api/endpoints/ledger";
 import { useEstateStore } from "../../estate/store/estateStore";
@@ -34,8 +36,21 @@ export function OldLedgerDetailScreen({ route }: { route: any }) {
   if (!d) return <EmptyState title="Could not load this year" />;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md }}>
-      <Section title="EXPENSES BY CATEGORY">
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: spacing.xl }}>
+      <View style={{ marginBottom: spacing.md }}>
+        <StatTiles
+          items={(() => {
+            const income = d.harvests.reduce((n, h) => n + Number(h.totalIncome || 0), 0);
+            const spent = d.expenseCategories.reduce((n, c) => n + c.total, 0) + d.workers.reduce((n, w) => n + w.earned, 0);
+            return [
+              { label: "Income", value: shortRupees(income), sub: "" },
+              { label: "Spent", value: shortRupees(spent), sub: "" },
+              { label: "Net", value: shortRupees(income - spent), sub: "" },
+            ];
+          })()}
+        />
+      </View>
+      <Section title="Expenses by category">
         {d.expenseCategories.length === 0 ? (
           <Text style={styles.muted}>No expenses recorded.</Text>
         ) : (
@@ -50,7 +65,7 @@ export function OldLedgerDetailScreen({ route }: { route: any }) {
         )}
       </Section>
 
-      <Section title="WAGES BY WORK TYPE">
+      <Section title="Wages by work type">
         {d.workTypes.length === 0 ? (
           <Text style={styles.muted}>No work recorded.</Text>
         ) : (
@@ -68,7 +83,7 @@ export function OldLedgerDetailScreen({ route }: { route: any }) {
         )}
       </Section>
 
-      <Section title="PER-WORKER WAGES">
+      <Section title="Per-worker wages">
         {d.workers.length === 0 ? (
           <Text style={styles.muted}>No attendance recorded.</Text>
         ) : (
@@ -86,7 +101,7 @@ export function OldLedgerDetailScreen({ route }: { route: any }) {
         )}
       </Section>
 
-      <Section title="HARVESTS">
+      <Section title="Harvests">
         {d.harvests.length === 0 ? (
           <Text style={styles.muted}>No harvests recorded.</Text>
         ) : (
@@ -104,7 +119,7 @@ export function OldLedgerDetailScreen({ route }: { route: any }) {
         )}
       </Section>
 
-      <Section title="PAYMENTS">
+      <Section title="Payments">
         {d.payments.length === 0 ? (
           <Text style={styles.muted}>No payments recorded.</Text>
         ) : (
@@ -122,7 +137,7 @@ export function OldLedgerDetailScreen({ route }: { route: any }) {
         )}
       </Section>
 
-      <Section title="ADVANCES">
+      <Section title="Advances">
         {d.advances.length === 0 ? (
           <Text style={styles.muted}>No advances recorded.</Text>
         ) : (
@@ -137,7 +152,7 @@ export function OldLedgerDetailScreen({ route }: { route: any }) {
         )}
       </Section>
 
-      <Section title="LOANS ISSUED">
+      <Section title="Loans issued">
         {d.loans.length === 0 ? (
           <Text style={styles.muted}>No loans recorded.</Text>
         ) : (
@@ -160,15 +175,15 @@ export function OldLedgerDetailScreen({ route }: { route: any }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  sectionTitle: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.6, marginBottom: spacing.sm },
-  muted: { fontSize: 13, color: colors.textMuted },
+  sectionTitle: { fontSize: 20, fontWeight: "800", color: colors.text, marginBottom: spacing.sm },
+  muted: { fontSize: 14.5, color: colors.textMuted },
   line: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: spacing.xs + 2,
   },
-  lineLabel: { fontSize: 13.5, fontWeight: "600", color: colors.text },
-  lineSub: { fontSize: 11.5, color: colors.textMuted, marginTop: 1 },
-  lineValue: { fontSize: 13.5, fontWeight: "700", color: colors.text },
+  lineLabel: { fontSize: 15, fontWeight: "600", color: colors.text },
+  lineSub: { fontSize: 13.5, color: colors.textMuted, marginTop: 1 },
+  lineValue: { fontSize: 15, fontWeight: "700", color: colors.text },
 });

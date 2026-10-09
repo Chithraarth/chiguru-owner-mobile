@@ -1,49 +1,64 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
   Image,
   Modal,
+  Platform,
   Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
+import { Text, TextInput } from "../../../components/Text";
+import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Banknote,
   Camera,
+  Check,
   CheckCircle2,
-  ChevronDown,
-  ChevronUp,
   Clock3,
   CreditCard,
   FileText,
-  ScanFace,
+  Search,
   Sparkles,
   UserMinus,
   Users,
   Wallet,
   Wheat,
   X,
+  Plus,
+  UserPlus,
+  Pencil,
+  UserX,
+  CalendarDays,
 } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { ChipSelect } from "../../../components/ChipSelect";
+import { SelectOrType } from "../../../components/SelectOrType";
 import { TextField } from "../../../components/TextField";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
-import { colors, radius, spacing } from "../../../components/theme";
-import { useAttendance } from "../hooks/useAttendance";
+import { colors, radius, shadow, spacing } from "../../../components/theme";
+import { Avatar, Pill, RoundButton } from "../../../components/harvest";
+import { todayIso, useAttendance } from "../hooks/useAttendance";
+import { getCrops } from "../../../api/endpoints/crops";
+import { useEstateStore } from "../../estate/store/estateStore";
 import { useWorkGroups } from "../../work-groups/hooks/useWorkGroups";
 import { describeDevice } from "../../../lib/device";
 import { useSyncStore } from "../../../store/syncStore";
 import { countWorkersFromPhoto, type SeasonEndResult } from "../../../api/endpoints/workGroups";
-import { createWorker, matchFace } from "../../../api/endpoints/workers";
+import { createWorker, updateWorker } from "../../../api/endpoints/workers";
+import { deleteAttendance, getAttendanceByGroup } from "../../../api/endpoints/attendance";
 import { compressToDataUrl } from "../../../lib/imageCompression";
 import type { GroupLoan, Worker } from "../../../types/api";
+import { isGateError } from "../../../api/errors";
 
 const SETTLEMENT_MODES: { value: string; label: string }[] = [
   { value: "weekly", label: "Weekly" },
@@ -61,7 +76,11 @@ const PAY_FREQ_LABELS: Record<string, string> = {
 
 const REPAY_METHODS = ["cash", "salary deduction", "bank transfer", "installment"];
 
-type Tab = "attendance" | "payments" | "loans";
+type Tab = "attendance" | "history" | "payments" | "loans";
+
+function fmtDay(iso: string) {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+}
 
 function inr(n: number) {
   return `₹${Math.round(n).toLocaleString("en-IN")}`;
@@ -91,6 +110,9 @@ export function AttendanceScreen({ route }: { route: any }) {
     workGroupId: number;
     workGroupName: string;
   };
+  // Day being marked - today by default, or an earlier day to add or fix it.
+  const [selectedDate, setSelectedDate] = useState(todayIso);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const {
     workers,
     attendance,
@@ -116,8 +138,7 @@ export function AttendanceScreen({ route }: { route: any }) {
     recordLoanRepayment,
     generateSeasonAccount,
     removeWorker,
-    setWorkerPhoto,
-  } = useAttendance(workGroupId);
+  } = useAttendance(workGroupId, selectedDate);
   const { data: workGroups } = useWorkGroups();
   const workGroup = workGroups?.find((g) => g.id === workGroupId);
   const rate = Number(workGroup?.rate ?? 0);
@@ -128,11 +149,20 @@ export function AttendanceScreen({ route }: { route: any }) {
   const defaultOtRate = paymentType === "Per hour" ? rate : rate / 8;
 
   const [tab, setTab] = useState<Tab>("attendance");
+  const [search, setSearch] = useState("");
+  const navigation = useNavigation<any>();
   const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  // Same day form as the web app: hours, overtime (one per-hour rate, hours
+  // typed next to each person), harvest picking (crop + bonus rule, kg typed
+  // next to each person) and the day's total headcount.
+  const [hours, setHours] = useState("8");
+  const [otMode, setOtMode] = useState(false);
+  const [otRateAll, setOtRateAll] = useState("");
   const [otHours, setOtHours] = useState<Record<number, string>>({});
-  const [otRate, setOtRate] = useState<Record<number, string>>({});
+  const [pickMode, setPickMode] = useState(isHarvestGroup);
+  const [pickCrop, setPickCrop] = useState("");
   const [harvestKg, setHarvestKg] = useState<Record<number, string>>({});
+  const [totalPeople, setTotalPeople] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   // Picking-bonus rule editor (threshold kg + pay/kg above it). Prefilled
   // from the group's saved rule, editable inline like the web app.
@@ -142,6 +172,44 @@ export function AttendanceScreen({ route }: { route: any }) {
   const [pickBonus, setPickBonus] = useState(
     workGroup?.harvestBonusPerKg != null ? String(Number(workGroup.harvestBonusPerKg)) : ""
   );
+  // The group's saved bonus rule can arrive after the first render (or be
+  // refreshed from the server), so follow it until the owner types their own.
+  const savedThreshold = workGroup?.harvestThresholdKg != null ? String(Number(workGroup.harvestThresholdKg)) : "";
+  const savedBonus = workGroup?.harvestBonusPerKg != null ? String(Number(workGroup.harvestBonusPerKg)) : "";
+  const [ruleEdited, setRuleEdited] = useState(false);
+  useEffect(() => {
+    if (workGroup?.paymentType === "Per kg") setPickMode(true);
+  }, [workGroup?.paymentType]);
+  // The crop picked usually is the group's own crop - start from it.
+  useEffect(() => {
+    if (workGroup?.cropName) setPickCrop((cur) => cur || workGroup.cropName || "");
+  }, [workGroup?.cropName]);
+  useEffect(() => {
+    if (ruleEdited) return;
+    setPickThreshold(savedThreshold);
+    setPickBonus(savedBonus);
+  }, [savedThreshold, savedBonus, ruleEdited]);
+  // "Total people working" starts from the day's saved headcount.
+  useEffect(() => {
+    setTotalPeople(workSession?.headcountIn != null ? String(workSession.headcountIn) : "");
+  }, [selectedDate, workSession?.headcountIn]);
+  const activeEstateId = useEstateStore((s) => s.activeEstateId);
+  const { data: crops = [] } = useQuery({
+    queryKey: ["crops", activeEstateId],
+    queryFn: getCrops,
+    enabled: activeEstateId != null,
+  });
+  const queryClient = useQueryClient();
+  // Home's worker count and today's wages come from the dashboard summary.
+  const refreshDashboard = () => queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+  // Every day this group worked, newest first - shown as "Attendance history"
+  // so earlier days can be opened, checked and corrected.
+  const historyQuery = useQuery({
+    queryKey: ["attendance-history", workGroupId],
+    queryFn: () => getAttendanceByGroup(workGroupId),
+    enabled: !!workGroupId,
+  });
+  const [historyShown, setHistoryShown] = useState(7);
   const isOnline = useSyncStore((s) => s.isOnline);
   const insets = useSafeAreaInsets();
 
@@ -152,8 +220,14 @@ export function AttendanceScreen({ route }: { route: any }) {
   const [checkingOut, setCheckingOut] = useState(false);
 
   // ── Single Person Face Attendance state ─────────────────────────────────────
-  const [faceMatching, setFaceMatching] = useState(false);
-  const [savingWorkerPhotoId, setSavingWorkerPhotoId] = useState<number | null>(null);
+  // Edit mode (pencil in the header): fix a worker's details, take back a
+  // "present" saved by mistake (e.g. they were on leave), or remove a worker.
+  const [editMode, setEditMode] = useState(false);
+  const [editingWorkerId, setEditingWorkerId] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editWage, setEditWage] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // ── Advance payment form state ──────────────────────────────────────────────
   const [showPaymentForm, setShowPaymentForm] = useState(false);
@@ -173,6 +247,13 @@ export function AttendanceScreen({ route }: { route: any }) {
   const [loanPhotoBusy, setLoanPhotoBusy] = useState(false);
   const [loanNameFocused, setLoanNameFocused] = useState(false);
   const [creatingLoanWorker, setCreatingLoanWorker] = useState(false);
+  // "+ Add worker": workers belong to the whole farm, so one added here also
+  // shows in every other group's list.
+  const [showAddWorker, setShowAddWorker] = useState(false);
+  const [newWorkerName, setNewWorkerName] = useState("");
+  const [newWorkerPhone, setNewWorkerPhone] = useState("");
+  const [newWorkerWage, setNewWorkerWage] = useState("");
+  const [addingWorker, setAddingWorker] = useState(false);
   const [payLoanId, setPayLoanId] = useState<number | null>(null);
   const [repayAmount, setRepayAmount] = useState("");
   const [repayMethod, setRepayMethod] = useState("cash");
@@ -192,18 +273,55 @@ export function AttendanceScreen({ route }: { route: any }) {
   const presentIds = markedIds;
 
   function toggle(workerId: number) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(workerId)) next.delete(workerId);
-      else next.add(workerId);
-      return next;
-    });
+    if (selected.has(workerId)) {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        next.delete(workerId);
+        return next;
+      });
+      return;
+    }
+    // Re-selecting someone already marked edits their day: start from what was
+    // saved, so saving again (e.g. just to add the crop) never wipes their kg
+    // or overtime.
+    const saved = attendance.find((a) => a.workGroupId === workGroupId && a.workerId === workerId);
+    if (saved) {
+      const savedOt = Number(saved.overtimeHours ?? 0);
+      const savedKg = Number(saved.harvestedKg ?? 0);
+      if (savedOt > 0) {
+        setOtMode(true);
+        setOtHours((cur) => ({ ...cur, [workerId]: String(savedOt) }));
+        if (!otRateAll && Number(saved.overtimeRate ?? 0) > 0) setOtRateAll(String(Number(saved.overtimeRate)));
+      }
+      if (savedKg > 0) {
+        setPickMode(true);
+        setHarvestKg((cur) => ({ ...cur, [workerId]: String(savedKg) }));
+        if (!pickCrop && saved.harvestCrop) setPickCrop(saved.harvestCrop);
+      }
+      if (Number(saved.hoursWorked) > 0) setHours(String(Number(saved.hoursWorked)));
+    }
+    setSelected((prev) => new Set(prev).add(workerId));
   }
 
+  const num = (v: string | undefined) => Math.max(0, parseFloat(v ?? "") || 0);
+  const hoursNum = num(hours) || 8;
+  const otPerHour = num(otRateAll) || defaultOtRate;
+  const threshold = num(pickThreshold);
+  const bonusPerKg = num(pickBonus);
+
+  /** Day's pay before extras: kg x rate for per-kg groups, else the group rate. */
+  function baseFor(workerId: number): number {
+    if (isHarvestGroup) return num(harvestKg[workerId]) * rate;
+    const base = paymentType === "Per hour" ? rate * hoursNum : rate;
+    return base || Number(workers.find((w) => w.id === workerId)?.wageRate ?? 0);
+  }
+
+  /** Overtime and picking bonus on top of the base pay (same rules as the web app). */
   function extraFor(workerId: number): number {
-    const ot = Number(otHours[workerId] ?? 0) * Number(otRate[workerId] ?? defaultOtRate);
-    const kg = isHarvestGroup ? Number(harvestKg[workerId] ?? 0) * rate : 0;
-    return (Number.isFinite(ot) ? ot : 0) + (Number.isFinite(kg) ? kg : 0);
+    const ot = otMode ? num(otHours[workerId]) * otPerHour : 0;
+    const kg = pickMode ? num(harvestKg[workerId]) : 0;
+    const bonus = kg > 0 && threshold > 0 && bonusPerKg > 0 ? Math.max(0, kg - threshold) * bonusPerKg : 0;
+    return ot + bonus;
   }
 
   async function onRefresh() {
@@ -216,47 +334,56 @@ export function AttendanceScreen({ route }: { route: any }) {
     const deviceLabel = describeDevice();
     // Picking-bonus rule (target kg + pay/kg above it) is owned by the work
     // group, not the attendance row - save it once here if it changed, same
-    // as the web app does right before writing today's attendance.
-    if (isHarvestGroup) {
-      const threshold = Math.max(0, Number(pickThreshold) || 0);
-      const bonusPerKg = Math.max(0, Number(pickBonus) || 0);
+    // as the web app does right before writing the day's attendance.
+    if (pickMode) {
       const savedThreshold = Number(workGroup?.harvestThresholdKg ?? 0);
       const savedBonus = Number(workGroup?.harvestBonusPerKg ?? 0);
       if (threshold !== savedThreshold || bonusPerKg !== savedBonus) {
-        await updateWorkGroup.mutateAsync({
-          harvestThresholdKg: threshold > 0 ? String(threshold) : null,
-          harvestBonusPerKg: bonusPerKg > 0 ? String(bonusPerKg) : null,
-        });
+        try {
+          await updateWorkGroup.mutateAsync({
+            harvestThresholdKg: threshold > 0 ? String(threshold) : null,
+            harvestBonusPerKg: bonusPerKg > 0 ? String(bonusPerKg) : null,
+          });
+        } catch {
+          Alert.alert("Couldn't save the picking bonus rule", "Attendance will still be saved.");
+        }
       }
     }
     // Re-check against the current active-worker list, not just the stale
     // `selected` ids - a worker removed after being selected (but before
     // Save was tapped) must not still get a wage entry written for them.
     const eligibleIds = new Set(eligibleWorkers.map((w) => w.id));
+    const crop = pickCrop.trim();
     for (const workerId of selected) {
       if (!eligibleIds.has(workerId)) continue;
-      const hoursWorked = paymentType === "Per hour" ? 8 : undefined;
-      const baseWage = isHarvestGroup ? Number(harvestKg[workerId] ?? 0) * rate : paymentType === "Per hour" ? rate * 8 : rate;
-      const otH = Number(otHours[workerId] ?? 0);
-      const otR = Number(otRate[workerId] ?? defaultOtRate);
-      const otAmount = otH > 0 ? otH * otR : 0;
+      const otH = otMode ? num(otHours[workerId]) : 0;
+      const kg = pickMode ? num(harvestKg[workerId]) : 0;
       await markAttendance.mutateAsync({
         workGroupId,
         workerId,
         date,
-        hoursWorked,
-        wageAmount: baseWage + otAmount,
+        hoursWorked: hoursNum,
+        wageAmount: Math.round((baseFor(workerId) + extraFor(workerId)) * 100) / 100,
         overtimeHours: otH > 0 ? otH : undefined,
-        overtimeRate: otH > 0 ? otR : undefined,
-        harvestedKg: isHarvestGroup && harvestKg[workerId] ? Number(harvestKg[workerId]) : undefined,
+        overtimeRate: otH > 0 ? Math.round(otPerHour * 100) / 100 : undefined,
+        harvestedKg: kg > 0 ? kg : undefined,
+        harvestCrop: kg > 0 && crop ? crop : undefined,
         deviceLabel,
       });
     }
+    // "Total people working" - the full gang for the day, including people
+    // not in the worker list - is kept on the day's work session.
+    const count = parseInt(totalPeople, 10);
+    if (count > 0 && count !== workSession?.headcountIn) {
+      try {
+        await startOrUpdateSession.mutateAsync({ date, headcountIn: count });
+      } catch {
+        Alert.alert("Attendance saved", "But the total people count could not be saved.");
+      }
+    }
     setSelected(new Set());
     setOtHours({});
-    setOtRate({});
     setHarvestKg({});
-    setExpandedId(null);
     setAiResult(null);
   }
 
@@ -293,75 +420,11 @@ export function AttendanceScreen({ route }: { route: any }) {
           "Work start could not be saved — retry from the work session card."
         );
       }
-    } catch {
+    } catch (err) {
+      if (isGateError(err)) return; // the plan/wallet prompt already explained it
       Alert.alert("AI scan failed", "Could not count workers from that photo. Try again.");
     } finally {
       setAiScanning(false);
-    }
-  }
-
-  // ── Single Person Face Attendance: camera → send photo to
-  // /workers/face-match → mark the matched worker present. Deliberately
-  // simple compared to web's on-device face-api.js scanning (ruled out this
-  // session for licensing/model-compatibility reasons) — one photo, one
-  // backend call, one result, no live camera/ML here.
-  async function handleFaceAttendance() {
-    const uri = await captureCameraPhoto();
-    if (!uri) return;
-    setFaceMatching(true);
-    try {
-      const photo = await compressToDataUrl(uri, "ai");
-      const result = await matchFace(photo);
-      if (result.matchedWorkerId == null) {
-        if (result.message) {
-          Alert.alert("No reference photos yet", result.message);
-        } else {
-          Alert.alert(
-            "No confident match found",
-            "Add a reference photo for this worker using the camera icon next to their name below, or use Group Attendance / manual marking instead."
-          );
-        }
-        return;
-      }
-      const worker = eligibleWorkers.find((w) => w.id === result.matchedWorkerId);
-      const workerName = result.matchedWorkerName ?? worker?.name ?? "Worker";
-      if (presentIds.has(result.matchedWorkerId)) {
-        Alert.alert(`${workerName} — already marked today`);
-        return;
-      }
-      // Same base-wage computation as web's markFacePresent — this is a
-      // single click-to-mark flow, not harvest-picking. Falls back to the
-      // worker's own wageRate if the group itself has no rate set.
-      const baseWage = (paymentType === "Per hour" ? rate * 8 : rate) || Number(worker?.wageRate ?? 0);
-      await markAttendance.mutateAsync({
-        workGroupId,
-        workerId: result.matchedWorkerId,
-        date,
-        hoursWorked: paymentType === "Per hour" ? 8 : undefined,
-        wageAmount: baseWage,
-        deviceLabel: "Face",
-      });
-      Alert.alert(`${workerName} marked present ✓`);
-    } catch {
-      Alert.alert("Face match failed", "Could not reach the AI service. Try again, or use Group Attendance / manual marking.");
-    } finally {
-      setFaceMatching(false);
-    }
-  }
-
-  // Registers/updates a worker's saved reference photo used for face matching.
-  async function handleSaveWorkerPhoto(worker: Worker) {
-    const uri = await captureCameraPhoto();
-    if (!uri) return;
-    setSavingWorkerPhotoId(worker.id);
-    try {
-      const photo = await compressToDataUrl(uri, "record");
-      await setWorkerPhoto.mutateAsync({ workerId: worker.id, photoDataUrl: photo });
-      Alert.alert("Reference photo saved", `${worker.name}'s photo will be used for face attendance.`);
-    } catch {
-      Alert.alert("Could not save the photo", "Please try again.");
-    } finally {
-      setSavingWorkerPhotoId(null);
     }
   }
 
@@ -408,12 +471,33 @@ export function AttendanceScreen({ route }: { route: any }) {
     }
   }
 
+  const isToday = date === todayIso();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      subtitle: [workGroup?.blockName, isToday ? "Today" : fmtDay(date)].filter(Boolean).join(" · "),
+      // Nothing to edit until the group has workers.
+      headerRight: () => eligibleWorkers.length === 0 && !editMode ? null : (
+        <RoundButton
+          icon={editMode ? Check : Pencil}
+          label={editMode ? "Done editing" : "Edit workers"}
+          onPress={() => {
+            setEditMode((v) => !v);
+            setEditingWorkerId(null);
+          }}
+        />
+      ),
+    });
+  });
+
   if (isLoading) return <LoadingView label="Loading attendance..." />;
 
-  const totalDue = [...selected].reduce((sum, id) => {
-    const base = isHarvestGroup ? Number(harvestKg[id] ?? 0) * rate : paymentType === "Per hour" ? rate * 8 : rate;
-    return sum + base + extraFor(id);
-  }, 0);
+  const q = search.trim().toLowerCase();
+  const visibleWorkers = q ? eligibleWorkers.filter((w) => w.name.toLowerCase().includes(q)) : eligibleWorkers;
+  const presentCount = new Set([...selected, ...markedIds]).size;
+  const absentCount = Math.max(0, eligibleWorkers.length - presentCount);
+
+  const totalDue = [...selected].reduce((sum, id) => sum + baseFor(id) + extraFor(id), 0);
 
   const todayWage = attendance
     .filter((a) => a.workGroupId === workGroupId)
@@ -422,6 +506,19 @@ export function AttendanceScreen({ route }: { route: any }) {
     .filter((a) => a.workGroupId === workGroupId)
     .reduce((s, a) => s + Number(a.harvestedKg ?? 0), 0);
   const todayCount = attendance.filter((a) => a.workGroupId === workGroupId).length;
+
+  const historyDays = (() => {
+    const byDate = new Map<string, { date: string; count: number; kg: number; otHours: number; cost: number }>();
+    for (const a of historyQuery.data ?? []) {
+      const d = byDate.get(a.date) ?? { date: a.date, count: 0, kg: 0, otHours: 0, cost: 0 };
+      d.count += 1;
+      d.kg += Number(a.harvestedKg ?? 0);
+      d.otHours += Number(a.overtimeHours ?? 0);
+      d.cost += Number(a.wageAmount ?? 0);
+      byDate.set(a.date, d);
+    }
+    return [...byDate.values()].sort((x, y) => (x.date < y.date ? 1 : -1));
+  })();
 
   const advancePerDay = workGroup?.advancePerUnit ? Number(workGroup.advancePerUnit) : 0;
   const remainingPerDay = advancePerDay > 0 ? rate - advancePerDay : 0;
@@ -518,6 +615,103 @@ export function AttendanceScreen({ route }: { route: any }) {
   // Mirrors web's saveLoan() unresolved-name branch (attendance.tsx:280-310):
   // prefer the picked/matched worker; otherwise create a new one by that name
   // before recording the loan.
+  function startEditing(worker: Worker) {
+    if (editingWorkerId === worker.id) {
+      setEditingWorkerId(null);
+      return;
+    }
+    setEditingWorkerId(worker.id);
+    setEditName(worker.name);
+    setEditPhone(worker.phone ?? "");
+    setEditWage(worker.wageRate && Number(worker.wageRate) > 0 ? String(Number(worker.wageRate)) : "");
+  }
+
+  async function saveWorkerEdit(worker: Worker) {
+    const name = editName.trim();
+    if (!name || savingEdit) return;
+    setSavingEdit(true);
+    try {
+      await updateWorker(worker.id, {
+        name,
+        phone: editPhone.trim() || null,
+        ...(Number(editWage) > 0 ? { wageRate: String(Number(editWage)) } : {}),
+      });
+      setEditingWorkerId(null);
+      refetch();
+      refreshDashboard();
+    } catch {
+      Alert.alert("Could not save", "Please try again.");
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
+  // Someone was saved as present but didn't come (on leave): remove that
+  // day's entry so they aren't paid for it.
+  function confirmMarkAbsent(worker: Worker) {
+    const entry = attendance.find((a) => a.workGroupId === workGroupId && a.workerId === worker.id);
+    if (!entry) return;
+    Alert.alert(
+      `Mark ${worker.name} absent?`,
+      "Their attendance for this day is removed, so it won't count towards wages.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Mark absent",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteAttendance(entry.id);
+              setSelected((prev) => {
+                const next = new Set(prev);
+                next.delete(worker.id);
+                return next;
+              });
+              setEditingWorkerId(null);
+              refetch();
+              historyQuery.refetch();
+            } catch {
+              Alert.alert("Could not mark absent", "Please try again.");
+            }
+          },
+        },
+      ],
+    );
+  }
+
+  async function saveNewWorker() {
+    const name = newWorkerName.trim();
+    if (!name || addingWorker) return;
+    if (eligibleWorkers.some((w) => w.name.trim().toLowerCase() === name.toLowerCase())) {
+      Alert.alert("Already in the list", `${name} is already one of your workers.`);
+      return;
+    }
+    const wage = newWorkerWage.trim();
+    setAddingWorker(true);
+    try {
+      const w = await createWorker(name, {
+        ...(newWorkerPhone.trim() ? { phone: newWorkerPhone.trim() } : {}),
+        ...(wage && Number(wage) > 0 ? { wageRate: String(Number(wage)) } : {}),
+      });
+      setShowAddWorker(false);
+      setNewWorkerName("");
+      setNewWorkerPhone("");
+      setNewWorkerWage("");
+      if (!w) {
+        Alert.alert("Saved offline", `${name} will be added when you're back online.`);
+        return;
+      }
+      await refetch();
+      refreshDashboard();
+      // They're usually being added because they came today - tick them.
+      setSelected((prev) => new Set(prev).add(w.id));
+    } catch {
+      Alert.alert("Could not add worker", "Please try again.");
+    } finally {
+      setAddingWorker(false);
+    }
+  }
+
   async function saveLoan() {
     // Guards a fast double-tap: the button's own disabled/loading state
     // only reflects createLoan.isPending / creatingLoanWorker AFTER this
@@ -604,79 +798,257 @@ export function AttendanceScreen({ route }: { route: any }) {
 
       <View style={styles.tabRow}>
         <Pressable style={[styles.tabBtn, tab === "attendance" && styles.tabBtnActive]} onPress={() => setTab("attendance")}>
-          <Banknote size={14} color={tab === "attendance" ? colors.primary : colors.textMuted} />
+          <Banknote size={16} color={tab === "attendance" ? colors.primary : colors.textMuted} />
           <Text style={[styles.tabText, tab === "attendance" && styles.tabTextActive]}>Attend</Text>
         </Pressable>
+        <Pressable style={[styles.tabBtn, tab === "history" && styles.tabBtnActive]} onPress={() => setTab("history")}>
+          <CalendarDays size={16} color={tab === "history" ? colors.primary : colors.textMuted} />
+          <Text style={[styles.tabText, tab === "history" && styles.tabTextActive]}>History</Text>
+        </Pressable>
         <Pressable style={[styles.tabBtn, tab === "payments" && styles.tabBtnActive]} onPress={() => setTab("payments")}>
-          <Wallet size={14} color={tab === "payments" ? "#C77A2E" : colors.textMuted} />
-          <Text style={[styles.tabText, tab === "payments" && { color: "#C77A2E" }]}>Advance</Text>
+          <Wallet size={16} color={tab === "payments" ? colors.primary : colors.textMuted} />
+          <Text style={[styles.tabText, tab === "payments" && styles.tabTextActive]}>Advance</Text>
         </Pressable>
         <Pressable style={[styles.tabBtn, tab === "loans" && styles.tabBtnActive]} onPress={() => setTab("loans")}>
-          <CreditCard size={14} color={tab === "loans" ? colors.danger : colors.textMuted} />
-          <Text style={[styles.tabText, tab === "loans" && { color: colors.danger }]}>Loans</Text>
+          <CreditCard size={16} color={tab === "loans" ? colors.primary : colors.textMuted} />
+          <Text style={[styles.tabText, tab === "loans" && styles.tabTextActive]}>Loans</Text>
         </Pressable>
       </View>
 
       {tab === "attendance" ? (
         <FlatList
-          data={eligibleWorkers}
+          keyboardShouldPersistTaps="handled"
+          data={visibleWorkers}
           keyExtractor={(w) => String(w.id)}
-          contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+          contentContainerStyle={{ padding: 20, paddingBottom: 150 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           ListHeaderComponent={
-            <View style={{ gap: spacing.sm, marginBottom: spacing.sm }}>
-              {/* Two ways to mark attendance, side by side — mirrors web's
-                  grid-cols-2 layout (attendance.tsx:679-712). */}
-              <View style={{ flexDirection: "row", gap: spacing.sm }}>
-                {/* Single Person Face Attendance: one photo → AI face match →
-                    mark that one worker present. Mobile-only simplification of
-                    web's live face-api.js scanning (deliberately not ported —
-                    see handleFaceAttendance). */}
-                <Pressable
-                  style={[styles.faceCard, faceMatching && { opacity: 0.85 }]}
-                  onPress={handleFaceAttendance}
-                  disabled={faceMatching}
-                >
-                  <View style={styles.faceIconWrap}>
-                    {faceMatching ? <ActivityIndicator color="#fff" /> : <ScanFace size={20} color="#fff" />}
-                  </View>
-                  <View>
-                    <Text style={styles.faceCardTitle}>Single Person Face Attendance</Text>
-                    <Text style={styles.faceCardSubtitle}>
-                      {faceMatching ? "Matching face…" : "Regular workers — each face marks itself, one by one"}
-                    </Text>
-                  </View>
-                </Pressable>
-
-                {/* Group Attendance: AI headcount */}
-                <Pressable
-                  style={[styles.aiCard, (aiScanning || !!workSession) && { opacity: 0.85 }]}
+            <View style={{ gap: 12, marginBottom: 14 }}>
+              {/* Canvas layout: count-from-photo + select-all, then search. Face
+                  attendance lives on the header's scan button. */}
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <Button
+                  title={aiScanning ? "Counting…" : workSession ? (workSession.checkOutAt ? "Work done" : workSession.checkInPhoto ? "Photo taken" : "Work started") : "Count from photo"}
+                  variant="light"
+                  icon={workSession ? CheckCircle2 : Camera}
                   onPress={handleGroupAttendanceScan}
-                  disabled={aiScanning || !!workSession}
-                >
-                  <View style={styles.aiIconWrap}>
-                    {aiScanning ? (
-                      <ActivityIndicator color="#fff" />
-                    ) : workSession ? (
-                      <CheckCircle2 size={20} color="#fff" />
-                    ) : (
-                      <Camera size={20} color="#fff" />
-                    )}
-                  </View>
-                  <View>
-                    <Text style={styles.aiCardTitle}>Group Attendance</Text>
-                    <Text style={styles.aiCardSubtitle}>
-                      {aiScanning
-                        ? "AI is counting heads…"
-                        : workSession
-                          ? workSession.checkOutAt
-                            ? "Work done for this day"
-                            : `Work started at ${fmtTime(workSession.checkInAt)}`
-                          : "Arrival photo — AI counts heads & time is noted"}
-                    </Text>
-                  </View>
-                </Pressable>
+                  loading={aiScanning}
+                  disabled={!!workSession}
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  title="All"
+                  variant="secondary"
+                  icon={Check}
+                  onPress={() => setSelected(new Set(eligibleWorkers.filter((w) => !markedIds.has(w.id)).map((w) => w.id)))}
+                />
               </View>
+              <View style={styles.searchWrap}>
+                <Search size={20} color={colors.textMuted} style={styles.searchIcon} />
+                <TextInput
+                  value={search}
+                  onChangeText={setSearch}
+                  placeholder="Search workers"
+                  accessibilityLabel="Search workers"
+                  style={styles.searchInput}
+                />
+              </View>
+              <Button
+                title={showAddWorker ? "Cancel" : "Add worker"}
+                variant="light"
+                icon={showAddWorker ? undefined : UserPlus}
+                onPress={() => setShowAddWorker((v) => !v)}
+              />
+              {showAddWorker ? (
+                <Card style={{ gap: spacing.sm }}>
+                  <Text style={styles.formTitle}>New worker</Text>
+                  <TextField
+                    label="Name *"
+                    autoCorrect={false}
+                    autoCapitalize="words"
+                    placeholder="e.g. Ramesh Jadhav"
+                    value={newWorkerName}
+                    onChangeText={setNewWorkerName}
+                    autoFocus
+                    containerStyle={{ marginBottom: 0 }}
+                  />
+                  <TextField
+                    label="Phone (optional)"
+                    placeholder="98765 43210"
+                    keyboardType="phone-pad"
+                    value={newWorkerPhone}
+                    onChangeText={setNewWorkerPhone}
+                    containerStyle={{ marginBottom: 0 }}
+                  />
+                  <TextField
+                    label="Daily wage ₹ (optional)"
+                    placeholder="e.g. 350"
+                    keyboardType="number-pad"
+                    value={newWorkerWage}
+                    onChangeText={(v) => setNewWorkerWage(v.replace(/[^0-9]/g, ""))}
+                    containerStyle={{ marginBottom: 0 }}
+                  />
+                  <Button title="Save worker" onPress={saveNewWorker} loading={addingWorker} disabled={!newWorkerName.trim()} />
+                </Card>
+              ) : null}
+              {editMode ? (
+                <View style={styles.editBanner}>
+                  <Pencil size={16} color="#92600E" />
+                  <Text style={styles.editBannerText}>
+                    Tap a worker to change their name, phone or wage, mark them absent, or remove them. Tap ✓ above when done.
+                  </Text>
+                </View>
+              ) : null}
+
+              {!editMode ? (
+              <Card style={{ gap: spacing.sm }}>
+                <Text style={styles.fieldLabel}>Date</Text>
+                <Pressable style={styles.dateInput} onPress={() => setShowDatePicker(true)} accessibilityRole="button">
+                  <Text style={styles.dateText}>{fmtDay(date)}{isToday ? " · Today" : ""}</Text>
+                </Pressable>
+                {showDatePicker ? (
+                  <DateTimePicker
+                    value={new Date(`${date}T00:00:00`)}
+                    mode="date"
+                    display={Platform.OS === "ios" ? "inline" : "default"}
+                    maximumDate={new Date()}
+                    onChange={(event, picked) => {
+                      setShowDatePicker(false);
+                      if (event.type === "set" && picked) {
+                        const d = new Date(picked.getTime() - picked.getTimezoneOffset() * 60_000);
+                        setSelectedDate(d.toISOString().slice(0, 10));
+                        setSelected(new Set());
+                        setOtHours({});
+                        setHarvestKg({});
+                      }
+                    }}
+                  />
+                ) : null}
+
+                <TextField
+                  label="Hours worked"
+                  keyboardType="decimal-pad"
+                  value={hours}
+                  onChangeText={setHours}
+                  containerStyle={{ marginBottom: 0 }}
+                />
+
+                <View style={[styles.modeBox, otMode && styles.modeBoxOt]}>
+                  <Pressable
+                    style={styles.modeHeader}
+                    onPress={() => {
+                      const on = !otMode;
+                      setOtMode(on);
+                      if (!on) {
+                        setOtHours({});
+                        setOtRateAll("");
+                      }
+                    }}
+                    accessibilityRole="switch"
+                    accessibilityState={{ checked: otMode }}
+                  >
+                    <Text style={styles.modeTitle}>Overtime today?</Text>
+                    <View style={[styles.modePill, otMode && { backgroundColor: "#D9861F" }]}>
+                      <Text style={[styles.modePillText, otMode && { color: "#fff" }]}>{otMode ? "Yes" : "No"}</Text>
+                    </View>
+                  </Pressable>
+                  {otMode ? (
+                    <View style={{ gap: spacing.xs, marginTop: spacing.sm }}>
+                      <TextField
+                        label="Overtime pay (per hour)"
+                        keyboardType="decimal-pad"
+                        placeholder={String(Math.round(defaultOtRate * 100) / 100)}
+                        value={otRateAll}
+                        onChangeText={setOtRateAll}
+                        containerStyle={{ marginBottom: 0 }}
+                      />
+                      <Text style={[styles.modeHint, { color: "#95530F" }]}>
+                        Type the overtime hours next to each person who stayed longer - only they get the extra pay. Others stay at normal wage.
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+
+                <View style={[styles.modeBox, pickMode && styles.modeBoxPick]}>
+                  <Pressable
+                    style={styles.modeHeader}
+                    onPress={() => {
+                      // Per-kg groups are always weighed - kg is their pay.
+                      if (isHarvestGroup) return;
+                      const on = !pickMode;
+                      setPickMode(on);
+                      if (!on) setHarvestKg({});
+                    }}
+                    accessibilityRole="switch"
+                    accessibilityState={{ checked: pickMode, disabled: isHarvestGroup }}
+                  >
+                    <Text style={styles.modeTitle}>Harvest picking today?</Text>
+                    <View style={[styles.modePill, pickMode && { backgroundColor: "#1F9E5C" }]}>
+                      <Text style={[styles.modePillText, pickMode && { color: "#fff" }]}>{pickMode ? "Yes - weighing" : "No"}</Text>
+                    </View>
+                  </Pressable>
+                  {pickMode ? (
+                    <View style={{ gap: spacing.xs, marginTop: spacing.sm }}>
+                      <SelectOrType
+                        label="Which crop did they pick?"
+                        options={crops.map((c) => c.name)}
+                        value={pickCrop}
+                        onChange={setPickCrop}
+                      />
+                      <View style={{ flexDirection: "row", gap: spacing.sm }}>
+                        <View style={{ flex: 1 }}>
+                          <TextField
+                            label="Target per person (kg)"
+                            keyboardType="decimal-pad"
+                            placeholder="e.g. 80"
+                            value={pickThreshold}
+                            onChangeText={(v) => {
+                              setRuleEdited(true);
+                              setPickThreshold(v);
+                            }}
+                            containerStyle={{ marginBottom: 0 }}
+                          />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <TextField
+                            label="Extra pay per kg above (₹)"
+                            keyboardType="decimal-pad"
+                            placeholder="e.g. 5"
+                            value={pickBonus}
+                            onChangeText={(v) => {
+                              setRuleEdited(true);
+                              setPickBonus(v);
+                            }}
+                            containerStyle={{ marginBottom: 0 }}
+                          />
+                        </View>
+                      </View>
+                      <Text style={[styles.modeHint, { color: "#1F7A4A" }]}>
+                        Type each person's weighed kg next to their name below. Anyone above{" "}
+                        {threshold > 0 ? `${threshold} kg` : "the target"} gets the extra pay added automatically.
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+
+                <TextField
+                  label="Total people working"
+                  keyboardType="number-pad"
+                  placeholder="e.g. 12"
+                  value={totalPeople}
+                  onChangeText={(v) => setTotalPeople(v.replace(/[^0-9]/g, ""))}
+                  containerStyle={{ marginBottom: 0 }}
+                />
+                <Text style={styles.modeHint}>Full gang size for the day - including people not in the worker list</Text>
+              </Card>
+
+              ) : null}
+
+              {!editMode ? (
+              <Text style={styles.modeHint}>
+                Already-marked workers can be selected again to update their day - e.g. add picked kg or overtime after work is done. The new values replace the old ones.
+              </Text>
+              ) : null}
 
               {aiResult ? (
                 <Card style={styles.aiResultCard}>
@@ -697,6 +1069,10 @@ export function AttendanceScreen({ route }: { route: any }) {
                 </Card>
               ) : null}
 
+            </View>
+          }
+          ListFooterComponent={
+            <View style={{ gap: 12, marginTop: 14 }}>
               {/* Work session card: arrival → work photos → leaving */}
               {workSession ? (
                 <Card style={{ gap: spacing.sm }}>
@@ -795,12 +1171,12 @@ export function AttendanceScreen({ route }: { route: any }) {
               {todayCount > 0 ? (
                 <Card style={styles.summaryCard}>
                   <View style={{ alignItems: "flex-start" }}>
-                    <Text style={styles.summaryLabel}>Workers today</Text>
+                    <Text style={styles.summaryLabel}>{isToday ? "Workers today" : "Workers"}</Text>
                     <Text style={styles.summaryValue}>{todayCount}</Text>
                   </View>
-                  {isHarvestGroup && todayKg > 0 ? (
+                  {todayKg > 0 ? (
                     <View style={{ alignItems: "center" }}>
-                      <Text style={styles.summaryLabel}>Picked today</Text>
+                      <Text style={styles.summaryLabel}>{isToday ? "Picked today" : "Picked"}</Text>
                       <Text style={[styles.summaryValue, { color: "#1F9E5C" }]}>{todayKg.toLocaleString("en-IN")} kg</Text>
                     </View>
                   ) : null}
@@ -811,38 +1187,8 @@ export function AttendanceScreen({ route }: { route: any }) {
                 </Card>
               ) : null}
 
-              {isHarvestGroup ? (
-                <Card>
-                  <Text style={styles.ruleTitle}>Picking bonus rule</Text>
-                  <Text style={styles.ruleSubtitle}>
-                    Pay extra for every kg picked above the daily target - applies to this whole group.
-                  </Text>
-                  <View style={{ flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm }}>
-                    <View style={{ flex: 1 }}>
-                      <TextField
-                        label="Target/person (kg)"
-                        keyboardType="decimal-pad"
-                        placeholder="e.g. 80"
-                        value={pickThreshold}
-                        onChangeText={setPickThreshold}
-                        containerStyle={{ marginBottom: 0 }}
-                      />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <TextField
-                        label="Bonus/kg above (₹)"
-                        keyboardType="decimal-pad"
-                        placeholder="e.g. 5"
-                        value={pickBonus}
-                        onChangeText={setPickBonus}
-                        containerStyle={{ marginBottom: 0 }}
-                      />
-                    </View>
-                  </View>
-                </Card>
-              ) : null}
 
-              {!isHarvestGroup && overtimeSummary && overtimeSummary.pendingAmount + overtimeSummary.clearedAmount > 0 ? (
+              {overtimeSummary && overtimeSummary.pendingAmount + overtimeSummary.clearedAmount > 0 ? (
                 <Card style={{ padding: 0, overflow: "hidden" }}>
                   <View style={styles.settleHeader}>
                     <Clock3 size={14} color="#fff" />
@@ -879,7 +1225,7 @@ export function AttendanceScreen({ route }: { route: any }) {
                 </Card>
               ) : null}
 
-              {isHarvestGroup && harvestBonusSummary && harvestBonusSummary.pendingAmount + harvestBonusSummary.clearedAmount > 0 ? (
+              {harvestBonusSummary && harvestBonusSummary.pendingAmount + harvestBonusSummary.clearedAmount > 0 ? (
                 <Card style={{ padding: 0, overflow: "hidden" }}>
                   <View style={[styles.settleHeader, { backgroundColor: "#7CB342" }]}>
                     <Wheat size={14} color="#fff" />
@@ -918,102 +1264,164 @@ export function AttendanceScreen({ route }: { route: any }) {
             </View>
           }
           ListEmptyComponent={
-            <EmptyState title="No workers yet" subtitle="Add workers before marking attendance." />
+            <EmptyState title="No workers yet" subtitle="Tap “Add worker” above to add your first worker." />
           }
-          renderItem={({ item }) => {
+          renderItem={({ item, index }) => {
             const marked = markedIds.has(item.id);
             const isSelected = selected.has(item.id);
-            const expanded = expandedId === item.id;
+            const first = index === 0;
+            const last = index === visibleWorkers.length - 1;
             return (
-              <Card style={[styles.workerRow, isSelected && styles.workerRowSelected, marked && !isSelected && styles.workerRowMarked]}>
+              <View
+                style={[
+                  styles.workerRow,
+                  first && styles.workerRowFirst,
+                  last && styles.workerRowLast,
+                  !last && styles.workerRowDivider,
+                  marked && !isSelected && styles.workerRowMarked,
+                ]}
+              >
                 <View style={styles.workerRowMain}>
-                  <Pressable onPress={() => toggle(item.id)} style={styles.workerRowMainPressable}>
-                    <Text style={styles.workerName}>{item.name}</Text>
-                    {marked ? (
-                      <Text style={styles.markedLabel}>
-                        {isSelected ? "Editing entry…" : "Marked present ✓ · tap to edit"}
+                  <Pressable onPress={() => (editMode ? startEditing(item) : toggle(item.id))} style={styles.workerRowMainPressable}>
+                    <Avatar name={item.name} index={item.id} />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={styles.workerName} numberOfLines={1}>
+                        {item.name}
                       </Text>
+                      {marked ? (
+                        <Text style={styles.markedLabel}>{isSelected ? "Editing entry…" : "Marked present · tap to edit"}</Text>
+                      ) : (
+                        <Text style={styles.workerMeta}>
+                          {paymentType === "Per day" ? "Daily" : paymentType} · ₹{rate}
+                        </Text>
+                      )}
+                    </View>
+                    {extraFor(item.id) > 0 ? <Pill text={`+₹${extraFor(item.id).toFixed(0)}`} tone="warn" /> : null}
+                    {editMode ? (
+                      <Pencil size={20} color={colors.textMuted} />
+                    ) : marked && !isSelected ? (
+                      <CheckCircle2 size={26} color={colors.success} />
                     ) : (
-                      <View style={[styles.checkbox, isSelected && styles.checkboxSelected]} />
+                      <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                        {isSelected ? <Check size={18} color="#FFFFFF" strokeWidth={3} /> : null}
+                      </View>
                     )}
-                  </Pressable>
-                  <Pressable
-                    onPress={() => handleSaveWorkerPhoto(item)}
-                    hitSlop={10}
-                    style={styles.removeWorkerBtn}
-                    disabled={savingWorkerPhotoId === item.id}
-                  >
-                    {savingWorkerPhotoId === item.id ? (
-                      <ActivityIndicator size="small" color={colors.textMuted} />
-                    ) : (
-                      <Camera size={16} color={item.photoUrl ? colors.primary : colors.textMuted} />
-                    )}
-                  </Pressable>
-                  <Pressable
-                    onPress={() => confirmRemoveWorker(item)}
-                    hitSlop={10}
-                    style={styles.removeWorkerBtn}
-                  >
-                    <UserMinus size={16} color={colors.textMuted} />
                   </Pressable>
                 </View>
-                {isSelected ? (
-                  <>
-                    <Pressable style={styles.extraToggle} onPress={() => setExpandedId(expanded ? null : item.id)}>
-                      <Text style={styles.extraToggleText}>
-                        {isHarvestGroup ? "Kg picked" : "+ Overtime"}
-                        {extraFor(item.id) > 0 ? ` (+₹${extraFor(item.id).toFixed(0)})` : ""}
-                      </Text>
-                      {expanded ? <ChevronUp size={14} color={colors.primary} /> : <ChevronDown size={14} color={colors.primary} />}
-                    </Pressable>
-                    {expanded ? (
-                      <View style={styles.extraFields}>
-                        {isHarvestGroup ? (
-                          <TextField
-                            label="Kg picked"
-                            keyboardType="decimal-pad"
-                            value={harvestKg[item.id] ?? ""}
-                            onChangeText={(v) => setHarvestKg((cur) => ({ ...cur, [item.id]: v }))}
-                            containerStyle={{ marginBottom: 0 }}
-                          />
-                        ) : (
-                          <View style={{ flexDirection: "row", gap: spacing.sm }}>
-                            <View style={{ flex: 1 }}>
-                              <TextField
-                                label="OT hours"
-                                keyboardType="decimal-pad"
-                                value={otHours[item.id] ?? ""}
-                                onChangeText={(v) => setOtHours((cur) => ({ ...cur, [item.id]: v }))}
-                                containerStyle={{ marginBottom: 0 }}
-                              />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                              <TextField
-                                label="OT rate/hr"
-                                keyboardType="decimal-pad"
-                                placeholder={defaultOtRate.toFixed(0)}
-                                value={otRate[item.id] ?? ""}
-                                onChangeText={(v) => setOtRate((cur) => ({ ...cur, [item.id]: v }))}
-                                containerStyle={{ marginBottom: 0 }}
-                              />
-                            </View>
-                          </View>
-                        )}
+                {editMode && editingWorkerId === item.id ? (
+                  <View style={styles.extraFields}>
+                    <TextField label="Name" value={editName} onChangeText={setEditName} autoCorrect={false} autoCapitalize="words" containerStyle={{ marginBottom: 0 }} />
+                    <TextField
+                      label="Phone"
+                      keyboardType="phone-pad"
+                      value={editPhone}
+                      onChangeText={setEditPhone}
+                      containerStyle={{ marginBottom: 0 }}
+                    />
+                    <TextField
+                      label="Daily wage ₹"
+                      keyboardType="number-pad"
+                      value={editWage}
+                      onChangeText={(v) => setEditWage(v.replace(/[^0-9]/g, ""))}
+                      containerStyle={{ marginBottom: 0 }}
+                    />
+                    <Button title="Save changes" onPress={() => saveWorkerEdit(item)} loading={savingEdit} disabled={!editName.trim()} />
+                    {marked ? (
+                      <Button title={isToday ? "Mark absent today" : "Mark absent this day"} variant="secondary" icon={UserX} onPress={() => confirmMarkAbsent(item)} />
+                    ) : null}
+                    <Button title="Remove worker" variant="secondary" icon={UserMinus} onPress={() => confirmRemoveWorker(item)} />
+                  </View>
+                ) : null}
+                {isSelected && !editMode && (pickMode || otMode) ? (
+                  <View style={[styles.extraFields, { flexDirection: "row", gap: spacing.sm }]}>
+                    {pickMode ? (
+                      <View style={{ flex: 1 }}>
+                        <TextField
+                          label="Kg picked"
+                          keyboardType="decimal-pad"
+                          placeholder="kg"
+                          value={harvestKg[item.id] ?? ""}
+                          onChangeText={(v) => setHarvestKg((cur) => ({ ...cur, [item.id]: v }))}
+                          containerStyle={{ marginBottom: 0 }}
+                        />
                       </View>
                     ) : null}
-                  </>
+                    {otMode ? (
+                      <View style={{ flex: 1 }}>
+                        <TextField
+                          label="OT hours"
+                          keyboardType="decimal-pad"
+                          placeholder="OT hr"
+                          value={otHours[item.id] ?? ""}
+                          onChangeText={(v) => setOtHours((cur) => ({ ...cur, [item.id]: v }))}
+                          containerStyle={{ marginBottom: 0 }}
+                        />
+                      </View>
+                    ) : null}
+                  </View>
                 ) : null}
-              </Card>
+              </View>
             );
           }}
         />
       ) : null}
 
+      {tab === "history" ? (
+        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 150, gap: 12 }} refreshControl={<RefreshControl refreshing={historyQuery.isRefetching} onRefresh={() => historyQuery.refetch()} />}>
+          <Text style={styles.modeHint}>Every day this group worked. Tap a day to open it and see or change who came.</Text>
+              {/* Attendance history: one row per day worked; tap to open that day. */}
+              {historyDays.length > 0 ? (
+                <Card style={{ padding: 0, overflow: "hidden" }}>
+                  <Text style={styles.historyTitle}>ATTENDANCE HISTORY</Text>
+                  {historyDays.slice(0, historyShown).map((d, i) => {
+                    const open = d.date === date;
+                    return (
+                      <Pressable
+                        key={d.date}
+                        onPress={() => {
+                          setSelectedDate(d.date);
+                          setSelected(new Set());
+                          setOtHours({});
+                          setHarvestKg({});
+                          setTab("attendance");
+                        }}
+                        style={({ pressed }) => [styles.historyRow, i > 0 && styles.historyDivider, open && { backgroundColor: colors.tint }, pressed && { opacity: 0.7 }]}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Open ${fmtDay(d.date)}`}
+                      >
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={styles.historyDate}>{fmtDay(d.date)}{d.date === todayIso() ? " · Today" : ""}</Text>
+                          <Text style={styles.historyMeta} numberOfLines={1}>
+                            {d.count} {d.count === 1 ? "worker" : "workers"}
+                            {d.kg > 0 ? ` · ${d.kg.toLocaleString("en-IN")} kg` : ""}
+                            {d.otHours > 0 ? ` · ${d.otHours} hr OT` : ""}
+                          </Text>
+                        </View>
+                        <Text style={styles.historyAmount}>{inr(d.cost)}</Text>
+                        {open ? <Check size={18} color={colors.primary} /> : null}
+                      </Pressable>
+                    );
+                  })}
+                  {historyDays.length > historyShown ? (
+                    <Pressable style={styles.historyMore} onPress={() => setHistoryShown((n) => n + 14)} accessibilityRole="button">
+                      <Text style={styles.historyMoreText}>Show earlier days ({historyDays.length - historyShown} more)</Text>
+                    </Pressable>
+                  ) : null}
+                </Card>
+              ) : null}
+
+          {historyDays.length === 0 && !historyQuery.isLoading ? (
+            <EmptyState title="No attendance yet" subtitle="Days you mark will show here." />
+          ) : null}
+        </ScrollView>
+      ) : null}
+
       {tab === "payments" ? (
         <FlatList
+          keyboardShouldPersistTaps="handled"
           data={advancePayments}
           keyExtractor={(p) => String(p.id)}
-          contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+          contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: spacing.xl }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           ListHeaderComponent={
             <View style={{ gap: spacing.sm, marginBottom: spacing.sm }}>
@@ -1052,7 +1460,7 @@ export function AttendanceScreen({ route }: { route: any }) {
                 <Card style={{ gap: 4 }}>
                   <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                     <Text style={styles.summaryLabel}>Total advance paid</Text>
-                    <Text style={[styles.summaryValue, { fontSize: 15, color: "#C77A2E" }]}>{inr(totalAdvancePaid)}</Text>
+                    <Text style={[styles.summaryValue, { fontSize: 16.5, color: "#C77A2E" }]}>{inr(totalAdvancePaid)}</Text>
                   </View>
                   <Text style={styles.advCount}>
                     {advancePayments.length} payment{advancePayments.length !== 1 ? "s" : ""} recorded
@@ -1060,7 +1468,7 @@ export function AttendanceScreen({ route }: { route: any }) {
                 </Card>
               ) : null}
 
-              <Button title="+ Record advance payment" onPress={openPaymentForm} variant="secondary" />
+              <Button title="Record advance payment" icon={Plus} onPress={openPaymentForm} variant="secondary" />
 
               {showPaymentForm ? (
                 <Card style={{ gap: spacing.sm }}>
@@ -1180,7 +1588,7 @@ export function AttendanceScreen({ route }: { route: any }) {
                         <Text style={styles.advBoxLabel}>Paid directly</Text>
                         <Text style={[styles.seasonTileValue, { color: "#1F9E5C" }]}>{inr(seasonResult.totals.totalWorkerPayments)}</Text>
                       </View>
-                      <View style={[styles.seasonTile, { backgroundColor: "#F3EEFB" }]}>
+                      <View style={[styles.seasonTile, { backgroundColor: "#FFF0C2" }]}>
                         <Text style={styles.advBoxLabel}>Remaining</Text>
                         <Text style={[styles.seasonTileValue, { color: colors.primary }]}>{inr(seasonResult.totals.totalRemaining)}</Text>
                       </View>
@@ -1210,7 +1618,7 @@ export function AttendanceScreen({ route }: { route: any }) {
                   {item.notes ? <Text style={styles.advNotes}>{item.notes}</Text> : null}
                 </View>
                 <View style={{ alignItems: "flex-end", gap: spacing.xs }}>
-                  <Text style={[styles.summaryValue, { fontSize: 15, color: "#C77A2E" }]}>{inr(Number(item.totalAdvancePaid))}</Text>
+                  <Text style={[styles.summaryValue, { fontSize: 16.5, color: "#C77A2E" }]}>{inr(Number(item.totalAdvancePaid))}</Text>
                   <Pressable onPress={() => confirmDeletePayment(item.id)} hitSlop={8}>
                     <X size={16} color={colors.textMuted} />
                   </Pressable>
@@ -1223,9 +1631,10 @@ export function AttendanceScreen({ route }: { route: any }) {
 
       {tab === "loans" ? (
         <FlatList
+          keyboardShouldPersistTaps="handled"
           data={groupLoans}
           keyExtractor={(l) => String(l.id)}
-          contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+          contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: spacing.xl }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           ListHeaderComponent={
             <View style={{ gap: spacing.sm, marginBottom: spacing.sm }}>
@@ -1236,7 +1645,7 @@ export function AttendanceScreen({ route }: { route: any }) {
                       <Text style={styles.formTitle}>Loan taken by group (upfront)</Text>
                       {workGroup.loanNotes ? <Text style={styles.advCount}>{workGroup.loanNotes}</Text> : null}
                     </View>
-                    <Text style={[styles.summaryValue, { fontSize: 15 }]}>{inr(Number(workGroup.loanTaken))}</Text>
+                    <Text style={[styles.summaryValue, { fontSize: 16.5 }]}>{inr(Number(workGroup.loanTaken))}</Text>
                   </View>
                 </Card>
               ) : null}
@@ -1360,7 +1769,7 @@ export function AttendanceScreen({ route }: { route: any }) {
                     <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
                       <Image source={{ uri: loanProofPhoto }} style={{ width: 72, height: 72, borderRadius: radius.sm }} />
                       <Pressable onPress={() => setLoanProofPhoto(null)}>
-                        <Text style={{ color: colors.danger, fontSize: 13 }}>Remove photo</Text>
+                        <Text style={{ color: colors.danger, fontSize: 14.5 }}>Remove photo</Text>
                       </Pressable>
                     </View>
                   ) : (
@@ -1421,7 +1830,7 @@ export function AttendanceScreen({ route }: { route: any }) {
                     ) : null}
                   </View>
                   <View style={{ alignItems: "flex-end", gap: 4 }}>
-                    <Text style={[styles.summaryValue, { fontSize: 15, color: colors.danger }]}>{inr(outstanding)}</Text>
+                    <Text style={[styles.summaryValue, { fontSize: 16.5, color: colors.danger }]}>{inr(outstanding)}</Text>
                     <Text style={styles.advCount}>outstanding</Text>
                     {item.status !== "repaid" && item.status !== "closed" && outstanding > 0 ? (
                       <Pressable
@@ -1469,13 +1878,22 @@ export function AttendanceScreen({ route }: { route: any }) {
         />
       ) : null}
 
-      {tab === "attendance" && selected.size > 0 ? (
-        <View style={[styles.footer, { paddingBottom: spacing.md + insets.bottom }]}>
-          <Button
-            title={`Mark ${selected.size} present · ₹${totalDue.toFixed(0)}`}
-            onPress={save}
-            loading={markAttendance.isPending}
-          />
+      {tab === "attendance" && eligibleWorkers.length > 0 ? (
+        <View style={[styles.bottomBar, { paddingBottom: 14 }]}>
+          <View>
+            <Text style={styles.bottomCount}>
+              {presentCount} present · {absentCount} absent
+            </Text>
+            <Text style={styles.bottomTotal}>₹{Math.round(totalDue).toLocaleString("en-IN")}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Button
+              title={selected.size > 0 ? `Save ${selected.size}` : "Save"}
+              onPress={save}
+              loading={markAttendance.isPending}
+              disabled={selected.size === 0}
+            />
+          </View>
         </View>
       ) : null}
 
@@ -1522,15 +1940,15 @@ export function AttendanceScreen({ route }: { route: any }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   offlineBanner: { backgroundColor: colors.amberBg, padding: spacing.sm },
-  offlineText: { color: colors.warning, textAlign: "center", fontSize: 12 },
+  offlineText: { color: colors.warning, textAlign: "center", fontSize: 14 },
 
   tabRow: {
     flexDirection: "row",
     backgroundColor: colors.muted,
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
     padding: 4,
-    margin: spacing.md,
-    marginBottom: 0,
+    marginHorizontal: 20,
+    marginTop: spacing.md,
     gap: 4,
   },
   tabBtn: {
@@ -1539,43 +1957,93 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.sm,
+    minHeight: 44,
+    borderRadius: radius.pill,
   },
-  tabBtnActive: { backgroundColor: "#fff" },
-  tabText: { fontSize: 12.5, fontWeight: "600", color: colors.textMuted },
-  tabTextActive: { color: colors.primary },
+  tabBtnActive: { backgroundColor: "#fff", ...shadow },
+  tabText: { fontSize: 14.5, fontWeight: "600", color: colors.textMuted },
+  tabTextActive: { color: colors.text, fontWeight: "800" },
 
-  workerRow: {},
+  workerRow: { backgroundColor: colors.card, paddingHorizontal: 16, paddingVertical: 12 },
+  workerRowFirst: { borderTopLeftRadius: 28, borderTopRightRadius: 28 },
+  workerRowLast: { borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },
+  workerRowDivider: { borderBottomWidth: 1, borderBottomColor: colors.border },
+  workerMeta: { fontSize: 14, color: colors.textMuted },
+  searchWrap: { justifyContent: "center" },
+  searchIcon: { position: "absolute", left: 14, zIndex: 1 },
+  searchInput: {
+    minHeight: 54,
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: colors.card,
+    paddingLeft: 44,
+    paddingRight: 16,
+    fontSize: 17,
+    color: colors.text,
+  },
+  bottomBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.card,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingTop: 14,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    shadowColor: "#5A4600",
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: -6 },
+    elevation: 12,
+  },
+  bottomCount: { fontSize: 14, color: colors.textMuted },
+  bottomTotal: { fontSize: 26, fontWeight: "800", color: colors.text, lineHeight: 30 },
   workerRowMain: { flexDirection: "row", alignItems: "center" },
-  workerRowMainPressable: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  workerRowMainPressable: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12 },
   removeWorkerBtn: { paddingLeft: spacing.sm, paddingVertical: spacing.xs },
   workerRowSelected: { borderColor: colors.primary, borderWidth: 2 },
   workerRowMarked: { opacity: 0.6 },
-  workerName: { fontSize: 15, color: colors.text, fontWeight: "500" },
-  markedLabel: { fontSize: 12, color: colors.primary },
+  workerName: { fontSize: 16.5, color: colors.text, fontWeight: "700" },
+  markedLabel: { fontSize: 14, color: colors.primary },
   checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 4,
-    borderWidth: 2,
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    borderWidth: 2.5,
     borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
   },
   checkboxSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  extraToggle: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: spacing.sm,
-    paddingTop: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  extraToggleText: { fontSize: 12.5, color: colors.primary, fontWeight: "600" },
+  fieldLabel: { fontSize: 15.5, fontWeight: "500", color: colors.text },
+  dateInput: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md, backgroundColor: "#fff", minHeight: 48, justifyContent: "center" },
+  dateText: { fontSize: 16, color: colors.text },
+  modeBox: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm + 4 },
+  modeBoxOt: { backgroundColor: "#FFF8EC", borderColor: "#FBD9AE" },
+  modeBoxPick: { backgroundColor: "#EEF8F2", borderColor: "#BFE5CF" },
+  modeHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 36 },
+  modeTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text },
+  modePill: { backgroundColor: "#EFEFF2", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
+  modePillText: { fontSize: 13, fontWeight: "700", color: colors.textMuted },
+  historyTitle: { fontSize: 13, fontWeight: "800", letterSpacing: 0.6, color: colors.textMuted, paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.xs },
+  historyRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, minHeight: 56 },
+  historyDivider: { borderTopWidth: 1, borderTopColor: colors.border },
+  historyDate: { fontSize: 15.5, fontWeight: "700", color: colors.text },
+  historyMeta: { fontSize: 13.5, color: colors.textMuted, marginTop: 1 },
+  historyAmount: { fontSize: 15.5, fontWeight: "700", color: colors.primary },
+  historyMore: { paddingVertical: spacing.sm + 2, alignItems: "center", borderTopWidth: 1, borderTopColor: colors.border },
+  historyMoreText: { fontSize: 14.5, fontWeight: "700", color: colors.primary },
+  editBanner: { flexDirection: "row", gap: spacing.sm, alignItems: "flex-start", backgroundColor: "#FEF3C7", borderRadius: radius.md, padding: spacing.sm + 4 },
+  editBannerText: { flex: 1, fontSize: 14, color: "#92600E", lineHeight: 19, fontWeight: "600" },
+  modeHint: { fontSize: 12.5, color: colors.textMuted, lineHeight: 17 },
   extraFields: { marginTop: spacing.sm },
   footer: { padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
-  ruleTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
-  ruleSubtitle: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  ruleSubtitle: { fontSize: 14, color: colors.textMuted, marginTop: 2 },
   settleHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -1584,38 +2052,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 2,
   },
-  settleHeaderText: { color: "#fff", fontWeight: "700", fontSize: 13 },
-  settleLine: { fontSize: 13, color: colors.text },
-  settleLineMuted: { fontSize: 12, color: colors.textMuted },
+  settleHeaderText: { color: "#fff", fontWeight: "700", fontSize: 14.5 },
+  settleLine: { fontSize: 14.5, color: colors.text },
+  settleLineMuted: { fontSize: 14, color: colors.textMuted },
 
   // Single Person Face Attendance card — web's purple/violet gradient
   // (from-primary to-violet-500) approximated as a flat violet, matching how
-  // aiCard already uses a flat colors.accent instead of a real gradient (no
+  // aiCard already uses a flat colors.primary instead of a real gradient (no
   // expo-linear-gradient in this app).
   faceCard: {
     flex: 1,
     gap: spacing.sm,
-    backgroundColor: "#7C4DBF",
-    borderRadius: radius.md,
+    backgroundColor: colors.accent,
+    borderRadius: 24,
     padding: spacing.md - 2,
   },
   faceIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
   },
-  faceCardTitle: { fontSize: 13, fontWeight: "700", color: "#fff", lineHeight: 16 },
-  faceCardSubtitle: { fontSize: 10.5, color: "rgba(255,255,255,0.8)", marginTop: 4, lineHeight: 14 },
+  faceCardTitle: { fontSize: 14.5, fontWeight: "800", color: colors.accentInk, lineHeight: 19 },
+  faceCardSubtitle: { fontSize: 12.5, color: colors.accentInkSoft, marginTop: 4, lineHeight: 16 },
 
   // AI Group Attendance card
   aiCard: {
     flex: 1,
     gap: spacing.sm,
-    backgroundColor: colors.accent,
-    borderRadius: radius.md,
+    backgroundColor: colors.primary,
+    borderRadius: 24,
     padding: spacing.md - 2,
   },
   aiIconWrap: {
@@ -1626,23 +2094,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  aiCardTitle: { fontSize: 13, fontWeight: "700", color: "#fff", lineHeight: 16 },
-  aiCardSubtitle: { fontSize: 10.5, color: "rgba(255,255,255,0.85)", marginTop: 4, lineHeight: 14 },
-  aiResultCard: { backgroundColor: "#F3EEFB", borderColor: "#DDD0F0" },
+  aiCardTitle: { fontSize: 14.5, fontWeight: "800", color: "#fff", lineHeight: 19 },
+  aiCardSubtitle: { fontSize: 12.5, color: "rgba(255,255,255,0.85)", marginTop: 4, lineHeight: 16 },
+  aiResultCard: { backgroundColor: "#FFF0C2", borderColor: "#F0E4C2" },
   aiResultThumb: { width: 56, height: 56, borderRadius: radius.sm },
   aiResultCount: { fontSize: 22, fontWeight: "800", color: colors.primary },
-  aiResultLabel: { fontSize: 13, color: colors.textMuted, fontWeight: "500" },
-  aiResultNote: { fontSize: 11.5, color: colors.primary, fontWeight: "600", marginTop: 2 },
+  aiResultLabel: { fontSize: 14.5, color: colors.textMuted, fontWeight: "500" },
+  aiResultNote: { fontSize: 13.5, color: colors.primary, fontWeight: "600", marginTop: 2 },
 
   // Work session card
-  sessionHeader: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5 },
-  sessionDurationPill: { backgroundColor: "#F3EEFB", borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2 },
-  sessionDurationText: { fontSize: 11.5, fontWeight: "700", color: colors.primary },
+  sessionHeader: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5 },
+  sessionDurationPill: { backgroundColor: "#FFF0C2", borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2 },
+  sessionDurationText: { fontSize: 13.5, fontWeight: "700", color: colors.primary },
   sessionRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   sessionThumb: { width: 48, height: 48, borderRadius: radius.sm },
-  sessionThumbPlaceholder: { backgroundColor: "#F3EEFB", alignItems: "center", justifyContent: "center" },
-  sessionRowTitle: { fontSize: 13.5, fontWeight: "600", color: colors.text },
-  sessionRowSubtitle: { fontSize: 11.5, color: colors.textMuted, marginTop: 1 },
+  sessionThumbPlaceholder: { backgroundColor: "#FFF0C2", alignItems: "center", justifyContent: "center" },
+  sessionRowTitle: { fontSize: 15, fontWeight: "600", color: colors.text },
+  sessionRowSubtitle: { fontSize: 13.5, color: colors.textMuted, marginTop: 1 },
   sessionActionBtn: {
     flex: 1,
     flexDirection: "row",
@@ -1652,54 +2120,54 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingVertical: spacing.sm + 2,
   },
-  sessionActionText: { fontSize: 12, fontWeight: "700" },
+  sessionActionText: { fontSize: 14, fontWeight: "700" },
 
   // Today's summary
   summaryCard: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  summaryLabel: { fontSize: 11.5, color: colors.textMuted },
+  summaryLabel: { fontSize: 13.5, color: colors.textMuted },
   summaryValue: { fontSize: 20, fontWeight: "800", color: colors.text, marginTop: 2 },
 
   // Advance tab
-  advTitle: { fontSize: 12.5, fontWeight: "700", color: "#C77A2E" },
+  advTitle: { fontSize: 14.5, fontWeight: "700", color: "#C77A2E" },
   advBox: { flex: 1, backgroundColor: "#fff", borderRadius: radius.sm, padding: spacing.sm, alignItems: "center" },
-  advBoxLabel: { fontSize: 10.5, color: colors.textMuted },
-  advBoxValue: { fontSize: 13.5, fontWeight: "700", color: colors.text, marginTop: 2 },
-  advFreq: { fontSize: 11.5, color: "#C77A2E", marginTop: spacing.sm },
-  advEmptyText: { fontSize: 12.5, color: colors.textMuted, marginTop: spacing.xs },
-  advEmptySubtext: { fontSize: 11, color: colors.textMuted, marginTop: 2, textAlign: "center" },
-  advCount: { fontSize: 11.5, color: colors.textMuted },
-  advNotes: { fontSize: 11.5, color: colors.textMuted, fontStyle: "italic", marginTop: 2 },
+  advBoxLabel: { fontSize: 12.5, color: colors.textMuted },
+  advBoxValue: { fontSize: 15, fontWeight: "700", color: colors.text, marginTop: 2 },
+  advFreq: { fontSize: 13.5, color: "#C77A2E", marginTop: spacing.sm },
+  advEmptyText: { fontSize: 14.5, color: colors.textMuted, marginTop: spacing.xs },
+  advEmptySubtext: { fontSize: 13, color: colors.textMuted, marginTop: 2, textAlign: "center" },
+  advCount: { fontSize: 13.5, color: colors.textMuted },
+  advNotes: { fontSize: 13.5, color: colors.textMuted, fontStyle: "italic", marginTop: 2 },
   advPreviewBox: { backgroundColor: "#FFF3E6", borderRadius: radius.sm, padding: spacing.sm },
-  advPreviewText: { fontSize: 13, fontWeight: "700", color: "#C77A2E" },
-  advPreviewSubtext: { fontSize: 11, color: "#C77A2E", marginTop: 2 },
-  formTitle: { fontSize: 14.5, fontWeight: "700", color: colors.text },
+  advPreviewText: { fontSize: 14.5, fontWeight: "700", color: "#C77A2E" },
+  advPreviewSubtext: { fontSize: 13, color: "#C77A2E", marginTop: 2 },
+  formTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
 
   // Season-end account
   seasonTriggerCard: {
     gap: spacing.sm,
-    backgroundColor: "#F3EEFB",
-    borderColor: "#DDD0F0",
+    backgroundColor: "#FFF0C2",
+    borderColor: "#F0E4C2",
     borderWidth: 2,
     borderStyle: "dashed",
   },
   seasonIconWrap: {
     width: 30,
     height: 30,
-    borderRadius: radius.sm,
+    borderRadius: 15,
     backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
   },
-  seasonTitle: { fontSize: 13.5, fontWeight: "700", color: colors.primary },
-  seasonSubtitle: { fontSize: 11, color: colors.primary, marginTop: 1 },
-  seasonTile: { flex: 1, backgroundColor: "#F6F5F9", borderRadius: radius.sm, padding: spacing.sm, alignItems: "center" },
-  seasonTileValue: { fontSize: 12, fontWeight: "700", color: colors.text, marginTop: 2 },
-  seasonClosedPill: { backgroundColor: "#F3EEFB", borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2 },
-  seasonClosedPillText: { fontSize: 10.5, fontWeight: "600", color: colors.primary },
-  seasonSummaryText: { fontSize: 12.5, color: colors.text, lineHeight: 18 },
+  seasonTitle: { fontSize: 15, fontWeight: "700", color: colors.primary },
+  seasonSubtitle: { fontSize: 13, color: colors.primary, marginTop: 1 },
+  seasonTile: { flex: 1, backgroundColor: "#FBF2D9", borderRadius: radius.sm, padding: spacing.sm, alignItems: "center" },
+  seasonTileValue: { fontSize: 14, fontWeight: "700", color: colors.text, marginTop: 2 },
+  seasonClosedPill: { backgroundColor: "#FFF0C2", borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2 },
+  seasonClosedPillText: { fontSize: 12.5, fontWeight: "600", color: colors.primary },
+  seasonSummaryText: { fontSize: 14.5, color: colors.text, lineHeight: 18 },
 
   // Loans tab
-  loanDaysText: { fontSize: 11.5, color: colors.danger, textAlign: "center", marginTop: spacing.sm },
+  loanDaysText: { fontSize: 13.5, color: colors.danger, textAlign: "center", marginTop: spacing.sm },
   // Worker-name-input suggestion dropdown (item 4)
   nameSuggestBox: {
     position: "absolute",
@@ -1719,13 +2187,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  nameSuggestText: { fontSize: 13.5, color: colors.text },
+  nameSuggestText: { fontSize: 15, color: colors.text },
   nameSuggestNewRow: {
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    backgroundColor: "#F3EEFB",
+    backgroundColor: "#FFF0C2",
   },
-  nameSuggestNewText: { fontSize: 11.5, color: colors.primary },
+  nameSuggestNewText: { fontSize: 13.5, color: colors.primary },
   // Loan proof-photo badge + full-screen viewer (item 3)
   proofBadge: {
     flexDirection: "row",
@@ -1741,7 +2209,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   proofBadgeThumb: { width: 24, height: 24, borderRadius: 4 },
-  proofBadgeText: { fontSize: 11, fontWeight: "600", color: "#3E6FB0" },
+  proofBadgeText: { fontSize: 13, fontWeight: "600", color: "#3E6FB0" },
   proofModalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.9)" },
   proofModalHeader: {
     flexDirection: "row",
@@ -1749,12 +2217,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     padding: spacing.md,
   },
-  proofModalTitle: { color: "#fff", fontSize: 14, fontWeight: "700" },
-  proofModalSubtitle: { color: "#D1D5DB", fontSize: 12, marginTop: 2 },
+  proofModalTitle: { color: "#fff", fontSize: 15.5, fontWeight: "700" },
+  proofModalSubtitle: { color: "#D1D5DB", fontSize: 14, marginTop: 2 },
   proofModalImageWrap: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: spacing.sm },
   proofModalImage: { width: "100%", height: "100%" },
   proofModalFooter: { padding: spacing.md, alignItems: "center" },
-  proofModalFooterText: { color: "#E5E7EB", fontSize: 13, fontWeight: "500" },
+  proofModalFooterText: { color: "#E5E7EB", fontSize: 14.5, fontWeight: "500" },
   loanProofBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -1766,11 +2234,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingVertical: spacing.md,
   },
-  loanProofBtnText: { fontSize: 13, color: colors.textMuted },
+  loanProofBtnText: { fontSize: 14.5, color: colors.textMuted },
   statusPill: { backgroundColor: "#FEF3C7", borderRadius: radius.pill, paddingHorizontal: spacing.xs + 2, paddingVertical: 1 },
-  statusPillText: { fontSize: 10.5, fontWeight: "600", color: "#92600E" },
-  repayToggle: { backgroundColor: "#F3EEFB", borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
-  repayToggleText: { fontSize: 11, fontWeight: "600", color: colors.primary },
+  statusPillText: { fontSize: 12.5, fontWeight: "600", color: "#92600E" },
+  repayToggle: { backgroundColor: "#FFF0C2", borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
+  repayToggleText: { fontSize: 13, fontWeight: "600", color: colors.primary },
   repayForm: {
     marginTop: spacing.xs,
     paddingTop: spacing.sm,

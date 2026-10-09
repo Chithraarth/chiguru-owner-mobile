@@ -1,15 +1,18 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as Clipboard from "expo-clipboard";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, CloudOff, CloudUpload, Copy, LogOut, Phone, RotateCcw, ShieldCheck, UserCircle2 } from "lucide-react-native";
+import { Check, CloudOff, CloudUpload, Copy, LogOut, Phone, RotateCcw, ShieldCheck, Trash2, UserCircle2 } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
+import { Avatar } from "../../../components/harvest";
 import { colors, radius, spacing } from "../../../components/theme";
 import { useSessionStore } from "../../../store/sessionStore";
 import { signOutUser } from "../../../lib/firebase";
-import { getMyFarms, linkFarm } from "../../../api/endpoints/auth";
+import { deleteMyAccount, getMyFarms, linkFarm } from "../../../api/endpoints/auth";
+import { getSubscription } from "../../../api/endpoints/subscription";
 import { getFarmProfile, getBackupCode, restoreBackup, updateFarmProfile } from "../../../api/endpoints/estates";
 import { useEstateStore } from "../../estate/store/estateStore";
 import { useT } from "../../../lib/i18n";
@@ -113,11 +116,60 @@ export function ProfileScreen({ navigation }: { navigation: any }) {
     }
   }
 
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
+  async function deleteAccount() {
+    setDeletingAccount(true);
+    try {
+      await deleteMyAccount();
+      await signOutUser();
+      Alert.alert("Account deleted", "Your Chiguru account and all of its data have been permanently deleted.");
+    } catch {
+      Alert.alert("Couldn't delete your account", "Check your internet connection and try again.");
+    } finally {
+      setDeletingAccount(false);
+    }
+  }
+
+  function confirmDeleteAccount() {
+    Alert.alert(
+      "Delete your account?",
+      "This permanently deletes your account and everything in it: all your farms, workers, attendance, accounts, photos, ads, invitees and any wallet balance. This can't be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete forever", style: "destructive", onPress: deleteAccount },
+      ],
+    );
+  }
+
+  async function onDeleteAccountPress() {
+    // Apple and Google keep charging a store subscription until the
+    // subscriber cancels it there - deleting the account can't stop that.
+    const sub = (await qc.fetchQuery({ queryKey: ["subscription"], queryFn: getSubscription }).catch(() => null))?.subscription;
+    const renewsInStore =
+      !!sub && sub.autoRenew && (sub.status === "ACTIVE" || sub.status === "GRACE_PERIOD") &&
+      (sub.provider === "APPLE" || sub.provider === "GOOGLE_PLAY");
+    if (!renewsInStore) {
+      confirmDeleteAccount();
+      return;
+    }
+    const store = sub!.provider === "APPLE" ? "the App Store" : "Google Play";
+    Alert.alert(
+      "Cancel your subscription first",
+      `Your Chiguru plan renews through ${store}. Deleting your account does not stop those charges - cancel the subscription in ${store} first.`,
+      [
+        { text: "Manage subscription", onPress: () => navigation.navigate("Subscription") },
+        { text: "Delete anyway", style: "destructive", onPress: confirmDeleteAccount },
+        { text: "Cancel", style: "cancel" },
+      ],
+    );
+  }
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       <Card>
         <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
-          <UserCircle2 size={48} color={colors.border} />
+          <Avatar name={user?.displayName || user?.phoneNumber || "Farmer"} index={1} size={56} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={styles.userName} numberOfLines={1}>{user?.displayName || user?.phoneNumber || "—"}</Text>
             {user?.email ? <Text style={styles.userEmail} numberOfLines={1}>{user.email}</Text> : null}
@@ -132,7 +184,7 @@ export function ProfileScreen({ navigation }: { navigation: any }) {
       {user ? (
         <Card>
           <View style={{ flexDirection: "row", alignItems: "flex-start", gap: spacing.sm }}>
-            <View style={[styles.iconWrap, activeLinked ? { backgroundColor: "#E3E0EC" } : { backgroundColor: "#FEF3C7" }]}>
+            <View style={[styles.iconWrap, activeLinked ? { backgroundColor: "#FBF2D9" } : { backgroundColor: "#FEF3C7" }]}>
               {activeLinked ? <CloudUpload size={18} color={colors.primary} /> : <CloudOff size={18} color="#92600E" />}
             </View>
             <View style={{ flex: 1 }}>
@@ -172,7 +224,7 @@ export function ProfileScreen({ navigation }: { navigation: any }) {
 
       <Card>
         <View style={{ flexDirection: "row", alignItems: "flex-start", gap: spacing.sm }}>
-          <View style={[styles.iconWrap, { backgroundColor: "#E3E0EC" }]}>
+          <View style={[styles.iconWrap, { backgroundColor: "#FBF2D9" }]}>
             <Phone size={18} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
@@ -207,7 +259,7 @@ export function ProfileScreen({ navigation }: { navigation: any }) {
       {!user ? (
       <Card>
         <View style={{ flexDirection: "row", alignItems: "flex-start", gap: spacing.sm }}>
-          <View style={[styles.iconWrap, { backgroundColor: "#E3E0EC" }]}>
+          <View style={[styles.iconWrap, { backgroundColor: "#FBF2D9" }]}>
             <ShieldCheck size={18} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
@@ -236,35 +288,53 @@ export function ProfileScreen({ navigation }: { navigation: any }) {
         </View>
       </Card>
       ) : null}
+
+      {user ? (
+        <Card>
+          <View style={{ flexDirection: "row", alignItems: "flex-start", gap: spacing.sm }}>
+            <View style={[styles.iconWrap, { backgroundColor: "#FDEAEA" }]}>
+              <Trash2 size={18} color={colors.danger} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardTitle}>Delete account</Text>
+              <Text style={styles.cardSubtitle}>Permanently delete your account and all of its data.</Text>
+              <Pressable style={[styles.signOutBtn, deletingAccount && { opacity: 0.5 }]} disabled={deletingAccount} onPress={onDeleteAccountPress}>
+                <Trash2 size={15} color={colors.danger} />
+                <Text style={styles.signOutText}>{deletingAccount ? "Deleting..." : "Delete my account"}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Card>
+      ) : null}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  userName: { fontSize: 15, fontWeight: "700", color: colors.text },
-  userEmail: { fontSize: 12.5, color: colors.textMuted, marginTop: 1 },
+  userName: { fontSize: 16.5, fontWeight: "700", color: colors.text },
+  userEmail: { fontSize: 14.5, color: colors.textMuted, marginTop: 1 },
   signOutBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderWidth: 1, borderColor: "#F5C6C6", borderRadius: radius.sm, paddingVertical: spacing.sm + 2, marginTop: spacing.md },
-  signOutText: { color: colors.danger, fontWeight: "600", fontSize: 13.5 },
+  signOutText: { color: colors.danger, fontWeight: "600", fontSize: 15 },
 
-  iconWrap: { width: 38, height: 38, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
-  cardTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
-  cardSubtitle: { fontSize: 12, color: colors.textMuted, marginTop: 2, lineHeight: 16 },
-  sectionLabel: { fontSize: 10.5, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, marginBottom: spacing.xs },
+  iconWrap: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
+  cardTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text },
+  cardSubtitle: { fontSize: 14, color: colors.textMuted, marginTop: 2, lineHeight: 16 },
+  sectionLabel: { fontSize: 12.5, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5, marginBottom: spacing.xs },
 
   farmRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.sm },
-  farmName: { fontSize: 13, fontWeight: "600", color: colors.text, textTransform: "capitalize" },
-  farmLocation: { fontSize: 10.5, color: colors.textMuted },
+  farmName: { fontSize: 14.5, fontWeight: "600", color: colors.text, textTransform: "capitalize" },
+  farmLocation: { fontSize: 12.5, color: colors.textMuted },
   openFarmBtn: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: 4 },
-  openFarmBtnText: { fontSize: 11, fontWeight: "600", color: colors.text },
+  openFarmBtnText: { fontSize: 13, fontWeight: "600", color: colors.text },
 
   saveBtn: { backgroundColor: colors.primary, borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 4 },
-  saveBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  saveBtnText: { color: "#fff", fontWeight: "700", fontSize: 14.5 },
 
   codeBox: { flex: 1, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingVertical: spacing.sm + 4, alignItems: "center" },
-  codeText: { fontSize: 15, fontWeight: "700", color: colors.text, letterSpacing: 1 },
+  codeText: { fontSize: 16.5, fontWeight: "700", color: colors.text, letterSpacing: 1 },
   copyBtn: { width: 44, height: 44, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
 
   restoreSection: { marginTop: spacing.md, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
-  restoreTitle: { fontSize: 13, fontWeight: "600", color: colors.text },
+  restoreTitle: { fontSize: 14.5, fontWeight: "600", color: colors.text },
 });

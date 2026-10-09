@@ -33,16 +33,17 @@ import type {
   MarkAttendanceRequest,
 } from "../../../types/api";
 
-function todayIso(): string {
+export function todayIso(): string {
   const d = new Date();
   const tzOffsetMs = d.getTimezoneOffset() * 60_000;
   return new Date(d.getTime() - tzOffsetMs).toISOString().slice(0, 10);
 }
 
-export function useAttendance(workGroupId: number) {
+/** `selectedDate` (YYYY-MM-DD) lets the owner mark or fix an earlier day; defaults to today. */
+export function useAttendance(workGroupId: number, selectedDate?: string) {
   const activeEstateId = useEstateStore((s) => s.activeEstateId);
   const queryClient = useQueryClient();
-  const date = todayIso();
+  const date = selectedDate ?? todayIso();
 
   const workersQuery = useQuery({
     queryKey: ["workers", activeEstateId],
@@ -66,6 +67,13 @@ export function useAttendance(workGroupId: number) {
     mutationFn: (data: MarkAttendanceRequest) => markAttendance(data),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["attendance", activeEstateId, date] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["attendance-history", workGroupId] });
+      // Harvests "Picked by crop" and Labour Records read all attendance.
+      queryClient.invalidateQueries({ queryKey: ["attendance-all"] });
+      // Overtime and picking-bonus totals are summed from these rows.
+      queryClient.invalidateQueries({ queryKey: ["overtime-summary", workGroupId] });
+      queryClient.invalidateQueries({ queryKey: ["harvest-bonus-summary", workGroupId] });
     },
   });
 
@@ -192,6 +200,7 @@ export function useAttendance(workGroupId: number) {
     mutationFn: (workerId: number) => deleteWorker(workerId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workers", activeEstateId] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 

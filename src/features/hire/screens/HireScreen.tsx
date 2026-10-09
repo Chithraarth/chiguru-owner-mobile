@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from "react";
-import { Alert, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useMemo, useState, useLayoutEffect } from "react";
+import { Alert, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import * as Location from "expo-location";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -14,14 +15,16 @@ import {
   Tractor,
   Users,
   Wrench,
-} from "lucide-react-native";
+  Plus, Check, Trash2 } from "lucide-react-native";
 import { Button } from "../../../components/Button";
 import { Card } from "../../../components/Card";
+import { HeaderAddButton, Pill } from "../../../components/harvest";
 import { TextField } from "../../../components/TextField";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { useT } from "../../../lib/i18n";
 import { useHire } from "../hooks/useHire";
+import { useInnerBack } from "../../../navigation/useInnerBack";
 import { getMyHireListings } from "../../../api/endpoints/hire";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { HireListing } from "../../../types/api";
@@ -70,7 +73,8 @@ function distanceKm(lat1: number, lng1: number, lat2: number, lng2: number) {
 
 function Chip({ active, onPress, children, activeColor }: { active: boolean; onPress: () => void; children: string; activeColor: string }) {
   return (
-    <Pressable onPress={onPress} style={[styles.chip, active && { backgroundColor: activeColor, borderColor: activeColor }]}>
+    <Pressable onPress={onPress} style={[styles.chip, active && { backgroundColor: colors.tint, borderColor: activeColor }]}>
+      {active ? <Check size={15} color={colors.text} strokeWidth={2.6} /> : null}
       <Text style={[styles.chipText, active && styles.chipTextActive]}>{children}</Text>
     </Pressable>
   );
@@ -79,7 +83,7 @@ function Chip({ active, onPress, children, activeColor }: { active: boolean; onP
 function ListingCard({ listing, dist, tab, onDelete }: { listing: HireListing; dist: number | null; tab: Tab; onDelete: (id: number) => void }) {
   const cat = catMap(tab)[LEGACY_JOB_KEYS[listing.category] ?? listing.category] ?? catMap(tab).other;
   const isRental = tab === "rental";
-  const accent = isRental ? colors.primary : "#C77A2E";
+  const accent = colors.primary;
   const loc = [listing.village, listing.taluk, listing.district].filter(Boolean).join(", ");
 
   function confirmDelete() {
@@ -92,7 +96,7 @@ function ListingCard({ listing, dist, tab, onDelete }: { listing: HireListing; d
   return (
     <Card style={{ padding: 0, overflow: "hidden" }}>
       <View style={styles.cardTop}>
-        <View style={[styles.cardIcon, { backgroundColor: isRental ? "#EDEBF7" : "#FFF3E6" }]}>
+        <View style={[styles.cardIcon, { backgroundColor: isRental ? "#D8D2C4" : "#FFD166" }]}>
           <Text style={{ fontSize: 30 }}>{cat.emoji}</Text>
         </View>
         <View style={{ flex: 1, padding: spacing.sm + 4 }}>
@@ -117,6 +121,7 @@ function ListingCard({ listing, dist, tab, onDelete }: { listing: HireListing; d
             ) : null}
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 }}>
+            <Pill text={isRental ? "Machine" : "Job"} tone={isRental ? "good" : "accent"} />
             <MapPin size={11} color={colors.textMuted} />
             <Text style={styles.cardMeta} numberOfLines={1}>{listing.posterName} · {loc}</Text>
           </View>
@@ -139,21 +144,22 @@ function ListingCard({ listing, dist, tab, onDelete }: { listing: HireListing; d
       {listing.description ? <Text style={styles.description}>{listing.description}</Text> : null}
       <View style={styles.cardActions}>
         <Pressable style={[styles.callBtn, { backgroundColor: accent }]} onPress={() => Linking.openURL(`tel:${listing.phone}`)}>
-          <Phone size={14} color="#fff" />
-          <Text style={styles.callBtnText}>Call {listing.posterName.split(" ")[0]}</Text>
+          <Phone size={18} color="#fff" />
+          <Text style={styles.callBtnText}>Call</Text>
         </Pressable>
         <Pressable
-          style={[styles.waBtn, { borderColor: accent }]}
+          style={styles.waBtn}
           onPress={() => {
             const wa = (listing.whatsapp ?? listing.phone).replace(/\D/g, "");
             Linking.openURL(`https://wa.me/${wa.length === 10 ? "91" + wa : wa}`);
           }}
         >
-          <MessageCircle size={16} color={accent} />
+          <MessageCircle size={18} color={colors.text} />
+          <Text style={styles.waText}>WhatsApp</Text>
         </Pressable>
         {listing.mine ? (
-          <Pressable style={styles.deleteBtn} onPress={confirmDelete}>
-            <Text style={styles.deleteBtnText}>Delete</Text>
+          <Pressable style={styles.deleteBtn} onPress={confirmDelete} accessibilityLabel="Delete ad">
+            <Trash2 size={18} color={colors.danger} />
           </Pressable>
         ) : null}
       </View>
@@ -162,8 +168,20 @@ function ListingCard({ listing, dist, tab, onDelete }: { listing: HireListing; d
 }
 
 export function HireScreen({ navigation, route }: { navigation: any; route?: { params?: { initialTab?: Tab } } }) {
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => <HeaderAddButton label="Post listing" onPress={() => navigation.navigate("HireForm", { listingType: tab })} />,
+    });
+  });
+
   const { t } = useT();
   const [tab, setTab] = useState<Tab | null>(route?.params?.initialTab ?? null);
+  // Coming back here after posting an ad opens that ad's board.
+  useEffect(() => {
+    if (route?.params?.initialTab) setTab(route.params.initialTab);
+  }, [route?.params?.initialTab]);
+  // Opened on the board chooser: back from a board returns to the chooser.
+  const openedOnChooser = !route?.params?.initialTab;
   const [filter, setFilter] = useState("all");
   const [mineOnly, setMineOnly] = useState(false);
   const [districtQ, setDistrictQ] = useState("");
@@ -172,6 +190,14 @@ export function HireScreen({ navigation, route }: { navigation: any; route?: { p
   const [radius, setRadius] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const qc = useQueryClient();
+  useInnerBack(navigation, openedOnChooser && tab != null, () => {
+    setTab(null);
+    setFilter("all");
+    setMineOnly(false);
+    setDistrictQ("");
+    setMyLoc(null);
+    setRadius(null);
+  });
 
   const insets = useSafeAreaInsets();
   const { data: listings = [], isLoading, refetch, deleteListing } = useHire(tab ?? undefined);
@@ -230,10 +256,10 @@ export function HireScreen({ navigation, route }: { navigation: any; route?: { p
 
   if (tab === null) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+      <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
         <View style={styles.hero}>
           <View style={styles.heroIconWrap}>
-            <Handshake size={22} color="#fff" />
+            <Handshake size={22} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.heroTitle}>{t("more.farmManager")}</Text>
@@ -241,7 +267,7 @@ export function HireScreen({ navigation, route }: { navigation: any; route?: { p
           </View>
         </View>
         <View style={{ flexDirection: "row", gap: spacing.sm }}>
-          <Pressable style={[styles.landingTile, { backgroundColor: "#EDEBF7" }]} onPress={() => { setTab("rental"); setFilter("all"); setMineOnly(false); }}>
+          <Pressable style={[styles.landingTile, { backgroundColor: "#FFF0C2" }]} onPress={() => { setTab("rental"); setFilter("all"); setMineOnly(false); }}>
             <View style={[styles.landingIconWrap, { backgroundColor: "#DCD6F0" }]}>
               <Tractor size={28} color={colors.primary} />
             </View>
@@ -266,23 +292,16 @@ export function HireScreen({ navigation, route }: { navigation: any; route?: { p
   return (
     <View style={styles.container}>
       <ScrollView
-        contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}
+        contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <Pressable
-          style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
-          onPress={() => { setTab(null); setFilter("all"); setMineOnly(false); setDistrictQ(""); setMyLoc(null); setRadius(null); }}
-        >
-          <Text style={[styles.backLink, { color: accent }]}>{`← ${t("more.farmManager")}`}</Text>
-        </Pressable>
-
         <View style={[styles.hero, { backgroundColor: accent }]}>
           <View style={styles.heroIconWrap}>
-            <AccentIcon size={22} color="#fff" />
+            <AccentIcon size={22} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.heroTitle}>{tab === "rental" ? "Rent Machines & Vehicles" : "Find Workers for Your Estate"}</Text>
-            <Text style={styles.heroSubtitle}>
+            <Text style={[styles.heroTitle, styles.onAccent]}>{tab === "rental" ? "Rent Machines & Vehicles" : "Find Workers for Your Estate"}</Text>
+            <Text style={[styles.heroSubtitle, styles.onAccentSoft]}>
               {tab === "rental"
                 ? "Tractor, JCB, Hitachi, auto, pickup, cutting & weight machines — contact owners directly."
                 : "Post the workers you need — farm labourers, mestri, manager. People contact you directly."}
@@ -300,7 +319,7 @@ export function HireScreen({ navigation, route }: { navigation: any; route?: { p
           </Pressable>
           {myLoc ? (
             <Pressable onPress={() => { setMyLoc(null); setRadius(null); }}>
-              <Text style={{ fontSize: 12, color: colors.textMuted }}>Clear</Text>
+              <Text style={{ fontSize: 14, color: colors.textMuted }}>Clear</Text>
             </Pressable>
           ) : null}
         </View>
@@ -348,9 +367,6 @@ export function HireScreen({ navigation, route }: { navigation: any; route?: { p
           </View>
         )}
       </ScrollView>
-      <View style={[styles.footer, { paddingBottom: spacing.md + insets.bottom }]}>
-        <Button title="+ Post listing" onPress={() => navigation.navigate("HireForm", { listingType: tab })} />
-      </View>
     </View>
   );
 }
@@ -358,42 +374,45 @@ export function HireScreen({ navigation, route }: { navigation: any; route?: { p
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
-  hero: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md },
-  heroIconWrap: { width: 40, height: 40, borderRadius: radius.sm, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
-  heroTitle: { color: "#fff", fontSize: 16, fontWeight: "700" },
-  heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 12, marginTop: 2 },
+  hero: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.accent, borderRadius: 28, padding: spacing.md },
+  heroIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
+  heroTitle: { color: colors.accentInk, fontSize: 18, fontWeight: "800" },
+  heroSubtitle: { color: colors.accentInkSoft, fontSize: 14, marginTop: 2 },
 
   landingTile: { flex: 1, borderRadius: radius.md, padding: spacing.md, alignItems: "center", gap: spacing.xs },
-  landingIconWrap: { width: 56, height: 56, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
-  landingTitle: { fontSize: 14, fontWeight: "700", textAlign: "center" },
-  landingSubtitle: { fontSize: 10.5, textAlign: "center", opacity: 0.85 },
+  landingIconWrap: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center" },
+  landingTitle: { fontSize: 15.5, fontWeight: "700", textAlign: "center" },
+  landingSubtitle: { fontSize: 12.5, textAlign: "center", opacity: 0.85 },
 
-  backLink: { fontSize: 13, fontWeight: "700" },
+  // Text on the solid green/orange board banner.
+  onAccent: { color: "#FFFFFF" },
+  onAccentSoft: { color: "rgba(255,255,255,0.88)" },
 
-  locBtn: { flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 1, borderColor: colors.border, backgroundColor: "#fff", borderRadius: radius.pill, paddingHorizontal: spacing.sm + 4, paddingVertical: spacing.xs + 2 },
-  locBtnText: { fontSize: 12, fontWeight: "500", color: colors.textMuted },
+  locBtn: { flexDirection: "row", alignItems: "center", gap: 6, ...shadow, backgroundColor: "#fff", borderRadius: radius.pill, paddingHorizontal: spacing.sm + 4, paddingVertical: spacing.xs + 2 },
+  locBtnText: { fontSize: 14, fontWeight: "500", color: colors.textMuted },
 
-  chip: { paddingVertical: spacing.xs + 2, paddingHorizontal: spacing.sm + 4, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: "#fff" },
-  chipText: { fontSize: 12.5, color: colors.textMuted, fontWeight: "500" },
-  chipTextActive: { color: "#fff", fontWeight: "700" },
+  chip: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingHorizontal: 14, borderRadius: 999, borderWidth: 2.5, borderColor: colors.border, backgroundColor: "#fff" },
+  chipText: { fontSize: 14.5, color: colors.textMuted, fontWeight: "500" },
+  chipTextActive: { color: colors.text, fontWeight: "800" },
 
   cardTop: { flexDirection: "row" },
-  cardIcon: { width: 76, height: 76, alignItems: "center", justifyContent: "center" },
-  cardTitle: { fontSize: 14, fontWeight: "700", color: colors.text, flexShrink: 1 },
-  cardMeta: { fontSize: 11, color: colors.textMuted, flexShrink: 1 },
-  cardRate: { fontSize: 13, fontWeight: "700" },
+  cardIcon: { width: 76, height: 76, margin: 12, marginRight: 0, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  cardTitle: { fontSize: 17.5, fontWeight: "800", color: colors.text, flexShrink: 1 },
+  cardMeta: { fontSize: 13, color: colors.textMuted, flexShrink: 1 },
+  cardRate: { fontSize: 14.5, fontWeight: "700" },
   mineBadge: { backgroundColor: "#E4EEFB", borderRadius: radius.pill, paddingHorizontal: 6, paddingVertical: 1 },
-  mineBadgeText: { fontSize: 9, fontWeight: "700", color: "#5B8CD6" },
+  mineBadgeText: { fontSize: 11, fontWeight: "700", color: "#5B8CD6" },
   tinyBadge: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#FFEBD6", borderRadius: radius.pill, paddingHorizontal: 6, paddingVertical: 2 },
-  tinyBadgeText: { fontSize: 9.5, fontWeight: "700", color: "#95530F" },
-  description: { fontSize: 12, color: colors.textMuted, paddingHorizontal: spacing.sm + 4, paddingTop: spacing.xs },
+  tinyBadgeText: { fontSize: 11.5, fontWeight: "700", color: "#95530F" },
+  description: { fontSize: 14, color: colors.textMuted, paddingHorizontal: spacing.sm + 4, paddingTop: spacing.xs },
 
   cardActions: { flexDirection: "row", gap: spacing.sm, padding: spacing.sm + 4, paddingTop: spacing.sm },
-  callBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: radius.sm, paddingVertical: spacing.sm },
-  callBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
-  waBtn: { width: 40, alignItems: "center", justifyContent: "center", borderWidth: 1, borderRadius: radius.sm },
-  deleteBtn: { paddingHorizontal: spacing.sm + 2, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#F5C6C6", borderRadius: radius.sm },
-  deleteBtnText: { color: colors.danger, fontSize: 12, fontWeight: "700" },
+  callBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 999, minHeight: 50 },
+  callBtnText: { color: "#fff", fontWeight: "700", fontSize: 16.5 },
+  waBtn: { flexDirection: "row", gap: 6, paddingHorizontal: 16, alignItems: "center", justifyContent: "center", backgroundColor: colors.tint, borderRadius: 999, minHeight: 50 },
+  waText: { fontSize: 16, fontWeight: "700", color: colors.text },
+  deleteBtn: { width: 50, minHeight: 50, alignItems: "center", justifyContent: "center", backgroundColor: colors.dangerBg, borderRadius: 25 },
+  deleteBtnText: { color: colors.danger, fontSize: 14, fontWeight: "700" },
 
   footer: { padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.bg },
 });

@@ -1,6 +1,7 @@
 export const ApiErrorCode = {
   AUTH_REQUIRED: "AUTH_REQUIRED",
   SUBSCRIPTION_REQUIRED: "SUBSCRIPTION_REQUIRED",
+  WALLET_EMPTY: "WALLET_EMPTY",
   NO_SEATS_AVAILABLE: "NO_SEATS_AVAILABLE",
   ESTATE_LIMIT_REACHED: "ESTATE_LIMIT_REACHED",
   ALREADY_MANAGER: "ALREADY_MANAGER",
@@ -31,4 +32,13 @@ export function isAuthRequired(err: unknown): err is ApiError {
 
 export function isSubscriptionRequired(err: unknown): err is ApiError {
   return err instanceof ApiError && err.is(ApiErrorCode.SUBSCRIPTION_REQUIRED);
+}
+
+export function isWalletEmpty(err: unknown): err is ApiError {
+  return err instanceof ApiError && err.is(ApiErrorCode.WALLET_EMPTY);
+}
+
+/** The server refused because of the plan or the wallet - the app shows its own prompt for these. */
+export function isGateError(err: unknown): err is ApiError {
+  return isSubscriptionRequired(err) || isWalletEmpty(err);
 }

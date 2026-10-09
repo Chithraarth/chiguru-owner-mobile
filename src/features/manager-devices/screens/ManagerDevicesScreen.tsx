@@ -1,12 +1,14 @@
 import React, { useState } from "react";
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, FlatList, Pressable, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { ChipSelect } from "../../../components/ChipSelect";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
-import { colors, radius, spacing } from "../../../components/theme";
+import { Avatar, Pill, SectionLabel } from "../../../components/harvest";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { getManagers, inviteManager, removeManager } from "../../../api/endpoints/managers";
 import { useMyEstates } from "../../estate/hooks/useMyEstates";
 import { useEstateStore } from "../../estate/store/estateStore";
@@ -89,7 +91,7 @@ export function ManagerDevicesScreen() {
 
   return (
     <View style={styles.container}>
-      <Card style={{ margin: spacing.md }}>
+      <Card style={{ marginHorizontal: 20, marginTop: spacing.md, gap: 4, padding: 18 }}>
         <Text style={styles.sectionTitle}>Invite someone</Text>
         <TextField label={t("profile.name")} value={name} onChangeText={setName} />
 
@@ -124,20 +126,25 @@ export function ManagerDevicesScreen() {
       <FlatList
         data={query.data ?? []}
         keyExtractor={(m) => String(m.id)}
-        contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+        contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: spacing.xl }}
         ListEmptyComponent={<EmptyState title="No invitees yet" />}
-        renderItem={({ item }) => (
+        ListHeaderComponent={(query.data ?? []).length > 0 ? <SectionLabel>Your invitees</SectionLabel> : null}
+        renderItem={({ item, index }) => (
           <Card style={styles.row}>
+            <Avatar name={item.name} index={index} />
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.meta}>
-                {item.phone ?? item.email} · {item.status}
-              </Text>
+              <Text style={styles.meta}>{item.phone ?? item.email}</Text>
               {estateName(item.estateId) ? <Text style={styles.meta}>{estateName(item.estateId)}</Text> : null}
             </View>
-            {item.status !== "removed" ? (
-              <Button title="Remove" variant="danger" onPress={() => confirmRemove(item.id, item.name)} />
-            ) : null}
+            <View style={{ alignItems: "flex-end", gap: 6 }}>
+              <Pill text={item.status} tone={item.status === "active" ? "good" : item.status === "removed" ? "bad" : "warn"} />
+              {item.status !== "removed" ? (
+                <Pressable onPress={() => confirmRemove(item.id, item.name)} hitSlop={8} accessibilityLabel={`Remove ${item.name}`}>
+                  <Text style={styles.remove}>Remove</Text>
+                </Pressable>
+              ) : null}
+            </View>
           </Card>
         )}
       />
@@ -146,21 +153,16 @@ export function ManagerDevicesScreen() {
 }
 
 const styles = StyleSheet.create({
+  remove: { fontSize: 14.5, fontWeight: "800", color: colors.danger },
   container: { flex: 1, backgroundColor: colors.bg },
-  sectionTitle: { fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: spacing.sm },
-  modeRow: { flexDirection: "row", gap: spacing.xs, marginBottom: spacing.sm },
-  modeTab: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm + 2,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  modeTabActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  modeTabText: { fontSize: 12.5, fontWeight: "600", color: colors.text },
-  modeTabTextActive: { color: "#fff" },
-  row: { flexDirection: "row", alignItems: "center" },
-  name: { fontSize: 15, fontWeight: "600", color: colors.text },
-  meta: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  sectionTitle: { fontSize: 20, fontWeight: "800", color: colors.text, marginBottom: spacing.sm },
+  modeRow: { flexDirection: "row", backgroundColor: colors.muted, borderRadius: 999, padding: 4, marginBottom: spacing.md },
+  modeTab: { flex: 1, minHeight: 44, borderRadius: 999, alignItems: "center", justifyContent: "center" },
+  modeTabActive: { backgroundColor: colors.card, ...shadow },
+  modeTabText: { fontSize: 14.5, fontWeight: "600", color: colors.text },
+  modeTabTextActive: { color: colors.text, fontWeight: "800" },
+  row: { flexDirection: "row", alignItems: "center", gap: 12 },
+  name: { fontSize: 16.5, fontWeight: "600", color: colors.text },
+  meta: { fontSize: 14, color: colors.textMuted, marginTop: 2 },
   error: { color: colors.danger, marginBottom: spacing.md },
 });

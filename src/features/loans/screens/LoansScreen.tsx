@@ -1,14 +1,16 @@
 import React, { useState } from "react";
-import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import * as ImagePicker from "expo-image-picker";
 import { useQuery } from "@tanstack/react-query";
-import { Camera, ChevronDown, ChevronUp, X } from "lucide-react-native";
+import { Camera, ChevronDown, ChevronUp, X, Plus, Wallet, Users, ChevronRight, ChevronLeft, Trash2 } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { ChipSelect } from "../../../components/ChipSelect";
 import { SelectOrType } from "../../../components/SelectOrType";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
+import { Avatar, IconChip, ListCard, ListRow, Pill, ProgressBar, SectionLabel, StatTiles, shortRupees } from "../../../components/harvest";
 import { colors, radius, spacing } from "../../../components/theme";
 import { useLoans } from "../hooks/useLoans";
 import { getGroupLoans } from "../../../api/endpoints/loans";
@@ -154,34 +156,38 @@ export function LoansScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
         {openFolder === null ? (
           <>
-            {allOutstanding > 0 ? (
-              <View style={styles.outstandingCard}>
-                <Text style={styles.outstandingLabel}>Total outstanding loans</Text>
-                <Text style={styles.outstandingValue}>{inr(allOutstanding)}</Text>
-              </View>
-            ) : null}
-            <Text style={styles.sectionLabel}>👥 YOUR WORK GROUPS</Text>
-            <View style={{ gap: spacing.sm }}>
-              {folders.map((f) => (
-                <Pressable key={f.id ?? "general"} onPress={() => setOpenFolder({ id: f.id, name: f.name })}>
-                  <Card style={styles.folderRow}>
-                    <View style={styles.folderIcon}><Text style={{ fontSize: 20 }}>{f.id == null ? "💰" : "👥"}</Text></View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.folderName}>{f.name}</Text>
-                      <Text style={styles.folderSubtitle}>{f.subtitle}</Text>
+            <StatTiles
+              items={[
+                { label: "Outstanding", value: shortRupees(allOutstanding), sub: "to recover" },
+                { label: "Groups", value: String(folders.length), sub: "with loans" },
+              ]}
+            />
+            <SectionLabel>Your work groups</SectionLabel>
+            <ListCard>
+              {folders.map((f, i) => (
+                <ListRow
+                  key={f.id ?? "general"}
+                  title={f.name}
+                  subtitle={f.subtitle}
+                  left={<IconChip icon={f.id == null ? Wallet : Users} index={i} size={46} />}
+                  right={
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      {f.count > 0 ? <Pill text={String(f.count)} /> : null}
+                      <ChevronRight size={18} color={colors.textMuted} />
                     </View>
-                    {f.count > 0 ? <View style={styles.countBadge}><Text style={styles.countBadgeText}>{f.count}</Text></View> : null}
-                  </Card>
-                </Pressable>
+                  }
+                  divider={i < folders.length - 1}
+                  onPress={() => setOpenFolder({ id: f.id, name: f.name })}
+                />
               ))}
-            </View>
+            </ListCard>
           </>
         ) : (
           <>
-            <Pressable onPress={() => setOpenFolder(null)}><Text style={styles.backLink}>← All Groups</Text></Pressable>
+            <Pressable onPress={() => setOpenFolder(null)} style={styles.backChip}><ChevronLeft size={18} color={colors.text} /><Text style={styles.backLink}>All groups</Text></Pressable>
 
             {activeLoans.length > 0 ? (
               <View style={styles.outstandingCard}>
@@ -191,49 +197,44 @@ export function LoansScreen() {
             ) : null}
 
             {folderLoans.length > 0 ? (
-              <Button title="+ Record loan" onPress={openLoanForm} />
+              <Button title="Record loan" icon={Plus} onPress={openLoanForm} />
             ) : (
               <EmptyState title={`No loans for ${openFolder.name} yet`} actionLabel="Record loan" onAction={openLoanForm} />
             )}
 
             {activeLoans.length > 0 ? (
               <View style={{ gap: spacing.sm }}>
-                <Text style={styles.sectionLabel}>ACTIVE LOANS</Text>
+                <SectionLabel>Active loans</SectionLabel>
                 {activeLoans.map((l) => {
                   const remaining = Number(l.remainingAmount ?? l.totalDue);
                   const pct = Math.min(100, (Number(l.repaidAmount) / Number(l.totalDue)) * 100);
                   return (
-                    <Card key={l.id}>
-                      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                        <View>
-                          <Text style={styles.workerName}>{workerName(l)}</Text>
-                          <Text style={styles.loanMeta}>Issued {l.issuedDate} · {l.repaymentMethod}</Text>
-                          {l.workGroupName ? <Text style={styles.groupTag}>👥 {l.workGroupName}</Text> : null}
+                    <Card key={l.id} style={{ gap: 10 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                        <Avatar name={workerName(l)} index={l.id} />
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={styles.workerName} numberOfLines={1}>{workerName(l)}</Text>
+                          <Text style={styles.loanMeta}>
+                            {l.repaymentMethod} · {l.issuedDate}
+                            {l.workGroupName ? ` · ${l.workGroupName}` : ""}
+                          </Text>
                         </View>
                         <View style={{ alignItems: "flex-end" }}>
-                          <Text style={styles.remainingLabel}>Remaining</Text>
-                          <Text style={styles.remainingValue}>{inr(remaining)}</Text>
+                          <Text style={styles.remainingValue}>{inr(Number(l.totalDue))}</Text>
+                          <Text style={styles.progressText}>{inr(remaining)} left</Text>
                         </View>
                       </View>
-                      <View style={styles.progressTrack}>
-                        <View style={[styles.progressFill, { width: `${pct}%` }]} />
-                      </View>
-                      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                        <Text style={styles.progressText}>Repaid: {inr(Number(l.repaidAmount))}</Text>
-                        <Text style={styles.progressText}>Total: {inr(Number(l.totalDue))}</Text>
-                      </View>
-                      {l.proofPhotoUrl ? (
-                        <View style={styles.proofBadge}><Camera size={11} color={colors.primary} /><Text style={styles.proofBadgeText}>Proof photo saved</Text></View>
-                      ) : null}
-                      <View style={{ flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm }}>
-                        <View style={{ flex: 1 }}>
-                          <Button title="Record Payment" onPress={() => { setPayingLoan(l); setPayAmount(""); setPayMethod(REPAYMENT_METHODS[0]); }} />
-                        </View>
-                        <Pressable style={styles.expandBtn} onPress={() => setExpandedId(expandedId === l.id ? null : l.id)}>
-                          {expandedId === l.id ? <ChevronUp size={16} color={colors.textMuted} /> : <ChevronDown size={16} color={colors.textMuted} />}
-                        </Pressable>
-                        <Pressable style={styles.expandBtn} onPress={() => confirmDelete(l)}>
-                          <X size={16} color={colors.danger} />
+                      <ProgressBar value={pct / 100} />
+                      <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
+                        <Button
+                          title="Record payment"
+                          variant="light"
+                          style={{ flex: 1 }}
+                          onPress={() => { setPayingLoan(l); setPayAmount(""); setPayMethod(REPAYMENT_METHODS[0]); }}
+                        />
+                        {l.proofPhotoUrl ? <Pill text="Proof saved" tone="good" /> : null}
+                        <Pressable style={styles.expandBtn} onPress={() => confirmDelete(l)} accessibilityLabel="Delete loan">
+                          <Trash2 size={18} color={colors.danger} />
                         </Pressable>
                       </View>
                       {expandedId === l.id && l.notes ? <Text style={styles.notesText}>{l.notes}</Text> : null}
@@ -245,12 +246,12 @@ export function LoansScreen() {
 
             {closedLoans.length > 0 ? (
               <View style={{ gap: spacing.xs }}>
-                <Text style={styles.sectionLabel}>CLOSED LOANS</Text>
+                <SectionLabel>Closed loans</SectionLabel>
                 {closedLoans.map((l) => (
                   <View key={l.id} style={styles.closedRow}>
                     <View>
                       <Text style={styles.closedName}>{workerName(l)}</Text>
-                      <Text style={styles.closedMeta}>{l.issuedDate}{l.workGroupName ? ` · 👥 ${l.workGroupName}` : ""}</Text>
+                      <Text style={styles.closedMeta}>{l.issuedDate}{l.workGroupName ? ` · ${l.workGroupName}` : ""}</Text>
                     </View>
                     <View style={styles.closedBadge}><Text style={styles.closedBadgeText}>Closed</Text></View>
                   </View>
@@ -267,7 +268,7 @@ export function LoansScreen() {
           <View style={styles.sheetHeader}>
             <View>
               <Text style={styles.sheetTitle}>New Loan</Text>
-              <Text style={styles.sheetSubtitle}>{openFolder?.id != null ? `👥 ${openFolder.name}` : "💰 General"}</Text>
+              <Text style={styles.sheetSubtitle}>{openFolder?.id != null ? `${openFolder.name}` : "General"}</Text>
             </View>
             <Pressable onPress={() => setShowLoanForm(false)} hitSlop={10}><X size={20} color={colors.textMuted} /></Pressable>
           </View>
@@ -328,54 +329,55 @@ export function LoansScreen() {
 }
 
 const styles = StyleSheet.create({
+  backChip: { flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start", minHeight: 40, paddingHorizontal: 12, borderRadius: 999, backgroundColor: colors.card },
   container: { flex: 1, backgroundColor: colors.bg },
   outstandingCard: { backgroundColor: "#FDEAEA", borderWidth: 1, borderColor: "#F5C6C6", borderRadius: radius.md, padding: spacing.md },
-  outstandingLabel: { fontSize: 11.5, color: colors.danger, fontWeight: "600" },
+  outstandingLabel: { fontSize: 13.5, color: colors.danger, fontWeight: "600" },
   outstandingValue: { fontSize: 22, fontWeight: "700", color: colors.danger, marginTop: 2 },
 
-  sectionLabel: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5 },
+  sectionLabel: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5 },
   folderRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  folderIcon: { width: 44, height: 44, borderRadius: radius.sm, backgroundColor: "#FDEAEA", alignItems: "center", justifyContent: "center" },
-  folderName: { fontSize: 15, fontWeight: "700", color: colors.text },
-  folderSubtitle: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
-  countBadge: { backgroundColor: "#E9E6FB", borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
-  countBadgeText: { fontSize: 12, fontWeight: "700", color: colors.accent },
-  backLink: { fontSize: 13, fontWeight: "700", color: colors.primary },
+  folderIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#FDEAEA", alignItems: "center", justifyContent: "center" },
+  folderName: { fontSize: 16.5, fontWeight: "700", color: colors.text },
+  folderSubtitle: { fontSize: 14, color: colors.textMuted, marginTop: 2 },
+  countBadge: { backgroundColor: "#FFF0C2", borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
+  countBadgeText: { fontSize: 14, fontWeight: "700", color: colors.primary },
+  backLink: { fontSize: 14.5, fontWeight: "700", color: colors.primary },
 
-  workerName: { fontSize: 14.5, fontWeight: "700", color: colors.text },
-  loanMeta: { fontSize: 11.5, color: colors.textMuted, marginTop: 2 },
-  groupTag: { fontSize: 11, color: "#3E6FB0", marginTop: 2 },
-  remainingLabel: { fontSize: 10.5, color: colors.textMuted },
-  remainingValue: { fontSize: 15, fontWeight: "700", color: colors.danger },
+  workerName: { fontSize: 16, fontWeight: "700", color: colors.text },
+  loanMeta: { fontSize: 13.5, color: colors.textMuted, marginTop: 2 },
+  groupTag: { fontSize: 13, color: "#3E6FB0", marginTop: 2 },
+  remainingLabel: { fontSize: 12.5, color: colors.textMuted },
+  remainingValue: { fontSize: 16.5, fontWeight: "700", color: colors.danger },
   progressTrack: { height: 6, borderRadius: 3, backgroundColor: colors.muted, overflow: "hidden", marginTop: spacing.sm, marginBottom: 4 },
   progressFill: { height: "100%", backgroundColor: colors.primary, borderRadius: 3 },
-  progressText: { fontSize: 10.5, color: colors.textMuted },
+  progressText: { fontSize: 12.5, color: colors.textMuted },
   proofBadge: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: spacing.xs },
-  proofBadgeText: { fontSize: 10.5, color: colors.primary, fontWeight: "600" },
+  proofBadgeText: { fontSize: 12.5, color: colors.primary, fontWeight: "600" },
   expandBtn: { width: 40, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm },
-  notesText: { fontSize: 12, color: colors.textMuted, marginTop: spacing.sm, fontStyle: "italic" },
+  notesText: { fontSize: 14, color: colors.textMuted, marginTop: spacing.sm, fontStyle: "italic" },
 
   closedRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: colors.muted, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, opacity: 0.7 },
-  closedName: { fontSize: 13.5, fontWeight: "600", color: colors.text },
-  closedMeta: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
+  closedName: { fontSize: 15, fontWeight: "600", color: colors.text },
+  closedMeta: { fontSize: 13, color: colors.textMuted, marginTop: 1 },
   closedBadge: { backgroundColor: colors.border, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 3 },
-  closedBadgeText: { fontSize: 10.5, fontWeight: "600", color: colors.text },
+  closedBadgeText: { fontSize: 12.5, fontWeight: "600", color: colors.text },
 
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
   sheet: { position: "absolute", left: 0, right: 0, bottom: 0, maxHeight: "88%", backgroundColor: colors.card, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg },
   sheetHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: spacing.md },
-  sheetTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
-  sheetSubtitle: { fontSize: 12, color: "#3E6FB0", fontWeight: "600", marginTop: 2 },
+  sheetTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
+  sheetSubtitle: { fontSize: 14, color: "#3E6FB0", fontWeight: "600", marginTop: 2 },
 
-  label: { fontSize: 14, fontWeight: "500", color: colors.text, marginBottom: 2 },
-  hint: { fontSize: 11, color: colors.textMuted, marginBottom: spacing.sm },
+  label: { fontSize: 15.5, fontWeight: "500", color: colors.text, marginBottom: 2 },
+  hint: { fontSize: 13, color: colors.textMuted, marginBottom: spacing.sm },
   proofPreview: { width: 90, height: 90, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border },
   removeProofBtn: { position: "absolute", top: -6, right: -6, backgroundColor: colors.danger, borderRadius: 12, padding: 4 },
   proofPicker: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.xs, borderWidth: 2, borderStyle: "dashed", borderColor: colors.border, borderRadius: radius.md, paddingVertical: spacing.md },
-  proofPickerText: { fontSize: 13, color: colors.textMuted },
-  errorText: { color: colors.danger, fontSize: 12.5, marginBottom: spacing.md },
+  proofPickerText: { fontSize: 14.5, color: colors.textMuted },
+  errorText: { color: colors.danger, fontSize: 14.5, marginBottom: spacing.md },
 
   payingBox: { backgroundColor: "#FDEAEA", borderRadius: radius.sm, padding: spacing.sm + 4, marginBottom: spacing.md },
-  payingWorker: { fontSize: 13.5, fontWeight: "600", color: colors.danger },
-  payingOutstanding: { fontSize: 12.5, color: colors.danger, marginTop: 2 },
+  payingWorker: { fontSize: 15, fontWeight: "600", color: colors.danger },
+  payingOutstanding: { fontSize: 14.5, color: colors.danger, marginTop: 2 },
 });

@@ -1,5 +1,6 @@
 import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, CheckCircle2, History, RefreshCw, WifiOff } from "lucide-react-native";
 import { Card } from "../../../components/Card";
@@ -44,7 +45,7 @@ export function SyncLogScreen() {
     : "Not synced yet on this device";
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       <Card>
         <View style={{ flexDirection: "row", alignItems: "flex-start", gap: spacing.sm }}>
           <View style={[styles.statusIconWrap, { backgroundColor: statusIconBg }]}>{statusIcon}</View>
@@ -65,7 +66,7 @@ export function SyncLogScreen() {
 
         {isOnline ? (
           <View style={{ marginTop: spacing.sm }}>
-            <Button title="Sync now" variant="secondary" onPress={() => runSync({ manual: true })} loading={isSyncing} />
+            <Button title="Sync now" icon={RefreshCw} onPress={() => runSync({ manual: true })} loading={isSyncing} />
           </View>
         ) : null}
       </Card>
@@ -83,7 +84,7 @@ export function SyncLogScreen() {
 
       {conflictsQuery.isLoading ? (
         <Card style={{ alignItems: "center", paddingVertical: spacing.xl }}>
-          <Text style={{ color: colors.textMuted, fontSize: 13 }}>Loading…</Text>
+          <Text style={{ color: colors.textMuted, fontSize: 14.5 }}>Loading…</Text>
         </Card>
       ) : conflictsQuery.isError ? (
         <Card style={{ alignItems: "center", paddingVertical: spacing.lg, borderColor: "#FDE68A" }}>
@@ -136,24 +137,24 @@ export function SyncLogScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  statusIconWrap: { width: 36, height: 36, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
-  statusTitle: { fontSize: 13.5, fontWeight: "700", color: colors.text },
-  statusSubtitle: { fontSize: 11.5, color: colors.textMuted, marginTop: 2 },
+  statusIconWrap: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center" },
+  statusTitle: { fontSize: 20, fontWeight: "800", color: colors.text },
+  statusSubtitle: { fontSize: 13.5, color: colors.textMuted, marginTop: 2 },
   pendingBox: { backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", borderRadius: radius.sm, padding: spacing.sm + 2, marginTop: spacing.sm },
-  pendingText: { fontSize: 11.5, color: "#92600E", lineHeight: 16 },
+  pendingText: { fontSize: 13.5, color: "#92600E", lineHeight: 16 },
 
-  sectionTitle: { fontSize: 13.5, fontWeight: "700", color: colors.text },
-  sectionSubtitle: { fontSize: 11.5, color: colors.textMuted, lineHeight: 16 },
+  sectionTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
+  sectionSubtitle: { fontSize: 13.5, color: colors.textMuted, lineHeight: 16 },
 
-  emptyTitle: { fontSize: 13.5, fontWeight: "600", color: colors.text, marginTop: spacing.sm },
-  emptySubtitle: { fontSize: 11.5, color: colors.textMuted, marginTop: 2, textAlign: "center" },
+  emptyTitle: { fontSize: 15, fontWeight: "600", color: colors.text, marginTop: spacing.sm },
+  emptySubtitle: { fontSize: 13.5, color: colors.textMuted, marginTop: 2, textAlign: "center" },
 
-  conflictSummary: { flex: 1, fontSize: 13, fontWeight: "600", color: colors.text, lineHeight: 18 },
-  conflictDate: { fontSize: 9.5, color: colors.textMuted },
+  conflictSummary: { flex: 1, fontSize: 14.5, fontWeight: "600", color: colors.text, lineHeight: 18 },
+  conflictDate: { fontSize: 11.5, color: colors.textMuted },
   groupBadge: { alignSelf: "flex-start", backgroundColor: "#E4EEFB", borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 2, marginTop: spacing.xs },
-  groupBadgeText: { fontSize: 10.5, fontWeight: "600", color: "#3E6FB0" },
+  groupBadgeText: { fontSize: 12.5, fontWeight: "600", color: "#3E6FB0" },
   valueBox: { flex: 1, borderRadius: radius.sm, padding: spacing.xs + 2 },
-  valueLabel: { fontSize: 9.5, color: colors.textMuted, marginBottom: 1 },
-  valueTextOld: { fontSize: 11.5, color: colors.textMuted, textDecorationLine: "line-through" },
-  valueTextNew: { fontSize: 11.5, color: "#1F9E5C", fontWeight: "600" },
+  valueLabel: { fontSize: 11.5, color: colors.textMuted, marginBottom: 1 },
+  valueTextOld: { fontSize: 13.5, color: colors.textMuted, textDecorationLine: "line-through" },
+  valueTextNew: { fontSize: 13.5, color: "#1F9E5C", fontWeight: "600" },
 });

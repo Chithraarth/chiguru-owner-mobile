@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Pressable, Text } from "react-native";
+import { Pressable } from "react-native";
+import { Text } from "../components/Text";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Home, UserCheck, Camera, BookOpen, RefreshCw } from "lucide-react-native";
+import { Home, UserCheck, Camera, BookOpen, RefreshCw, Repeat } from "lucide-react-native";
 import { DashboardScreen } from "../features/dashboard/screens/DashboardScreen";
 import { MoreScreen } from "../features/dashboard/screens/MoreScreen";
 import { WorkGroupListScreen } from "../features/work-groups/screens/WorkGroupListScreen";
@@ -37,20 +38,18 @@ import { EquipmentFormScreen } from "../features/equipment/screens/EquipmentForm
 import { HireScreen } from "../features/hire/screens/HireScreen";
 import { HireFormScreen } from "../features/hire/screens/HireFormScreen";
 import { NurseryScreen } from "../features/nursery/screens/NurseryScreen";
-import { NurseryAdminScreen } from "../features/nursery/screens/NurseryAdminScreen";
 import { MandiScreen } from "../features/mandi/screens/MandiScreen";
 import { MyAdsScreen } from "../features/my-ads/screens/MyAdsScreen";
 import { AgriAiScreen } from "../features/agri-ai/screens/AgriAiScreen";
 import { DiseaseScreen } from "../features/disease/screens/DiseaseScreen";
 import { AgriDoctorScreen } from "../features/agri-doctor/screens/AgriDoctorScreen";
 import { AgriDoctorProfileScreen } from "../features/agri-doctor/screens/AgriDoctorProfileScreen";
-import { AgriDoctorCallScreen } from "../features/agri-doctor/screens/AgriDoctorCallScreen";
 import { AgriExpertHubScreen } from "../features/agri-doctor/screens/AgriExpertHubScreen";
 import { AgriDoctorRegisterScreen } from "../features/agri-doctor/screens/AgriDoctorRegisterScreen";
-import { AgriDoctorEarningsScreen } from "../features/agri-doctor/screens/AgriDoctorEarningsScreen";
-import { ConsultationScreen } from "../features/agri-doctor/screens/ConsultationScreen";
 import { SubscriptionScreen } from "../features/subscription/screens/SubscriptionScreen";
 import { WalletScreen } from "../features/wallet/screens/WalletScreen";
+import { useApplePurchaseHandler } from "../features/iap/appleIap";
+import { withPlan } from "../components/PlanLock";
 import { BinScreen } from "../features/bin/screens/BinScreen";
 import { SyncLogScreen } from "../features/sync-log/screens/SyncLogScreen";
 import { ManagerDevicesScreen } from "../features/manager-devices/screens/ManagerDevicesScreen";
@@ -62,9 +61,9 @@ import { EstateEditScreen } from "../features/estate/screens/EstateEditScreen";
 import { ProfileScreen } from "../features/profile/screens/ProfileScreen";
 import { BackupRestoreScreen } from "../features/profile/screens/BackupRestoreScreen";
 import { EstateSwitcherModal } from "../features/estate/components/EstateSwitcherModal";
-import { AppHeader } from "../components/AppHeader";
-import { FloatingTabBar } from "../components/FloatingTabBar";
-import { colors } from "../components/theme";
+import { harvestHeaderOptions } from "../components/HarvestHeader";
+import { HarvestTabBar } from "../components/HarvestTabBar";
+import { colors, radius } from "../components/theme";
 
 const Tab = createBottomTabNavigator();
 const DashboardStackNav = createNativeStackNavigator();
@@ -77,8 +76,22 @@ function EstateSwitcherButton() {
   const [visible, setVisible] = useState(false);
   return (
     <>
-      <Pressable onPress={() => setVisible(true)} hitSlop={10} style={{ marginRight: 12 }}>
-        <Text style={{ color: colors.primary, fontSize: 14 }}>Switch farm ▾</Text>
+      <Pressable
+        onPress={() => setVisible(true)}
+        hitSlop={8}
+        accessibilityRole="button"
+        style={{
+          height: 40,
+          paddingHorizontal: 12,
+          borderRadius: radius.pill,
+          backgroundColor: colors.card,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 6,
+        }}
+      >
+        <Repeat size={15} color={colors.text} strokeWidth={2.2} />
+        <Text style={{ color: colors.text, fontSize: 14, fontWeight: "800" }}>Switch</Text>
       </Pressable>
       <EstateSwitcherModal visible={visible} onClose={() => setVisible(false)} />
     </>
@@ -88,6 +101,29 @@ function EstateSwitcherButton() {
 const headerOptions = {
   headerRight: () => <EstateSwitcherButton />,
 };
+
+// Screens whose data the server only serves to an active plan: without one
+// they show a "Subscribe to unlock" card instead, so nothing typed offline is
+// lost when the server later refuses it.
+const AttendanceScreenGated = withPlan(AttendanceScreen);
+const EmployeeAttendanceScreenGated = withPlan(EmployeeAttendanceScreen);
+const LabourRecordsScreenGated = withPlan(LabourRecordsScreen);
+const ExpenseListScreenGated = withPlan(ExpenseListScreen);
+const ExpenseFormScreenGated = withPlan(ExpenseFormScreen);
+const HarvestsScreenGated = withPlan(HarvestsScreen);
+const HarvestFormScreenGated = withPlan(HarvestFormScreen);
+const LoansScreenGated = withPlan(LoansScreen);
+const LoanFormScreenGated = withPlan(LoanFormScreen);
+const ReportsScreenGated = withPlan(ReportsScreen);
+const FarmAccountsScreenGated = withPlan(FarmAccountsScreen);
+const OldLedgerScreenGated = withPlan(OldLedgerScreen);
+const OldLedgerDetailScreenGated = withPlan(OldLedgerDetailScreen);
+const AccountsScanScreenGated = withPlan(AccountsScanScreen);
+const MandiScreenGated = withPlan(MandiScreen);
+const AgriAiScreenGated = withPlan(AgriAiScreen);
+const DiseaseScreenGated = withPlan(DiseaseScreen);
+const MarketplaceFormScreenGated = withPlan(MarketplaceFormScreen);
+const EquipmentFormScreenGated = withPlan(EquipmentFormScreen);
 
 // Screens deep-linked from the More/Shop/Farm-Accounts hubs and the drawer
 // menu are registered on every stack that can navigate to them, so
@@ -101,52 +137,48 @@ function registerSharedScreens(Nav: ReturnType<typeof createNativeStackNavigator
       <Nav.Screen name="SprayForm" component={SprayFormScreen} options={{ title: "Log Spray" }} />
       <Nav.Screen name="YearPlan" component={YearPlanScreen} options={{ title: "Year Plan" }} />
       <Nav.Screen name="PlanTaskForm" component={PlanTaskFormScreen} options={({ route }: any) => ({ title: route.params?.task ? "Edit Task" : "Add Task" })} />
-      <Nav.Screen name="Harvests" component={HarvestsScreen} options={{ title: "Harvests" }} />
-      <Nav.Screen name="HarvestForm" component={HarvestFormScreen} options={{ title: "Log Harvest" }} />
-      <Nav.Screen name="Loans" component={LoansScreen} options={{ title: "Loans" }} />
-      <Nav.Screen name="LoanForm" component={LoanFormScreen} options={{ title: "New Loan" }} />
-      <Nav.Screen name="Reports" component={ReportsScreen} options={{ title: "Reports" }} />
-      <Nav.Screen name="AccountsScan" component={AccountsScanScreen} options={{ title: "Scan Account Page" }} />
-      <Nav.Screen name="ExpenseList" component={ExpenseListScreen} options={{ title: "Expenses" }} />
-      <Nav.Screen name="ExpenseForm" component={ExpenseFormScreen} options={{ title: "New Expense" }} />
+      <Nav.Screen name="Harvests" component={HarvestsScreenGated} options={{ title: "Harvests" }} />
+      <Nav.Screen name="HarvestForm" component={HarvestFormScreenGated} options={{ title: "Log Harvest" }} />
+      <Nav.Screen name="Loans" component={LoansScreenGated} options={{ title: "Loans" }} />
+      <Nav.Screen name="LoanForm" component={LoanFormScreenGated} options={{ title: "New Loan" }} />
+      <Nav.Screen name="Reports" component={ReportsScreenGated} options={{ title: "Reports" }} />
+      <Nav.Screen name="AccountsScan" component={AccountsScanScreenGated} options={{ title: "Scan Account Page" }} />
+      <Nav.Screen name="ExpenseList" component={ExpenseListScreenGated} options={{ title: "Expenses" }} />
+      <Nav.Screen name="ExpenseForm" component={ExpenseFormScreenGated} options={{ title: "New Expense" }} />
       <Nav.Screen name="WorkGroupList" component={WorkGroupListScreen} options={{ title: "Work Groups" }} />
       <Nav.Screen name="WorkGroupForm" component={WorkGroupFormScreen} options={{ title: "New Work Group" }} />
       <Nav.Screen
         name="Attendance"
-        component={AttendanceScreen}
+        component={AttendanceScreenGated}
         options={({ route }: any) => ({ title: route.params?.workGroupName ?? "Attendance" })}
       />
-      <Nav.Screen name="FarmAccounts" component={FarmAccountsScreen} options={{ title: "Farm Accounts" }} />
-      <Nav.Screen name="OldLedger" component={OldLedgerScreen} options={{ title: "Old Ledger" }} />
+      <Nav.Screen name="FarmAccounts" component={FarmAccountsScreenGated} options={{ title: "Farm Accounts" }} />
+      <Nav.Screen name="OldLedger" component={OldLedgerScreenGated} options={{ title: "Old Ledger" }} />
       <Nav.Screen
         name="OldLedgerDetail"
-        component={OldLedgerDetailScreen}
+        component={OldLedgerDetailScreenGated}
         options={({ route }: any) => ({ title: String(route.params?.year ?? "Year") })}
       />
-      <Nav.Screen name="LabourRecords" component={LabourRecordsScreen} options={{ title: "Labour Payments & Records" }} />
-      <Nav.Screen name="EmployeeAttendance" component={EmployeeAttendanceScreen} options={{ title: "Employee Attendance" }} />
+      <Nav.Screen name="LabourRecords" component={LabourRecordsScreenGated} options={{ title: "Labour Payments & Records" }} />
+      <Nav.Screen name="EmployeeAttendance" component={EmployeeAttendanceScreenGated} options={{ title: "Employee Attendance" }} />
       <Nav.Screen name="DailyUpdateList" component={DailyUpdateListScreen} options={{ title: "Work Updates" }} />
       <Nav.Screen name="DailyUpdateForm" component={DailyUpdateFormScreen} options={{ title: "New Update" }} />
       <Nav.Screen name="Shop" component={ShopScreen} options={{ title: "Shop" }} />
       <Nav.Screen name="Marketplace" component={MarketplaceScreen} options={{ title: "Marketplace" }} />
-      <Nav.Screen name="MarketplaceForm" component={MarketplaceFormScreen} options={{ title: "Sell Produce" }} />
+      <Nav.Screen name="MarketplaceForm" component={MarketplaceFormScreenGated} options={{ title: "Sell Produce" }} />
       <Nav.Screen name="Equipment" component={EquipmentScreen} options={{ title: "Equipment" }} />
-      <Nav.Screen name="EquipmentForm" component={EquipmentFormScreen} options={{ title: "List Equipment" }} />
+      <Nav.Screen name="EquipmentForm" component={EquipmentFormScreenGated} options={{ title: "List Equipment" }} />
       <Nav.Screen name="Hire" component={HireScreen} options={{ title: "Hire Board" }} />
       <Nav.Screen name="HireForm" component={HireFormScreen} options={{ title: "Post Listing" }} />
       <Nav.Screen name="Nursery" component={NurseryScreen} options={{ title: "Nursery" }} />
-      <Nav.Screen name="NurseryAdmin" component={NurseryAdminScreen} options={{ title: "Nursery Vendor Admin" }} />
-      <Nav.Screen name="Mandi" component={MandiScreen} options={{ title: "Market Prices" }} />
+      <Nav.Screen name="Mandi" component={MandiScreenGated} options={{ title: "Market Prices" }} />
       <Nav.Screen name="MyAds" component={MyAdsScreen} options={{ title: "My Ads" }} />
-      <Nav.Screen name="AgriAi" component={AgriAiScreen} options={{ title: "AI Agri Advisor" }} />
-      <Nav.Screen name="Disease" component={DiseaseScreen} options={{ title: "AI Disease Check" }} />
+      <Nav.Screen name="AgriAi" component={AgriAiScreenGated} options={{ title: "AI Agri Advisor" }} />
+      <Nav.Screen name="Disease" component={DiseaseScreenGated} options={{ title: "AI Disease Check" }} />
       <Nav.Screen name="AgriDoctor" component={AgriDoctorScreen} options={{ title: "Agri Doctor" }} />
       <Nav.Screen name="AgriDoctorProfile" component={AgriDoctorProfileScreen} options={{ title: "Doctor Profile" }} />
-      <Nav.Screen name="AgriDoctorCall" component={AgriDoctorCallScreen} options={{ title: "On call", headerShown: false }} />
       <Nav.Screen name="AgriExpertHub" component={AgriExpertHubScreen} options={{ title: "Agriculture Expert" }} />
       <Nav.Screen name="AgriDoctorRegister" component={AgriDoctorRegisterScreen} options={{ title: "Add Doctor Profile" }} />
-      <Nav.Screen name="AgriDoctorEarnings" component={AgriDoctorEarningsScreen} options={{ title: "Earnings & Payouts" }} />
-      <Nav.Screen name="Consultation" component={ConsultationScreen} options={{ title: "Consultation" }} />
       <Nav.Screen name="Subscription" component={SubscriptionScreen} options={{ title: "Subscription" }} />
       <Nav.Screen name="Wallet" component={WalletScreen} options={{ title: "Wallet" }} />
       <Nav.Screen name="ManagerDevices" component={ManagerDevicesScreen} options={{ title: "Invitees" }} />
@@ -156,7 +188,7 @@ function registerSharedScreens(Nav: ReturnType<typeof createNativeStackNavigator
       <Nav.Screen name="Help" component={HelpScreen} options={{ title: "Help" }} />
       <Nav.Screen name="Profile" component={ProfileScreen} options={{ title: "Profile" }} />
       <Nav.Screen name="BackupRestore" component={BackupRestoreScreen} options={{ title: "Backup & Restore" }} />
-      <Nav.Screen name="Onboarding" component={OnboardingScreen} options={{ title: "Set Up Your Farm" }} />
+      <Nav.Screen name="Onboarding" component={OnboardingScreen} options={{ title: "Set Up Your Farm", headerShown: false }} />
       <Nav.Screen name="EstateEdit" component={EstateEditScreen} options={{ title: "Edit Farm" }} />
       <Nav.Screen name="Welcome" options={{ title: "How Chiguru Works" }}>
         {({ navigation }: any) => <WelcomeScreen onDone={() => navigation.goBack()} />}
@@ -167,11 +199,11 @@ function registerSharedScreens(Nav: ReturnType<typeof createNativeStackNavigator
 
 function DashboardStack() {
   return (
-    <DashboardStackNav.Navigator>
+    <DashboardStackNav.Navigator screenOptions={harvestHeaderOptions}>
       <DashboardStackNav.Screen
         name="Dashboard"
         component={DashboardScreen}
-        options={({ navigation }) => ({ header: () => <AppHeader navigation={navigation} /> })}
+        options={{ headerShown: false }}
       />
       <DashboardStackNav.Screen name="More" component={MoreScreen} options={{ title: "More" }} />
       {registerSharedScreens(DashboardStackNav)}
@@ -181,7 +213,7 @@ function DashboardStack() {
 
 function WorkStack() {
   return (
-    <WorkStackNav.Navigator>
+    <WorkStackNav.Navigator screenOptions={harvestHeaderOptions}>
       <WorkStackNav.Screen
         name="WorkGroupList"
         component={WorkGroupListScreen}
@@ -190,7 +222,7 @@ function WorkStack() {
       <WorkStackNav.Screen name="WorkGroupForm" component={WorkGroupFormScreen} options={{ title: "New Work Group" }} />
       <WorkStackNav.Screen
         name="Attendance"
-        component={AttendanceScreen}
+        component={AttendanceScreenGated}
         options={({ route }: any) => ({ title: route.params?.workGroupName ?? "Attendance" })}
       />
     </WorkStackNav.Navigator>
@@ -199,7 +231,7 @@ function WorkStack() {
 
 function UpdatesStack() {
   return (
-    <UpdatesStackNav.Navigator>
+    <UpdatesStackNav.Navigator screenOptions={harvestHeaderOptions}>
       <UpdatesStackNav.Screen
         name="DailyUpdateList"
         component={DailyUpdateListScreen}
@@ -212,7 +244,11 @@ function UpdatesStack() {
 
 function AccountsStack() {
   return (
-    <AccountsStackNav.Navigator initialRouteName="FarmAccounts" screenOptions={headerOptions}>
+    // Switch farm only on the Accounts tab's first screen, not on every record screen.
+    <AccountsStackNav.Navigator
+      initialRouteName="FarmAccounts"
+      screenOptions={({ route }) => ({ ...harvestHeaderOptions, ...(route.name === "FarmAccounts" ? headerOptions : {}) })}
+    >
       {registerSharedScreens(AccountsStackNav)}
     </AccountsStackNav.Navigator>
   );
@@ -220,13 +256,13 @@ function AccountsStack() {
 
 function SyncStack() {
   return (
-    <SyncStackNav.Navigator>
+    <SyncStackNav.Navigator screenOptions={harvestHeaderOptions}>
       <SyncStackNav.Screen name="SyncLog" component={SyncLogScreen} options={{ title: "Sync Activity" }} />
     </SyncStackNav.Navigator>
   );
 }
 
-const TAB_ICONS: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
+const TAB_ICONS: Record<string, React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>> = {
   DashboardTab: Home,
   WorkTab: UserCheck,
   UpdatesTab: Camera,
@@ -235,14 +271,16 @@ const TAB_ICONS: Record<string, React.ComponentType<{ size?: number; color?: str
 };
 
 export function MainTabs() {
+  // iPhone purchases (plans, wallet packs, seats) are verified here, app-wide.
+  useApplePurchaseHandler();
   return (
     <Tab.Navigator
-      tabBar={(props) => <FloatingTabBar {...props} />}
+      tabBar={(props) => <HarvestTabBar {...props} />}
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarIcon: ({ color, size }) => {
+        tabBarIcon: ({ color, size, focused }) => {
           const Icon = TAB_ICONS[route.name];
-          return <Icon color={color} size={size ?? 20} />;
+          return <Icon color={color} size={size ?? 24} strokeWidth={focused ? 2.2 : 1.9} />;
         },
       })}
     >

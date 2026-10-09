@@ -1,5 +1,6 @@
 import React from "react";
-import { ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
+import { ScrollView, StyleSheet, View, Pressable } from "react-native";
+import { Text } from "../../../components/Text";
 import {
   ScanFace,
   ClipboardList,
@@ -215,38 +216,38 @@ const styles = StyleSheet.create({
   hero: { alignItems: "center", paddingVertical: spacing.lg },
   heroTitleRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs, flexWrap: "wrap", justifyContent: "center" },
   heroTitle: { fontSize: 26, fontWeight: "800", color: colors.text, textAlign: "center" },
-  heroDesc: { fontSize: 15, color: colors.textMuted, marginTop: spacing.sm, textAlign: "center", lineHeight: 21, paddingHorizontal: spacing.sm },
+  heroDesc: { fontSize: 16.5, color: colors.textMuted, marginTop: spacing.sm, textAlign: "center", lineHeight: 21, paddingHorizontal: spacing.sm },
 
   section: { marginBottom: spacing.lg },
   sectionHeaderRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs, marginBottom: spacing.sm },
   sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
 
   listenBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 4, paddingHorizontal: 6, borderRadius: radius.sm },
-  listenText: { fontSize: 12, fontWeight: "700", color: colors.primary },
+  listenText: { fontSize: 14, fontWeight: "700", color: colors.primary },
 
   videoCard: { padding: 0, overflow: "hidden" },
   videoPlaceholder: { aspectRatio: 16 / 9, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center", gap: spacing.xs },
-  videoSoonText: { fontSize: 13, fontWeight: "600", color: colors.textMuted },
-  videoTitle: { fontSize: 14.5, fontWeight: "700", color: colors.text },
-  videoDesc: { fontSize: 12.5, color: colors.textMuted, marginTop: 2, lineHeight: 17 },
+  videoSoonText: { fontSize: 14.5, fontWeight: "600", color: colors.textMuted },
+  videoTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
+  videoDesc: { fontSize: 14.5, color: colors.textMuted, marginTop: 2, lineHeight: 17 },
 
   featureCard: { flexDirection: "row", gap: spacing.sm },
-  featureIconWrap: { width: 42, height: 42, borderRadius: radius.sm, backgroundColor: colors.primary + "1A", alignItems: "center", justifyContent: "center" },
+  featureIconWrap: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.primary + "1A", alignItems: "center", justifyContent: "center" },
   featureTitleRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs, flexWrap: "wrap" },
-  featureTitle: { fontSize: 14.5, fontWeight: "700", color: colors.text },
-  featureDesc: { fontSize: 12.5, color: colors.textMuted, marginTop: 2, lineHeight: 17 },
+  featureTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
+  featureDesc: { fontSize: 14.5, color: colors.textMuted, marginTop: 2, lineHeight: 17 },
 
   sellCard: { alignItems: "center" },
-  sellIconWrap: { width: 46, height: 46, borderRadius: radius.sm, backgroundColor: "#E3F5EA", alignItems: "center", justifyContent: "center", marginBottom: spacing.xs },
-  sellTitle: { fontSize: 14.5, fontWeight: "700", color: colors.text },
-  sellDesc: { fontSize: 12.5, color: colors.textMuted, marginTop: 2, textAlign: "center", lineHeight: 17 },
+  sellIconWrap: { width: 46, height: 46, borderRadius: 23, backgroundColor: "#E3F5EA", alignItems: "center", justifyContent: "center", marginBottom: spacing.xs },
+  sellTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
+  sellDesc: { fontSize: 14.5, color: colors.textMuted, marginTop: 2, textAlign: "center", lineHeight: 17 },
 
   benefitRow: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
-  benefitText: { flex: 1, fontSize: 13.5, color: colors.text, lineHeight: 19 },
+  benefitText: { flex: 1, fontSize: 15, color: colors.text, lineHeight: 19 },
 
   cta: { alignItems: "center", backgroundColor: colors.primary, borderRadius: radius.lg, padding: spacing.lg },
   ctaTitle: { fontSize: 19, fontWeight: "800", color: "#fff", textAlign: "center" },
-  ctaNote: { fontSize: 13, color: "#fff", opacity: 0.8, marginTop: 4, textAlign: "center" },
+  ctaNote: { fontSize: 14.5, color: "#fff", opacity: 0.8, marginTop: 4, textAlign: "center" },
   ctaButton: { flexDirection: "row", alignItems: "center", gap: spacing.xs, backgroundColor: "#fff", borderRadius: radius.pill, paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.lg },
-  ctaButtonText: { fontSize: 15.5, fontWeight: "700", color: colors.primary },
+  ctaButtonText: { fontSize: 17, fontWeight: "700", color: colors.primary },
 });

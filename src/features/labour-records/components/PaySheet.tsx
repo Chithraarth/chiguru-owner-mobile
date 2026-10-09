@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, ExternalLink, X } from "lucide-react-native";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { getWorkerWages, getWorkers } from "../../../api/endpoints/attendance";
 import { createWorkerPayment } from "../../../api/endpoints/workerPayments";
 import { newClientId } from "../../../lib/idempotency";
@@ -177,7 +178,7 @@ export function PaySheet({
                     onPress={() => setPayeeKind("group")}
                   >
                     <Text style={[styles.payeeOptionTitle, payeeKind === "group" && styles.payeeOptionTitleActive]}>
-                      👥 Whole group
+                      Whole group
                     </Text>
                     <Text style={[styles.payeeOptionSub, payeeKind === "group" && styles.payeeOptionSubActive]} numberOfLines={1}>
                       {groupName}
@@ -189,7 +190,7 @@ export function PaySheet({
                   onPress={() => setPayeeKind("worker")}
                 >
                   <Text style={[styles.payeeOptionTitle, payeeKind === "worker" && styles.payeeOptionTitleActive]}>
-                    🧑‍🌾 One worker
+                    One worker
                   </Text>
                   <Text style={[styles.payeeOptionSub, payeeKind === "worker" && styles.payeeOptionSubActive]}>
                     Pick by name
@@ -351,7 +352,7 @@ const styles = StyleSheet.create({
   },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.md },
   headerTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
-  label: { fontSize: 14, fontWeight: "500", color: colors.text, marginBottom: spacing.xs },
+  label: { fontSize: 15.5, fontWeight: "500", color: colors.text, marginBottom: spacing.xs },
   row: { flexDirection: "row", gap: spacing.sm, marginBottom: spacing.sm },
   payeeOption: {
     flex: 1,
@@ -361,20 +362,19 @@ const styles = StyleSheet.create({
     padding: spacing.sm + 4,
   },
   payeeOptionActive: { borderColor: colors.primary, backgroundColor: colors.primary },
-  payeeOptionTitle: { fontSize: 13, fontWeight: "600", color: colors.text },
+  payeeOptionTitle: { fontSize: 14.5, fontWeight: "600", color: colors.text },
   payeeOptionTitleActive: { color: "#fff" },
-  payeeOptionSub: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
+  payeeOptionSub: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
   payeeOptionSubActive: { color: "rgba(255,255,255,0.8)" },
   workerChip: {
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...shadow,
     backgroundColor: "#fff",
   },
   workerChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  workerChipText: { fontSize: 13, color: colors.text },
+  workerChipText: { fontSize: 14.5, color: colors.text },
   workerChipTextActive: { color: "#fff", fontWeight: "600" },
   methodRow: {
     flexDirection: "row",
@@ -387,9 +387,9 @@ const styles = StyleSheet.create({
   },
   methodRowActive: { borderColor: colors.primary, backgroundColor: colors.bg },
   methodEmoji: { fontSize: 18, lineHeight: 22 },
-  methodLabel: { fontSize: 14, fontWeight: "500", color: colors.text },
-  methodHint: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
-  warning: { fontSize: 12, color: colors.warning, marginTop: -spacing.sm, marginBottom: spacing.md },
+  methodLabel: { fontSize: 15.5, fontWeight: "500", color: colors.text },
+  methodHint: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
+  warning: { fontSize: 14, color: colors.warning, marginTop: -spacing.sm, marginBottom: spacing.md },
   upiBox: {
     backgroundColor: colors.bg,
     borderWidth: 1,
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     gap: spacing.sm,
   },
-  upiBoxText: { fontSize: 12, color: colors.textMuted, lineHeight: 17 },
+  upiBoxText: { fontSize: 14, color: colors.textMuted, lineHeight: 17 },
   upiButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -410,9 +410,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm + 2,
   },
   upiButtonDisabled: { opacity: 0.5 },
-  upiButtonText: { color: "#fff", fontWeight: "600", fontSize: 13 },
-  upiOpenedNote: { fontSize: 12, color: colors.primary, fontWeight: "500" },
-  footerNote: { fontSize: 11, color: colors.textMuted, textAlign: "center", marginTop: spacing.sm, lineHeight: 15 },
+  upiButtonText: { color: "#fff", fontWeight: "600", fontSize: 14.5 },
+  upiOpenedNote: { fontSize: 14, color: colors.primary, fontWeight: "500" },
+  footerNote: { fontSize: 13, color: colors.textMuted, textAlign: "center", marginTop: spacing.sm, lineHeight: 15 },
   wagesBox: {
     backgroundColor: colors.bg,
     borderWidth: 1,
@@ -423,14 +423,14 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   wagesHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
-  wagesTitle: { fontSize: 12.5, fontWeight: "700", color: colors.text },
+  wagesTitle: { fontSize: 14.5, fontWeight: "700", color: colors.text },
   monthToggle: { paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border },
   monthToggleActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  monthToggleText: { fontSize: 11, color: colors.text, fontWeight: "600" },
+  monthToggleText: { fontSize: 13, color: colors.text, fontWeight: "600" },
   monthToggleTextActive: { color: "#fff" },
   wagesRowLine: { flexDirection: "row", justifyContent: "space-between" },
-  wagesRow: { fontSize: 12.5, color: colors.text },
-  wagesRowMuted: { fontSize: 11.5, color: colors.textMuted },
-  wagesNetLabel: { fontSize: 13, fontWeight: "700", color: colors.text },
-  wagesNetValue: { fontSize: 13, fontWeight: "700", color: colors.primary },
+  wagesRow: { fontSize: 14.5, color: colors.text },
+  wagesRowMuted: { fontSize: 13.5, color: colors.textMuted },
+  wagesNetLabel: { fontSize: 14.5, fontWeight: "700", color: colors.text },
+  wagesNetValue: { fontSize: 14.5, fontWeight: "700", color: colors.primary },
 });
