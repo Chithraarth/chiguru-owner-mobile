@@ -1,7 +1,7 @@
 import React, { useLayoutEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useInnerBack } from "../../../navigation/useInnerBack";
-import { DEFAULT_PAY_CYCLE, PayCycleChip, PeriodBar, inPeriod, pastPeriods, resolvePeriod, todayIso, type PayCycle, type Period } from "../period";
+import { DEFAULT_PAY_CYCLE, PayCycleChip, payCycleLabel, PeriodBar, inPeriod, pastPeriods, resolvePeriod, todayIso, type PayCycle, type Period } from "../period";
 import { useMyEstates } from "../../estate/hooks/useMyEstates";
 import { useEstateStore } from "../../estate/store/estateStore";
 import { Text } from "../../../components/Text";
@@ -198,7 +198,8 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
     ...groupList.map((g) => {
       const recs = records.filter((r) => r.workGroupId === g.id);
       const wage = recs.reduce((s, r) => s + Number(r.wageAmount ?? 0), 0);
-      const subtitle = recs.length === 0 ? "No records yet" : `${inr(wage)} wages`;
+      const pay = payCycleLabel(startOf(g.id));
+      const subtitle = recs.length === 0 ? `No records yet · ${pay}` : `${inr(wage)} wages · ${pay}`;
       return { id: g.id as number | null, name: g.name, subtitle, count: recs.length };
     }),
     {

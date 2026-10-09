@@ -61,8 +61,9 @@ function dayOfMonth(mi: number, day: number) {
 
 /** "Mon → Sat" or "3rd → 30th next month". */
 export function payCycleLabel(c: PayCycle) {
-  if (c.cycle === "weekly") return `${DAY_SHORT[c.from]} → ${DAY_SHORT[c.to]}`;
-  return `${ordinal(c.from)} → ${ordinal(c.to)}${c.toNextMonth ? " next month" : ""}`;
+  if (c.cycle === "weekly") return `Pay every ${DAY_SHORT[c.to]}`;
+  if (!c.toNextMonth && c.to >= 28) return "Pay at month end";
+  return `Pay on the ${ordinal(c.to)}`;
 }
 
 /** The pay cycle that contains `anchor` (or the latest one starting before it). */
@@ -289,6 +290,22 @@ export function PayCycleChip({
   );
 }
 
+/**
+ * Tap one date on the calendar: the pay day. Weekly pays on that weekday,
+ * every 7 days; monthly pays on that date, the period running from the day
+ * after the previous pay date. A month-end date (29th-31st) pays at month end.
+ */
+export function payDayCycle(kind: PayCycle["cycle"], date: string): PayCycle {
+  const d = new Date(`${date}T00:00:00`);
+  if (kind === "weekly") {
+    const to = d.getDay();
+    return { cycle: "weekly", from: (to + 1) % 7, to, toNextMonth: false };
+  }
+  const day = d.getDate();
+  if (day >= 29) return { cycle: "monthly", from: 1, to: 31, toNextMonth: false };
+  return { cycle: "monthly", from: day + 1, to: day, toNextMonth: true };
+}
+
 function PayCycleSheet({
   initial,
   initialKind,
@@ -306,99 +323,55 @@ function PayCycleSheet({
 }) {
   const kind = initialKind;
   const now = resolvePeriod({ kind: "cycle", anchor: todayIso() }, initial);
-  const [from, setFrom] = useState<string | null>(null);
-  const [to, setTo] = useState<string | null>(null);
-  const step: "from" | "to" | "done" = from == null ? "from" : to == null ? "to" : "done";
-  // The calendar starts on a highlighted date; tapping that same date
+  const [picked, setPicked] = useState<string | null>(null);
+  // The calendar opens on the current pay day; tapping a highlighted date
   // doesn't register, so "Use this date" confirms it.
-  const shownDate = step === "to" && from ? from : now.from ?? todayIso();
-  function pick(v: string) {
-    if (step === "from") setFrom(v);
-    else if (step === "to") setTo(v);
-  }
-
-  const result: PayCycle | null =
-    kind && from && to
-      ? kind === "weekly"
-        ? { cycle: "weekly", from: new Date(`${from}T00:00:00`).getDay(), to: new Date(`${to}T00:00:00`).getDay(), toNextMonth: false }
-        : {
-            cycle: "monthly",
-            from: Number(from.slice(8, 10)),
-            to: Number(to.slice(8, 10)),
-            toNextMonth: to.slice(0, 7) !== from.slice(0, 7),
-          }
-      : null;
-  const tooLong =
-    kind && from && to
-      ? kind === "weekly"
-        ? daysBetween(from, to) > 6
-        : monthsBetween(from, to) > 1
-      : false;
+  const shownDate = now.to ?? todayIso();
+  const result = picked ? payDayCycle(kind, picked) : null;
+  const example = result ? resolvePeriod({ kind: "cycle", anchor: todayIso() }, result) : null;
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close" />
       <View style={styles.sheet}>
         <View style={styles.sheetHead}>
-          <Text style={styles.sheetTitle}>{kind === "monthly" ? "Monthly pay dates" : "Weekly pay days"}</Text>
+          <Text style={styles.sheetTitle}>{kind === "monthly" ? "Monthly pay day" : "Weekly pay day"}</Text>
           <Pressable onPress={onClose} hitSlop={10} accessibilityLabel="Close"><X size={22} color={colors.textMuted} /></Pressable>
         </View>
         <ScrollView contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.lg }}>
-          <Text style={styles.sheetHint}>
-            Now: {initial.cycle === "weekly" ? "Weekly" : "Monthly"} · {payCycleLabel(initial)} ({now.label})
-          </Text>
+          <Text style={styles.sheetHint}>Now: {payCycleLabel(initial)}</Text>
           {inherit ? (
             <Pressable onPress={() => onSave(null)} style={styles.dayRow} accessibilityRole="button">
               <Text style={styles.dayText}>Same as farm ({payCycleLabel(farm)})</Text>
             </Pressable>
           ) : null}
-          {kind ? (
-            <>
-              <Text style={styles.pickTitle}>
-                {step === "from" ? "Tap the first day of the pay period" : step === "to" ? "Now tap the pay day (last day)" : "Pay period chosen"}
-              </Text>
-              <View style={{ flexDirection: "row", gap: spacing.sm }}>
-                <Pressable onPress={() => { setFrom(null); setTo(null); }} style={[styles.dateField, step === "from" && styles.dateFieldOn]} accessibilityRole="button">
-                  <Text style={styles.fieldLabel}>From</Text>
-                  <Text style={styles.fieldValue}>{from ? fmt(from, true) : "Tap a date"}</Text>
-                </Pressable>
-                <Pressable onPress={() => from && setTo(null)} style={[styles.dateField, step === "to" && styles.dateFieldOn]} accessibilityRole="button">
-                  <Text style={styles.fieldLabel}>To (pay day)</Text>
-                  <Text style={styles.fieldValue}>{to ? fmt(to, true) : "Tap a date"}</Text>
-                </Pressable>
-              </View>
-              {step !== "done" ? (
-                <DateTimePicker
-                  key={step}
-                  value={new Date(`${shownDate}T00:00:00`)}
-                  mode="date"
-                  display={Platform.OS === "ios" ? "inline" : "default"}
-                  minimumDate={step === "to" && from ? new Date(`${from}T00:00:00`) : undefined}
-                  onChange={(event, d) => {
-                    if (event.type !== "set" || !d) return;
-                    pick(isoOf(d));
-                  }}
-                />
-              ) : null}
-              {step !== "done" ? (
-                <Pressable onPress={() => pick(shownDate)} style={styles.useDate} accessibilityRole="button">
-                  <Text style={styles.useDateText}>Use {fmt(shownDate, true)}</Text>
-                </Pressable>
-              ) : null}
-              {result ? (
-                <Text style={[styles.sheetHint, tooLong && { color: colors.danger }]}>
-                  {tooLong
-                    ? kind === "weekly"
-                      ? "A weekly pay period can be at most 7 days."
-                      : "A monthly pay period can end at most in the next month."
-                    : kind === "weekly"
-                      ? `Every week ${DAY_NAMES[result.from]} → ${DAY_NAMES[result.to]}, pay on ${DAY_NAMES[result.to]}.`
-                      : `Every month the ${payCycleLabel(result)}.`}
-                </Text>
-              ) : null}
-              <Button title="Save" onPress={() => result && onSave(result)} disabled={!result || tooLong} />
-            </>
+          <Text style={styles.pickTitle}>
+            {kind === "weekly" ? "Tap any day you pay on, e.g. a Saturday" : "Tap the date you pay on each month"}
+          </Text>
+          <DateTimePicker
+            value={new Date(`${picked ?? shownDate}T00:00:00`)}
+            mode="date"
+            display={Platform.OS === "ios" ? "inline" : "default"}
+            onChange={(event, d) => {
+              if (event.type === "set" && d) setPicked(isoOf(d));
+            }}
+          />
+          {!picked ? (
+            <Pressable onPress={() => setPicked(shownDate)} style={styles.useDate} accessibilityRole="button">
+              <Text style={styles.useDateText}>Use {fmt(shownDate, true)}</Text>
+            </Pressable>
           ) : null}
+          {result && example ? (
+            <View style={styles.resultBox}>
+              <Text style={styles.resultTitle}>{payCycleLabel(result)}</Text>
+              <Text style={styles.sheetHint}>
+                {kind === "weekly"
+                  ? `Each week runs ${DAY_NAMES[result.from]} → ${DAY_NAMES[result.to]}. This week: ${example.label}.`
+                  : `Each period runs from the day after the last pay date. This period: ${example.label}.`}
+              </Text>
+            </View>
+          ) : null}
+          <Button title="Save" onPress={() => result && onSave(result)} disabled={!result} />
         </ScrollView>
       </View>
     </Modal>
@@ -455,6 +428,8 @@ const styles = StyleSheet.create({
   dayGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   cycleBtn: { flex: 1, minHeight: 64, borderRadius: radius.md, borderWidth: 2, borderColor: colors.border, alignItems: "center", justifyContent: "center", backgroundColor: colors.card },
   cycleBtnOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  resultBox: { backgroundColor: colors.tint, borderRadius: radius.md, padding: spacing.sm + 4, gap: 2 },
+  resultTitle: { fontSize: 17, fontWeight: "800", color: colors.primary },
   useDate: { alignSelf: "center", minHeight: 44, paddingHorizontal: 16, justifyContent: "center" },
   useDateText: { fontSize: 15, fontWeight: "700", color: colors.primary },
   inlineToggle: { flexDirection: "row", gap: spacing.sm },
