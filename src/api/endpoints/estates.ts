@@ -28,6 +28,11 @@ export function createEstate(data: {
   return apiMutate<Estate>("POST", "/estates", data);
 }
 
+/** 0 = Sunday ... 6 = Saturday: the day the farm's pay week starts. */
+export function setFarmPayWeekStart(id: number, payWeekStart: number) {
+  return apiMutate<Estate>("PATCH", `/estates/${id}`, { payWeekStart });
+}
+
 export function renameEstate(id: number, farmName: string) {
   return apiMutate<Estate>("PATCH", `/estates/${id}`, { farmName });
 }

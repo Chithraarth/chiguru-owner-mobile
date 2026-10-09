@@ -1,7 +1,10 @@
-import React, { useEffect, useLayoutEffect, useState } from "react";
+import React, { useLayoutEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useInnerBack } from "../../../navigation/useInnerBack";
-import { DateBar } from "../../../components/DateBar";
+import { PayWeekChip, PeriodBar, inPeriod, resolvePeriod, todayIso, type Period } from "../period";
+import { useMyEstates } from "../../estate/hooks/useMyEstates";
+import { useEstateStore } from "../../estate/store/estateStore";
+import { setFarmPayWeekStart } from "../../../api/endpoints/estates";
 import { Text } from "../../../components/Text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -29,6 +32,7 @@ import {
   getWorkGroups,
   settleHarvestBonus,
   settleOvertime,
+  updateWorkGroup,
 } from "../../../api/endpoints/workGroups";
 import { getGroupLoans } from "../../../api/endpoints/loans";
 import { getWorkerPayments, deleteWorkerPayment } from "../../../api/endpoints/workerPayments";
@@ -37,7 +41,6 @@ import { newClientId } from "../../../lib/idempotency";
 import { useT } from "../../../lib/i18n";
 import type { AttendanceRecord, WorkerMoney } from "../../../types/api";
 
-type ViewMode = "weekly" | "monthly" | "yearly" | "final";
 
 function formatDate(dateStr: string) {
   return new Date(dateStr + "T00:00:00").toLocaleDateString("en-IN", {
@@ -55,30 +58,6 @@ function inr(n: number) {
 function fmtNum(n: number) {
   return n.toLocaleString("en-IN", { maximumFractionDigits: 2 });
 }
-function weekStart(dateStr: string) {
-  const d = new Date(dateStr + "T00:00:00");
-  const day = (d.getDay() + 6) % 7;
-  d.setDate(d.getDate() - day);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-function weekLabel(startStr: string) {
-  const s = new Date(startStr + "T00:00:00");
-  const e = new Date(s);
-  e.setDate(e.getDate() + 6);
-  const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" };
-  return `${s.toLocaleDateString("en-IN", opts)} – ${e.toLocaleDateString("en-IN", opts)}`;
-}
-function monthKey(dateStr: string) {
-  return dateStr.slice(0, 7);
-}
-function monthLabel(key: string) {
-  return new Date(key + "-01T00:00:00").toLocaleDateString("en-IN", { month: "long", year: "numeric" });
-}
-function yearKey(dateStr: string) {
-  return dateStr.slice(0, 4);
-}
-
-interface PeriodTotals { days: number; wages: number; advances: number; loans: number }
 
 export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   const [openFolder, setOpenFolder] = useState<{ id: number | null; name: string } | null>(null);
@@ -87,10 +66,14 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   useInnerBack(navigation, openWorker != null || openFolder != null, () =>
     openWorker ? setOpenWorker(null) : setOpenFolder(null)
   );
-  const [view, setView] = useState<ViewMode>("weekly");
-  // Daily records: one chosen day, or null for every day.
-  const [recordDay, setRecordDay] = useState<string | null>(null);
-  useEffect(() => setRecordDay(null), [openFolder?.id]);
+  // Which dates the screen shows: this pay week by default. Chosen on the
+  // group list and kept when a group is opened.
+  const [period, setPeriod] = useState<Period>({ kind: "week", anchor: todayIso() });
+  const view = period.kind === "all" ? "final" : "period";
+  const activeEstateId = useEstateStore((s) => s.activeEstateId);
+  const myEstate = (useMyEstates().data ?? []).find((e) => e.id === activeEstateId);
+  const farmStart = myEstate?.payWeekStart ?? 6;
+  const canEditFarm = myEstate?.relationship !== "invited";
   const [showPaySheet, setShowPaySheet] = useState(false);
   const qc = useQueryClient();
   const { t } = useT();
@@ -108,6 +91,18 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
     queryFn: getAllAttendance,
   });
   const { data: workGroups = [] } = useQuery({ queryKey: ["work-groups"], queryFn: getWorkGroups });
+  const farmPayWeek = useMutation({
+    mutationFn: (start: number) => setFarmPayWeekStart(activeEstateId as number, start),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["my-estates"] }),
+    onError: () => Alert.alert("Couldn't save the pay week", "Please try again."),
+  });
+  const groupPayWeek = useMutation({
+    mutationFn: (v: { id: number; start: number | null }) => updateWorkGroup(v.id, { payWeekStart: v.start }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["work-groups"] }),
+    onError: () => Alert.alert("Couldn't save the pay week", "Please try again."),
+  });
+  const startOf = (groupId: number | null) =>
+    workGroups.find((g) => g.id === groupId)?.payWeekStart ?? farmStart;
 
   const groupOpen = openFolder != null && openFolder.id != null;
 
@@ -142,7 +137,6 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   const { data: allPayments = [] } = useQuery({
     queryKey: ["worker-payments"],
     queryFn: () => getWorkerPayments(),
-    enabled: openFolder != null,
   });
   const payments = openFolder != null ? allPayments.filter((pm) => (pm.workGroupId ?? null) === openFolder.id) : [];
   const paymentsTotal = payments.reduce((s, pm) => s + Number(pm.amount), 0);
@@ -197,21 +191,38 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
 
   const folders = [
     ...groupList.map((g) => {
-      const recs = records.filter((r) => r.workGroupId === g.id);
+      const range = resolvePeriod(period, startOf(g.id));
+      const recs = records.filter((r) => r.workGroupId === g.id && inPeriod(r.date, range));
       const wage = recs.reduce((s, r) => s + Number(r.wageAmount ?? 0), 0);
-      return { id: g.id as number | null, name: g.name, subtitle: recs.length === 0 ? "No records yet" : wage > 0 ? `${inr(wage)} wages` : `${recs.length} entries`, count: recs.length };
+      const paid = allPayments
+        .filter((pm) => pm.workGroupId === g.id && inPeriod(pm.paymentDate, range))
+        .reduce((s, pm) => s + Number(pm.amount), 0);
+      const ownWeek = period.kind === "week" && workGroups.find((x) => x.id === g.id)?.payWeekStart != null;
+      const subtitle =
+        recs.length === 0
+          ? "No work in these dates"
+          : `${inr(wage)} wages${paid > 0 ? ` · ${inr(paid)} paid` : ""}${ownWeek ? ` · ${range.label}` : ""}`;
+      return { id: g.id as number | null, name: g.name, subtitle, count: recs.length };
     }),
     {
       id: null,
       name: "General Records",
-      subtitle: generalRecords.length === 0
-        ? "Records without a group"
-        : (() => { const wage = generalRecords.reduce((s, r) => s + Number(r.wageAmount ?? 0), 0); return wage > 0 ? `${inr(wage)} wages` : `${generalRecords.length} entries`; })(),
-      count: generalRecords.length,
+      subtitle: (() => {
+        const range = resolvePeriod(period, farmStart);
+        const recs = generalRecords.filter((r) => inPeriod(r.date, range));
+        if (recs.length === 0) return "Records without a group";
+        const wage = recs.reduce((s, r) => s + Number(r.wageAmount ?? 0), 0);
+        return wage > 0 ? `${inr(wage)} wages` : `${recs.length} entries`;
+      })(),
+      count: generalRecords.filter((r) => inPeriod(r.date, resolvePeriod(period, farmStart))).length,
     },
   ];
 
-  const folderRecords = openFolder ? records.filter((r) => (r.workGroupId ?? null) === openFolder.id) : records;
+  const allFolderRecords = openFolder ? records.filter((r) => (r.workGroupId ?? null) === openFolder.id) : records;
+  const groupStart = startOf(openFolder?.id ?? null);
+  const range = resolvePeriod(period, groupStart);
+  // Everything below shows only the chosen dates.
+  const folderRecords = allFolderRecords.filter((r) => inPeriod(r.date, range));
 
   const group = groupOpen ? workGroups.find((g) => g.id === openFolder!.id) : undefined;
   const isCleared = group?.clearedAt != null;
@@ -231,15 +242,21 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   const loanOutstanding = groupLoans.reduce((s, l) => s + Math.max(0, Number(l.totalDue) - Number(l.repaidAmount)), 0);
   const finalPayable = totalEarned - totalAdvances - loanOutstanding - paymentsTotal;
 
-  // ── "Payment due now" — owner pays on whichever day they choose (Sat, Wed…).
-  // Everything earned after the last recorded payment is what's due now. A
-  // payment covers all work up to and including its date, so only work AFTER
-  // the last payment date counts.
-  const lastPaymentDate = [
-    ...payments.map((pm) => pm.paymentDate),
-    ...advances.map((a) => a.paymentDate),
-  ].sort().pop() ?? null;
-  const dueRecords = lastPaymentDate ? folderRecords.filter((r) => r.date > lastPaymentDate) : folderRecords;
+  // ── What's due for the chosen dates: earned in them, plus anything still
+  // unpaid from before, less what was paid in them.
+  const moneyOut = [
+    ...payments.map((pm) => ({ date: pm.paymentDate, amount: Number(pm.amount) })),
+    ...advances.map((a) => ({ date: a.paymentDate, amount: Number(a.totalAdvancePaid) })),
+  ];
+  const dueRecords = folderRecords;
+  const paidInPeriod = moneyOut.filter((m) => inPeriod(m.date, range)).reduce((s, m) => s + m.amount, 0);
+  const earlierPending = range.from
+    ? Math.max(
+        0,
+        allFolderRecords.filter((r) => r.date < range.from!).reduce((s, r) => s + earnOf(r), 0) -
+          moneyOut.filter((m) => m.date < range.from!).reduce((s, m) => s + m.amount, 0)
+      )
+    : 0;
   const dueDays = dueRecords.length;
   const dueEarned = dueRecords.reduce((s, r) => s + earnOf(r), 0);
   // Split what's due into base wages, overtime and picking bonus (same rule
@@ -265,39 +282,7 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   const dueAdvance = dueDays * advPerDay;
   // Advance-structure groups pay only the advance-per-day now; the rest is
   // held for the Final Account. Other groups pay everything earned since.
-  const dueWages = hasAdvanceStructure ? dueAdvance : dueEarned;
-
-  const emptyPeriod = (): PeriodTotals => ({ days: 0, wages: 0, advances: 0, loans: 0 });
-  const weekly = new Map<string, PeriodTotals>();
-  const monthly = new Map<string, PeriodTotals>();
-  const yearly = new Map<string, PeriodTotals>();
-  const bump = (map: Map<string, PeriodTotals>, key: string, fn: (t: PeriodTotals) => void) => {
-    const t = map.get(key) ?? emptyPeriod();
-    fn(t);
-    map.set(key, t);
-  };
-  for (const r of folderRecords) {
-    const add = (t: PeriodTotals) => { t.days += 1; t.wages += earnOf(r); };
-    bump(weekly, weekStart(r.date), add);
-    bump(monthly, monthKey(r.date), add);
-    bump(yearly, yearKey(r.date), add);
-  }
-  for (const a of advances) {
-    const add = (t: PeriodTotals) => { t.advances += Number(a.totalAdvancePaid); };
-    bump(weekly, weekStart(a.paymentDate), add);
-    bump(monthly, monthKey(a.paymentDate), add);
-    bump(yearly, yearKey(a.paymentDate), add);
-  }
-  for (const l of groupLoans) {
-    if (!l.issuedDate) continue;
-    const add = (t: PeriodTotals) => { t.loans += Number(l.amount); };
-    bump(weekly, weekStart(l.issuedDate), add);
-    bump(monthly, monthKey(l.issuedDate), add);
-    bump(yearly, yearKey(l.issuedDate), add);
-  }
-  const weeklyRows = [...weekly.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-  const monthlyRows = [...monthly.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-  const yearlyRows = [...yearly.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+  const dueWages = hasAdvanceStructure ? dueAdvance : Math.max(0, dueEarned + earlierPending - paidInPeriod);
 
   const byDate = folderRecords.reduce<Record<string, AttendanceRecord[]>>((acc, r) => {
     (acc[r.date] = acc[r.date] || []).push(r);
@@ -319,15 +304,24 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   })();
 
   if (openFolder === null) {
-    const allWages = records.reduce((sum, r) => sum + (r.wageAmount != null && r.wageAmount !== "" ? Number(r.wageAmount) : 0), 0);
-    const workerCount = new Set(records.map((r) => r.workerId).filter((id) => id != null)).size;
+    const farmRange = resolvePeriod(period, farmStart);
+    const shown = records.filter((r) => inPeriod(r.date, resolvePeriod(period, startOf(r.workGroupId ?? null))));
+    const allWages = shown.reduce((sum, r) => sum + (r.wageAmount != null && r.wageAmount !== "" ? Number(r.wageAmount) : 0), 0);
+    const workerCount = new Set(shown.map((r) => r.workerId).filter((id) => id != null)).size;
     return (
       <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
+        <PayWeekChip value={farmStart} farmStart={farmStart} editable={canEditFarm && activeEstateId != null} onChange={(d) => d != null && farmPayWeek.mutate(d)} />
+        <PeriodBar period={period} weekStart={farmStart} onChange={setPeriod} />
+        {period.kind === "week" && farmRange.to ? (
+          <Text style={styles.payOnText}>
+            {farmRange.to === todayIso() ? "Pay day is today" : `Pay on ${formatDate(farmRange.to)}`}
+          </Text>
+        ) : null}
         <StatTiles
           items={[
-            { label: "Workers", value: String(workerCount), sub: "on record" },
-            { label: "Wages", value: shortRupees(allWages), sub: "season" },
-            { label: "Groups", value: String(workGroups.length), sub: "active" },
+            { label: "Workers", value: String(workerCount), sub: "worked" },
+            { label: "Wages", value: shortRupees(allWages), sub: period.kind === "all" ? "season" : "these dates" },
+            { label: "Groups", value: String(groupList.length), sub: "active" },
           ]}
         />
         <SectionLabel>Your work groups</SectionLabel>
@@ -345,10 +339,7 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
                 </View>
               }
               divider={i < folders.length - 1}
-              onPress={() => {
-                setView("weekly");
-                setOpenFolder({ id: f.id, name: f.name });
-              }}
+              onPress={() => setOpenFolder({ id: f.id, name: f.name })}
             />
           ))}
         </ListCard>
@@ -358,7 +349,7 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
             <SectionLabel style={{ marginBottom: spacing.sm }}>Accounts history</SectionLabel>
             <View style={{ gap: spacing.sm }}>
               {clearedGroups.map((g) => (
-                <Pressable key={g.id} onPress={() => { setView("final"); setOpenFolder({ id: g.id, name: g.name }); }}>
+                <Pressable key={g.id} onPress={() => { setPeriod({ kind: "all" }); setOpenFolder({ id: g.id, name: g.name }); }}>
                   <Card style={styles.folderRow}>
                     <View style={[styles.folderIcon, { backgroundColor: "#D8F3E6" }]}>
                       <CheckCircle2 size={20} color="#1F9E5C" />
@@ -592,22 +583,28 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
         {groupOpen ? (
-          <View style={styles.tabs}>
-            {([["weekly", "Weekly"], ["monthly", "Monthly"], ["yearly", "Yearly"], ["final", "Final Account"]] as [ViewMode, string][]).map(([key, label]) => (
-              <Pressable key={key} onPress={() => setView(key)} style={[styles.tab, view === key && styles.tabActive]}>
-                <Text style={[styles.tabText, view === key && styles.tabTextActive]}>{label}</Text>
-              </Pressable>
-            ))}
-          </View>
-        ) : null}
+          <>
+            <PayWeekChip
+              value={group?.payWeekStart ?? null}
+              farmStart={farmStart}
+              inherit
+              editable={!isCleared}
+              onChange={(d) => groupPayWeek.mutate({ id: openFolder!.id as number, start: d })}
+            />
+            <PeriodBar period={period} weekStart={groupStart} onChange={setPeriod} />
+          </>
+        ) : (
+          <PeriodBar period={period} weekStart={groupStart} onChange={setPeriod} />
+        )}
 
         {groupOpen && !isCleared ? (
           <Card style={{ padding: 0, overflow: "hidden" }}>
             <View style={styles.dueHeader}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.blockTitleLight}>PAYMENT DUE NOW</Text>
+                <Text style={styles.blockTitleLight}>{period.kind === "week" ? "PAY WEEK" : "PAYMENT FOR THESE DATES"}</Text>
                 <Text style={styles.dueSubtitle}>
-                  {lastPaymentDate ? `for work after ${formatDate(lastPaymentDate)}` : "no payment made yet"}
+                  {range.label}
+                  {period.kind === "week" && range.to ? (range.to === todayIso() ? " · pay today" : ` · pay on ${formatDate(range.to)}`) : ""}
                 </Text>
               </View>
               <Text style={styles.dueHeaderValue}>{inr(Math.max(0, dueWages))}</Text>
@@ -649,6 +646,18 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
                 </Text>
               </View>
             )}
+            {!hasAdvanceStructure && earlierPending > 0 ? (
+              <View style={[styles.simpleRow, styles.periodRowBorder]}>
+                <Text style={styles.simpleRowMutedLabel}>Still unpaid from earlier</Text>
+                <Text style={[styles.simpleRowTitle, { color: colors.warning }]}>+ {inr(earlierPending)}</Text>
+              </View>
+            ) : null}
+            {!hasAdvanceStructure && paidInPeriod > 0 ? (
+              <View style={[styles.simpleRow, styles.periodRowBorder]}>
+                <Text style={styles.simpleRowMutedLabel}>Already paid in these dates</Text>
+                <Text style={[styles.simpleRowTitle, { color: "#1F9E92" }]}>− {inr(paidInPeriod)}</Text>
+              </View>
+            ) : null}
             <View style={[styles.simpleRow, styles.periodRowBorder]}>
               <Text style={styles.simpleRowMutedLabel}>Loan pending</Text>
               <Text style={[styles.simpleRowTitle, { color: loanOutstanding > 0 ? colors.danger : colors.textMuted }]}>
@@ -656,7 +665,7 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
               </Text>
             </View>
             <View style={[styles.finalTotal, { backgroundColor: colors.bg }]}>
-              <Text style={[styles.finalTotalLabel, { color: colors.primary }]}>To pay this time</Text>
+              <Text style={[styles.finalTotalLabel, { color: colors.primary }]}>To pay</Text>
               <Text style={[styles.finalTotalValue, { color: colors.primary }]}>{inr(Math.max(0, dueWages))}</Text>
             </View>
             {loanOutstanding > 0 && dueWages > 0 ? (
@@ -785,42 +794,6 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
           )
         ) : null}
 
-        {groupOpen && view !== "final" ? (() => {
-          const rows = view === "weekly" ? weeklyRows : view === "monthly" ? monthlyRows : yearlyRows;
-          const labelOf = (key: string) => (view === "weekly" ? weekLabel(key) : view === "monthly" ? monthLabel(key) : key);
-          if (rows.length === 0) {
-            return <EmptyState title="No records yet for this view" />;
-          }
-          return (
-            <Card style={{ padding: 0, overflow: "hidden" }}>
-              {rows.map(([key, v], idx) => {
-                const advanceDue = v.days * advPerDay;
-                const held = v.wages - advanceDue;
-                const toPay = hasAdvanceStructure ? advanceDue : v.wages - v.advances;
-                return (
-                  <View key={key} style={[styles.periodRow, idx > 0 && styles.periodRowBorder]}>
-                    <View style={styles.periodRowTop}>
-                      <Text style={styles.periodLabel}>{labelOf(key)}</Text>
-                      <Text style={[styles.periodValue, { color: toPay >= 0 ? colors.primary : colors.danger }]}>
-                        {toPay >= 0 ? inr(toPay) : `− ${inr(Math.abs(toPay))}`}
-                      </Text>
-                    </View>
-                    <View style={styles.periodMetaRow}>
-                      <Text style={styles.periodMeta}>{v.days} work{v.days !== 1 ? "s" : ""} done</Text>
-                      <Text style={[styles.periodMeta, { color: colors.primary }]}>earned {inr(v.wages)}</Text>
-                      {hasAdvanceStructure ? (
-                        held > 0 ? <Text style={[styles.periodMeta, { color: colors.warning }]}>{inr(held)} held for final</Text> : null
-                      ) : v.advances > 0 ? (
-                        <Text style={[styles.periodMeta, { color: colors.warning }]}>advance − {inr(v.advances)}</Text>
-                      ) : null}
-                      {v.loans > 0 ? <Text style={[styles.periodMeta, { color: colors.danger }]}>loan given {inr(v.loans)}</Text> : null}
-                    </View>
-                  </View>
-                );
-              })}
-            </Card>
-          );
-        })() : null}
 
         {groupOpen && view === "final" && overtimeSummary && overtimeSummary.pendingAmount + overtimeSummary.clearedAmount > 0 ? (
           <Card style={{ padding: 0, overflow: "hidden" }}>
@@ -920,22 +893,19 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
         ) : null}
 
         {folderRecords.length === 0 ? (
-          <EmptyState title={`No labour records for ${openFolder.name} yet`} subtitle="Records will appear here after attendance is marked" />
+          <EmptyState
+            title={allFolderRecords.length === 0 ? `No labour records for ${openFolder.name} yet` : "No work in these dates"}
+            subtitle={allFolderRecords.length === 0 ? "Records will appear here after attendance is marked" : "Use ‹ › or tap the dates to see other weeks."}
+          />
         ) : null}
 
-        {(!groupOpen || view === "final") && sortedDates.length > 0 ? (
+        {sortedDates.length > 0 ? (
           <>
             <Text style={styles.sectionLabel}>DAILY RECORDS</Text>
-            <DateBar dates={sortedDates} value={recordDay} onChange={setRecordDay} />
-            {recordDay && !byDate[recordDay] ? (
-              <Card>
-                <Text style={styles.entryMeta}>No one was recorded on {formatDate(recordDay)}.</Text>
-              </Card>
-            ) : null}
           </>
         ) : null}
 
-        {(!groupOpen || view === "final") && (recordDay ? sortedDates.filter((d) => d === recordDay) : sortedDates).map((date) => {
+        {sortedDates.map((date) => {
           const entries = byDate[date];
           const totalWage = entries.reduce((s, e) => s + Number(e.wageAmount ?? 0), 0);
           return (
@@ -989,6 +959,7 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
+  payOnText: { fontSize: 14.5, fontWeight: "700", color: colors.primary, marginTop: -4 },
   sectionLabel: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.6, marginBottom: spacing.sm },
   folderRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   folderIcon: { width: 46, height: 46, borderRadius: 23, backgroundColor: "#9FD8EA", alignItems: "center", justifyContent: "center" },
