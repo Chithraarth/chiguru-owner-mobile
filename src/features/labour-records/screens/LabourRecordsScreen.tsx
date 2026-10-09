@@ -1,7 +1,7 @@
 import React, { useLayoutEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useInnerBack } from "../../../navigation/useInnerBack";
-import { DEFAULT_PAY_CYCLE, PayCycleChip, PeriodBar, inPeriod, resolvePeriod, todayIso, type PayCycle, type Period } from "../period";
+import { DEFAULT_PAY_CYCLE, PayCycleChip, PeriodBar, inPeriod, pastPeriods, resolvePeriod, todayIso, type PayCycle, type Period } from "../period";
 import { useMyEstates } from "../../estate/hooks/useMyEstates";
 import { useEstateStore } from "../../estate/store/estateStore";
 import { Text } from "../../../components/Text";
@@ -675,6 +675,50 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
             <Text style={styles.payButtonText}>Pay Workers</Text>
           </Pressable>
         ) : null}
+
+        {groupOpen && allFolderRecords.length > 0 ? (() => {
+          // Every pay period since this group's first record: wages, paid
+          // and what's left, newest first. Tap one to open it above.
+          const first = allFolderRecords.reduce((m, r) => (r.date < m ? r.date : m), allFolderRecords[0].date);
+          const rows = pastPeriods(groupStart, first)
+            .map((pp) => {
+              const recs = allFolderRecords.filter((r) => r.date >= pp.from && r.date <= pp.to);
+              const wages = recs.reduce((s2, r) => s2 + earnOf(r), 0);
+              const paid = moneyOut.filter((m) => m.date >= pp.from && m.date <= pp.to).reduce((s2, m) => s2 + m.amount, 0);
+              return { ...pp, works: recs.length, wages, paid };
+            })
+            .filter((r) => r.works > 0 || r.paid > 0);
+          if (rows.length === 0) return null;
+          return (
+            <Card style={{ padding: 0, overflow: "hidden" }}>
+              <Text style={styles.blockTitle}>PAY HISTORY</Text>
+              {rows.map((r, i) => {
+                const open = period.kind === "cycle" && range.from === r.from;
+                const left = Math.max(0, r.wages - r.paid);
+                return (
+                  <Pressable
+                    key={r.from}
+                    onPress={() => setPeriod({ kind: "cycle", anchor: r.anchor })}
+                    style={[styles.periodRow, i > 0 && styles.periodRowBorder, open && { backgroundColor: colors.tint }]}
+                    accessibilityRole="button"
+                  >
+                    <View style={styles.periodRowTop}>
+                      <Text style={styles.periodLabel}>{r.label}</Text>
+                      <Text style={[styles.periodValue, { color: left > 0 ? colors.primary : "#1F9E5C" }]}>
+                        {left > 0 ? inr(left) : "✓ Paid"}
+                      </Text>
+                    </View>
+                    <View style={styles.periodMetaRow}>
+                      <Text style={styles.periodMeta}>{r.works} work{r.works !== 1 ? "s" : ""}</Text>
+                      <Text style={[styles.periodMeta, { color: colors.primary }]}>earned {inr(r.wages)}</Text>
+                      {r.paid > 0 ? <Text style={[styles.periodMeta, { color: "#1F9E92" }]}>paid {inr(r.paid)}</Text> : null}
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </Card>
+          );
+        })() : null}
 
         {openFolder !== null && folderWorkers.length > 0 ? (
           <Card style={{ padding: 0, overflow: "hidden" }}>

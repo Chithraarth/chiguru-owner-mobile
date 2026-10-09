@@ -283,6 +283,11 @@ export function PayCycleChip({
   );
 }
 
+/**
+ * Pick Weekly or Monthly, then tap the first day and the pay day on a
+ * calendar. Weekly keeps the two weekdays (e.g. Mon -> Sat); monthly keeps
+ * the two dates and whether the pay day falls in the next month.
+ */
 function PayCycleSheet({
   initial,
   inherit,
@@ -296,14 +301,42 @@ function PayCycleSheet({
   onClose: () => void;
   onSave: (c: PayCycle | null) => void;
 }) {
-  const [c, setC] = useState<PayCycle>(initial);
-  const weekly = c.cycle === "weekly";
-  function setCycle(cycle: PayCycle["cycle"]) {
-    if (cycle === c.cycle) return;
-    setC(cycle === "weekly" ? { cycle, from: 1, to: 6, toNextMonth: false } : { cycle, from: 1, to: 30, toNextMonth: false });
+  const [kind, setKind] = useState<PayCycle["cycle"] | null>(null);
+  const now = resolvePeriod({ kind: "cycle", anchor: todayIso() }, initial);
+  const [from, setFrom] = useState<string | null>(null);
+  const [to, setTo] = useState<string | null>(null);
+  const step: "from" | "to" | "done" = from == null ? "from" : to == null ? "to" : "done";
+  // The calendar starts on a highlighted date; tapping that same date
+  // doesn't register, so "Use this date" confirms it.
+  const shownDate = step === "to" && from ? from : now.from ?? todayIso();
+  function pick(v: string) {
+    if (step === "from") setFrom(v);
+    else if (step === "to") setTo(v);
   }
-  const invalid = !weekly && !c.toNextMonth && c.to < c.from;
-  const days = weekly ? DAY_SHORT.map((d, i) => ({ label: d, v: i })) : Array.from({ length: 31 }, (_, i) => ({ label: String(i + 1), v: i + 1 }));
+
+  function choose(k: PayCycle["cycle"]) {
+    setKind(k);
+    setFrom(null);
+    setTo(null);
+  }
+  const result: PayCycle | null =
+    kind && from && to
+      ? kind === "weekly"
+        ? { cycle: "weekly", from: new Date(`${from}T00:00:00`).getDay(), to: new Date(`${to}T00:00:00`).getDay(), toNextMonth: false }
+        : {
+            cycle: "monthly",
+            from: Number(from.slice(8, 10)),
+            to: Number(to.slice(8, 10)),
+            toNextMonth: to.slice(0, 7) !== from.slice(0, 7),
+          }
+      : null;
+  const tooLong =
+    kind && from && to
+      ? kind === "weekly"
+        ? daysBetween(from, to) > 6
+        : monthsBetween(from, to) > 1
+      : false;
+
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close" />
@@ -313,60 +346,99 @@ function PayCycleSheet({
           <Pressable onPress={onClose} hitSlop={10} accessibilityLabel="Close"><X size={22} color={colors.textMuted} /></Pressable>
         </View>
         <ScrollView contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.lg }}>
+          <Text style={styles.sheetHint}>
+            Now: {initial.cycle === "weekly" ? "Weekly" : "Monthly"} · {payCycleLabel(initial)} ({now.label})
+          </Text>
           {inherit ? (
             <Pressable onPress={() => onSave(null)} style={styles.dayRow} accessibilityRole="button">
-              <Text style={styles.dayText}>Same as farm ({farm.cycle === "weekly" ? "weekly" : "monthly"} · {payCycleLabel(farm)})</Text>
+              <Text style={styles.dayText}>Same as farm ({payCycleLabel(farm)})</Text>
             </Pressable>
           ) : null}
-          <View style={styles.toggle}>
+          <View style={{ flexDirection: "row", gap: spacing.sm }}>
             {(["weekly", "monthly"] as const).map((k) => (
-              <Pressable key={k} onPress={() => setCycle(k)} style={[styles.toggleBtn, c.cycle === k && styles.toggleOn]} accessibilityRole="button" accessibilityState={{ selected: c.cycle === k }}>
-                <Text style={[styles.toggleText, c.cycle === k && styles.toggleTextOn]}>{k === "weekly" ? "Weekly" : "Monthly"}</Text>
+              <Pressable
+                key={k}
+                onPress={() => choose(k)}
+                style={[styles.cycleBtn, kind === k && styles.cycleBtnOn]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: kind === k }}
+              >
+                <Text style={[styles.cycleBtnText, kind === k && { color: "#fff" }]}>{k === "weekly" ? "Weekly" : "Monthly"}</Text>
               </Pressable>
             ))}
           </View>
-          {(["from", "to"] as const).map((which) => (
-            <View key={which} style={{ gap: 6 }}>
+          {kind ? (
+            <>
               <Text style={styles.pickTitle}>
-                {which === "from" ? (weekly ? "From (first working day)" : "From date") : weekly ? "To (pay day)" : "To date (pay day)"}
+                {step === "from" ? "Tap the first day of the pay period" : step === "to" ? "Now tap the pay day (last day)" : "Pay period chosen"}
               </Text>
-              <View style={styles.dayGrid}>
-                {days.map((d) => {
-                  const on = c[which] === d.v;
-                  return (
-                    <Pressable
-                      key={d.v}
-                      onPress={() => setC({ ...c, [which]: d.v })}
-                      style={[weekly ? styles.dayChipWide : styles.dayChip, on && styles.dayChipOn]}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: on }}
-                    >
-                      <Text style={[styles.dayChipText, on && styles.dayChipTextOn]}>{d.label}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-          ))}
-          {!weekly ? (
-            <View style={styles.toggle}>
-              {[false, true].map((next) => (
-                <Pressable key={String(next)} onPress={() => setC({ ...c, toNextMonth: next })} style={[styles.toggleBtn, c.toNextMonth === next && styles.toggleOn]} accessibilityRole="button">
-                  <Text style={[styles.toggleText, c.toNextMonth === next && styles.toggleTextOn]}>{next ? "To date in next month" : "Same month"}</Text>
+              <View style={{ flexDirection: "row", gap: spacing.sm }}>
+                <Pressable onPress={() => { setFrom(null); setTo(null); }} style={[styles.dateField, step === "from" && styles.dateFieldOn]} accessibilityRole="button">
+                  <Text style={styles.fieldLabel}>From</Text>
+                  <Text style={styles.fieldValue}>{from ? fmt(from, true) : "Tap a date"}</Text>
                 </Pressable>
-              ))}
-            </View>
+                <Pressable onPress={() => from && setTo(null)} style={[styles.dateField, step === "to" && styles.dateFieldOn]} accessibilityRole="button">
+                  <Text style={styles.fieldLabel}>To (pay day)</Text>
+                  <Text style={styles.fieldValue}>{to ? fmt(to, true) : "Tap a date"}</Text>
+                </Pressable>
+              </View>
+              {step !== "done" ? (
+                <DateTimePicker
+                  key={step}
+                  value={new Date(`${shownDate}T00:00:00`)}
+                  mode="date"
+                  display={Platform.OS === "ios" ? "inline" : "default"}
+                  minimumDate={step === "to" && from ? new Date(`${from}T00:00:00`) : undefined}
+                  onChange={(event, d) => {
+                    if (event.type !== "set" || !d) return;
+                    pick(isoOf(d));
+                  }}
+                />
+              ) : null}
+              {step !== "done" ? (
+                <Pressable onPress={() => pick(shownDate)} style={styles.useDate} accessibilityRole="button">
+                  <Text style={styles.useDateText}>Use {fmt(shownDate, true)}</Text>
+                </Pressable>
+              ) : null}
+              {result ? (
+                <Text style={[styles.sheetHint, tooLong && { color: colors.danger }]}>
+                  {tooLong
+                    ? kind === "weekly"
+                      ? "A weekly pay period can be at most 7 days."
+                      : "A monthly pay period can end at most in the next month."
+                    : kind === "weekly"
+                      ? `Every week ${DAY_NAMES[result.from]} → ${DAY_NAMES[result.to]}, pay on ${DAY_NAMES[result.to]}.`
+                      : `Every month the ${payCycleLabel(result)}.`}
+                </Text>
+              ) : null}
+              <Button title="Save" onPress={() => result && onSave(result)} disabled={!result || tooLong} />
+            </>
           ) : null}
-          <Text style={[styles.sheetHint, invalid && { color: colors.danger }]}>
-            {invalid
-              ? "The To date is before the From date - choose \"To date in next month\"."
-              : `Pay for ${payCycleLabel(c)}${weekly ? `, on ${DAY_NAMES[c.to]}` : ""}.`}
-          </Text>
-          <Button title="Save" onPress={() => onSave(c)} disabled={invalid} />
         </ScrollView>
       </View>
     </Modal>
   );
+}
+
+function daysBetween(a: string, b: string) {
+  return Math.round((new Date(`${b}T00:00:00`).getTime() - new Date(`${a}T00:00:00`).getTime()) / 86_400_000);
+}
+function monthsBetween(a: string, b: string) {
+  return (Number(b.slice(0, 4)) - Number(a.slice(0, 4))) * 12 + Number(b.slice(5, 7)) - Number(a.slice(5, 7));
+}
+
+/** Every pay period from the first record up to now, newest first. */
+export function pastPeriods(c: PayCycle, firstDate: string): { from: string; to: string; label: string; anchor: string }[] {
+  const out: { from: string; to: string; label: string; anchor: string }[] = [];
+  let p: Period = { kind: "cycle", anchor: todayIso() };
+  for (let i = 0; i < 200; i++) {
+    const r = resolvePeriod(p, c);
+    if (!r.from || !r.to) break;
+    out.push({ from: r.from, to: r.to, label: r.label, anchor: r.from });
+    if (r.from <= firstDate) break;
+    p = stepPeriod(p, -1, c);
+  }
+  return out;
 }
 
 const styles = StyleSheet.create({
@@ -398,6 +470,11 @@ const styles = StyleSheet.create({
   toggleText: { fontSize: 14.5, fontWeight: "600", color: colors.textMuted, textAlign: "center" },
   toggleTextOn: { color: colors.text, fontWeight: "800" },
   dayGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  cycleBtn: { flex: 1, minHeight: 64, borderRadius: radius.md, borderWidth: 2, borderColor: colors.border, alignItems: "center", justifyContent: "center", backgroundColor: colors.card },
+  cycleBtnOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  useDate: { alignSelf: "center", minHeight: 44, paddingHorizontal: 16, justifyContent: "center" },
+  useDateText: { fontSize: 15, fontWeight: "700", color: colors.primary },
+  cycleBtnText: { fontSize: 17, fontWeight: "800", color: colors.text },
   dayChip: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
   dayChipWide: { minWidth: 48, height: 44, paddingHorizontal: 8, borderRadius: 22, borderWidth: 2, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
   dayChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
