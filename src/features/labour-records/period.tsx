@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { CalendarDays, ChevronLeft, ChevronRight, Pencil, Wallet, X } from "lucide-react-native";
+import { CalendarDays, ChevronLeft, ChevronRight, X } from "lucide-react-native";
 import { Text } from "../../components/Text";
 import { Button } from "../../components/Button";
 import { colors, radius, shadow, spacing } from "../../components/theme";
@@ -249,33 +249,39 @@ export function PayCycleChip({
   editable?: boolean;
   onChange: (c: PayCycle | null) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState<PayCycle["cycle"] | null>(null);
   const shown = value ?? farm;
-  const label = `${shown.cycle === "weekly" ? "Weekly" : "Monthly"} · ${payCycleLabel(shown)}${inherit && value == null ? " · same as farm" : ""}`;
   return (
     <>
-      <Pressable
-        onPress={() => editable && setOpen(true)}
-        disabled={!editable}
-        style={styles.payChip}
-        accessibilityRole="button"
-        accessibilityLabel={`Pay ${label}. ${editable ? "Change" : ""}`}
-      >
-        <Wallet size={16} color={colors.primary} />
-        <Text style={styles.payChipText} numberOfLines={1}>
-          Pay: <Text style={{ fontWeight: "800", color: colors.text }}>{label}</Text>
-        </Text>
-        {editable ? <Pencil size={15} color={colors.textMuted} /> : null}
-      </Pressable>
+      <View style={styles.inlineToggle}>
+        {(["weekly", "monthly"] as const).map((k) => {
+          const on = shown.cycle === k;
+          return (
+            <Pressable
+              key={k}
+              onPress={() => editable && setOpen(k)}
+              disabled={!editable}
+              style={[styles.inlineBtn, on && styles.inlineBtnOn]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
+              accessibilityLabel={`${k === "weekly" ? "Weekly" : "Monthly"} pay${on ? `, ${payCycleLabel(shown)}` : ""}. Choose dates`}
+            >
+              <Text style={[styles.inlineBtnText, on && { color: "#fff" }]}>{k === "weekly" ? "Weekly" : "Monthly"}</Text>
+              {on ? <Text style={styles.inlineBtnSub}>{payCycleLabel(shown)}</Text> : null}
+            </Pressable>
+          );
+        })}
+      </View>
       {open ? (
         <PayCycleSheet
           initial={shown}
+          initialKind={open}
           inherit={inherit}
           farm={farm}
-          onClose={() => setOpen(false)}
+          onClose={() => setOpen(null)}
           onSave={(c) => {
             onChange(c);
-            setOpen(false);
+            setOpen(null);
           }}
         />
       ) : null}
@@ -283,25 +289,22 @@ export function PayCycleChip({
   );
 }
 
-/**
- * Pick Weekly or Monthly, then tap the first day and the pay day on a
- * calendar. Weekly keeps the two weekdays (e.g. Mon -> Sat); monthly keeps
- * the two dates and whether the pay day falls in the next month.
- */
 function PayCycleSheet({
   initial,
+  initialKind,
   inherit,
   farm,
   onClose,
   onSave,
 }: {
   initial: PayCycle;
+  initialKind: PayCycle["cycle"];
   inherit: boolean;
   farm: PayCycle;
   onClose: () => void;
   onSave: (c: PayCycle | null) => void;
 }) {
-  const [kind, setKind] = useState<PayCycle["cycle"] | null>(null);
+  const [kind, setKind] = useState<PayCycle["cycle"] | null>(initialKind);
   const now = resolvePeriod({ kind: "cycle", anchor: todayIso() }, initial);
   const [from, setFrom] = useState<string | null>(null);
   const [to, setTo] = useState<string | null>(null);
@@ -459,8 +462,6 @@ const styles = StyleSheet.create({
   dateFieldOn: { borderColor: colors.primary, backgroundColor: colors.tint },
   fieldLabel: { fontSize: 12.5, color: colors.textMuted, fontWeight: "600" },
   fieldValue: { fontSize: 15, fontWeight: "700", color: colors.text, marginTop: 2 },
-  payChip: { flexDirection: "row", alignItems: "center", gap: 8, alignSelf: "flex-start", minHeight: 44, paddingHorizontal: 14, borderRadius: radius.pill, backgroundColor: colors.card, ...shadow },
-  payChipText: { fontSize: 14.5, color: colors.textMuted, flexShrink: 1 },
   dayRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 52, borderBottomWidth: 1, borderBottomColor: colors.border },
   dayText: { fontSize: 16, fontWeight: "700", color: colors.text, flexShrink: 1 },
   dayMeta: { fontSize: 14, fontWeight: "400", color: colors.textMuted },
@@ -474,6 +475,11 @@ const styles = StyleSheet.create({
   cycleBtnOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   useDate: { alignSelf: "center", minHeight: 44, paddingHorizontal: 16, justifyContent: "center" },
   useDateText: { fontSize: 15, fontWeight: "700", color: colors.primary },
+  inlineToggle: { flexDirection: "row", gap: spacing.sm },
+  inlineBtn: { flex: 1, minHeight: 56, borderRadius: radius.md, borderWidth: 2, borderColor: colors.border, alignItems: "center", justifyContent: "center", backgroundColor: colors.card, paddingVertical: 6 },
+  inlineBtnOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  inlineBtnText: { fontSize: 16, fontWeight: "800", color: colors.text },
+  inlineBtnSub: { fontSize: 13, fontWeight: "600", color: "rgba(255,255,255,0.9)", marginTop: 1 },
   cycleBtnText: { fontSize: 17, fontWeight: "800", color: colors.text },
   dayChip: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
   dayChipWide: { minWidth: 48, height: 44, paddingHorizontal: 8, borderRadius: 22, borderWidth: 2, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
