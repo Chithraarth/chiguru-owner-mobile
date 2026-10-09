@@ -180,6 +180,10 @@ export function AttendanceScreen({ route }: { route: any }) {
   useEffect(() => {
     if (workGroup?.paymentType === "Per kg") setPickMode(true);
   }, [workGroup?.paymentType]);
+  // The crop picked usually is the group's own crop - start from it.
+  useEffect(() => {
+    if (workGroup?.cropName) setPickCrop((cur) => cur || workGroup.cropName || "");
+  }, [workGroup?.cropName]);
   useEffect(() => {
     if (ruleEdited) return;
     setPickThreshold(savedThreshold);

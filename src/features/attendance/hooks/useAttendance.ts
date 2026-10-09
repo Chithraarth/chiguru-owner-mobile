@@ -69,6 +69,8 @@ export function useAttendance(workGroupId: number, selectedDate?: string) {
       queryClient.invalidateQueries({ queryKey: ["attendance", activeEstateId, date] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["attendance-history", workGroupId] });
+      // Harvests "Picked by crop" and Labour Records read all attendance.
+      queryClient.invalidateQueries({ queryKey: ["attendance-all"] });
       // Overtime and picking-bonus totals are summed from these rows.
       queryClient.invalidateQueries({ queryKey: ["overtime-summary", workGroupId] });
       queryClient.invalidateQueries({ queryKey: ["harvest-bonus-summary", workGroupId] });

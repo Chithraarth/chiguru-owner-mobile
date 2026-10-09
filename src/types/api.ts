@@ -128,6 +128,8 @@ export interface WorkGroup {
   estateId: number;
   name: string;
   cropId: number | null;
+  /** Name of the group's crop (joined by GET /work-groups). */
+  cropName?: string | null;
   blockName: string | null;
   category: string | null;
   labourType: string | null;

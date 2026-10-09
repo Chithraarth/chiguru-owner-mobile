@@ -1,19 +1,24 @@
 import React, { useState } from "react";
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Text, TextInput } from "../../../components/Text";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Leaf, Plus, TrendingUp, Trash2, X, Users, ChevronRight, ChevronLeft, Sprout } from "lucide-react-native";
+import { ChevronDown, ChevronUp, Leaf, Plus, TrendingUp, Trash2, X } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { ChipSelect } from "../../../components/ChipSelect";
-import { EmptyState, LoadingView } from "../../../components/StateViews";
-import { IconChip, ListCard, ListRow, Pill, SectionLabel, StatTiles, shortRupees } from "../../../components/harvest";
+import { LoadingView } from "../../../components/StateViews";
+import { IconChip, SectionLabel, StatTiles, shortRupees } from "../../../components/harvest";
 import { colors, radius, spacing } from "../../../components/theme";
 import { useHarvests } from "../hooks/useHarvests";
+import { useQuery } from "@tanstack/react-query";
+import { getAllAttendance } from "../../../api/endpoints/attendance";
 import { useWorkGroups } from "../../work-groups/hooks/useWorkGroups";
 import { useT } from "../../../lib/i18n";
-import type { Harvest } from "../../../types/api";
+import type { AttendanceRecord, Harvest } from "../../../types/api";
+
+function fmtDay(iso: string) {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+}
 
 function inr(n: number) {
   return `₹${Math.round(n).toLocaleString("en-IN")}`;
@@ -24,11 +29,11 @@ type QuickAdd = "general" | "sold" | null;
 export function HarvestsScreen() {
   const { t } = useT();
   const { data: harvests = [], isLoading, crops, createHarvest, deleteHarvest } = useHarvests();
+  const { data: attendance = [] } = useQuery<AttendanceRecord[]>({ queryKey: ["attendance-all"], queryFn: getAllAttendance });
   const { data: workGroups = [] } = useWorkGroups();
-  const [openFolder, setOpenFolder] = useState<{ id: number | null; name: string } | null>(null);
+  const [openCrop, setOpenCrop] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [quickAdd, setQuickAdd] = useState<QuickAdd>(null);
-  const insets = useSafeAreaInsets();
 
   const [cropId, setCropId] = useState<number | null>(null);
   const [weightKg, setWeightKg] = useState("");
@@ -77,7 +82,7 @@ export function HarvestsScreen() {
       {
         date: new Date().toISOString().slice(0, 10),
         cropId,
-        workGroupId: quickAdd ? undefined : (openFolder?.id ?? undefined),
+        workGroupId: undefined,
         blockName: blockName.trim() || undefined,
         weightKg: weight,
         grade: grade.trim() || undefined,
@@ -92,133 +97,149 @@ export function HarvestsScreen() {
 
   if (isLoading) return <LoadingView label="Loading harvests..." />;
 
-  const totalIncome = harvests.reduce((s, h) => s + Number(h.totalIncome ?? 0), 0);
-  const totalKg = harvests.reduce((s, h) => s + Number(h.weightKg), 0);
+  // Picked = what workers weighed in attendance (kg + crop per person per day).
+  // It is added up here automatically - nothing to enter twice.
+  const pickedRows = attendance.filter((a) => Number(a.harvestedKg ?? 0) > 0);
+  const pickedKg = pickedRows.reduce((s, a) => s + Number(a.harvestedKg ?? 0), 0);
+  const byCrop = new Map<string, { crop: string; kg: number; days: Map<string, { date: string; group: string | null; kg: number; people: number }> }>();
+  for (const a of pickedRows) {
+    // No crop typed that day? Use the work group's crop.
+    const groupCrop = workGroups.find((g) => g.id === a.workGroupId)?.cropName ?? null;
+    const crop = a.harvestCrop?.trim() || groupCrop?.trim() || "Crop not set";
+    const c = byCrop.get(crop) ?? { crop, kg: 0, days: new Map() };
+    const kg = Number(a.harvestedKg ?? 0);
+    c.kg += kg;
+    const key = `${a.date}|${a.workGroupId ?? ""}`;
+    const d = c.days.get(key) ?? { date: a.date, group: a.workGroupName, kg: 0, people: 0 };
+    d.kg += kg;
+    d.people += 1;
+    c.days.set(key, d);
+    byCrop.set(crop, c);
+  }
+  const crops_ = [...byCrop.values()].sort((a, b) => b.kg - a.kg);
 
-  const knownGroupIds = new Set(workGroups.map((g) => g.id));
-  const orphanIds = [...new Set(harvests.filter((h) => h.workGroupId != null && !knownGroupIds.has(h.workGroupId)).map((h) => h.workGroupId as number))];
-  const groupList = [...workGroups.map((g) => ({ id: g.id, name: g.name })), ...orphanIds.map((id) => ({ id, name: `Group #${id}` }))];
-  const generalHarvests = harvests.filter((h) => h.workGroupId == null);
-
-  const folders = [
-    ...groupList.map((g) => {
-      const recs = harvests.filter((h) => h.workGroupId === g.id);
-      const kg = recs.reduce((s, h) => s + Number(h.weightKg), 0);
-      return { id: g.id as number | null, name: g.name, subtitle: recs.length === 0 ? "No harvests yet" : `${kg.toLocaleString("en-IN")} kg harvested`, count: recs.length };
-    }),
-    {
-      id: null,
-      name: "General Harvests",
-      subtitle: generalHarvests.length === 0 ? "Harvests without a group" : `${generalHarvests.reduce((s, h) => s + Number(h.weightKg), 0).toLocaleString("en-IN")} kg harvested`,
-      count: generalHarvests.length,
-    },
-  ];
-
-  const folderHarvests = openFolder ? harvests.filter((h) => (h.workGroupId ?? null) === openFolder.id) : harvests;
-  const folderKg = folderHarvests.reduce((s, h) => s + Number(h.weightKg), 0);
-  const folderIncome = folderHarvests.reduce((s, h) => s + Number(h.totalIncome ?? 0), 0);
+  // Sales have a price. Entries without one are the old hand-entered
+  // "General" harvests - kept and listed apart so they don't look like sales.
+  const sold = harvests.filter((h) => Number(h.pricePerKg ?? 0) > 0);
+  const earlier = harvests.filter((h) => !(Number(h.pricePerKg ?? 0) > 0));
+  const totalIncome = sold.reduce((s, h) => s + Number(h.totalIncome ?? 0), 0);
+  const soldKg = sold.reduce((s, h) => s + Number(h.weightKg), 0);
 
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
-        {openFolder === null ? (
-          <>
-            <StatTiles
-              items={[
-                { label: "Income", value: shortRupees(totalIncome), sub: "all harvests" },
-                { label: "Yield", value: `${Math.round(totalKg).toLocaleString("en-IN")} kg`, sub: "total" },
-              ]}
-            />
-            <View style={{ flexDirection: "row", gap: 10 }}>
-              <Button title="Sold harvest" icon={Plus} style={{ flex: 1 }} onPress={() => openForm("sold")} />
-              <Button title="General" variant="light" icon={Plus} style={{ flex: 1 }} onPress={() => openForm("general")} />
-            </View>
+        <StatTiles
+          items={[
+            { label: "Picked", value: `${Math.round(pickedKg).toLocaleString("en-IN")} kg`, sub: "from attendance" },
+            { label: "Sold", value: `${Math.round(soldKg).toLocaleString("en-IN")} kg`, sub: "harvest sales" },
+            { label: "Income", value: shortRupees(totalIncome), sub: "from sales" },
+          ]}
+        />
+        <Button title="Sold harvest" icon={Plus} onPress={() => openForm("sold")} />
 
-            <SectionLabel>Your work groups</SectionLabel>
-            <ListCard>
-              {folders.map((f, i) => (
-                <ListRow
-                  key={f.id ?? "general"}
-                  title={f.name}
-                  subtitle={f.subtitle}
-                  left={<IconChip icon={f.id == null ? Sprout : Users} index={i} size={46} />}
-                  right={
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                      {f.count > 0 ? <Pill text={String(f.count)} /> : null}
-                      <ChevronRight size={18} color={colors.textMuted} />
-                    </View>
-                  }
-                  divider={i < folders.length - 1}
-                  onPress={() => setOpenFolder({ id: f.id, name: f.name })}
-                />
-              ))}
-            </ListCard>
-          </>
+        <SectionLabel>Picked by crop</SectionLabel>
+        {crops_.length === 0 ? (
+          <Card>
+            <Text style={styles.emptyText}>
+              Nothing picked yet. When you mark attendance with "Harvest picking today?", each person's kg adds up here by crop.
+            </Text>
+          </Card>
         ) : (
-          <>
-            <Pressable onPress={() => setOpenFolder(null)} style={styles.backChip}>
-              <ChevronLeft size={18} color={colors.text} />
-              <Text style={styles.backLink}>All groups</Text>
-            </Pressable>
-
-            {folderHarvests.length > 0 ? (
-              <StatTiles
-                items={[
-                  { label: "Income", value: shortRupees(folderIncome), sub: openFolder.name },
-                  { label: "Yield", value: `${Math.round(folderKg).toLocaleString("en-IN")} kg`, sub: "harvested" },
-                ]}
-              />
-            ) : null}
-
-            {folderHarvests.length === 0 ? (
-              <EmptyState
-                title={`No harvests for ${openFolder.name} yet`}
-                actionLabel="Record harvest"
-                onAction={() => openForm(null)}
-              />
-            ) : (
-              <View style={{ gap: spacing.sm }}>
-                {folderHarvests.map((h) => (
-                  <Card key={h.id}>
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <View style={{ flex: 1 }}>
-                        <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
-                          <Text style={styles.harvestCrop}>{h.cropName ?? "—"}</Text>
-                          {h.grade ? <View style={styles.gradeBadge}><Text style={styles.gradeBadgeText}>{h.grade}</Text></View> : null}
-                          <View style={[styles.statusBadge, h.paymentStatus === "paid" && { backgroundColor: "#FBF2D9" }]}>
-                            <Text style={[styles.statusBadgeText, h.paymentStatus === "paid" && { color: colors.primary }]}>{h.paymentStatus}</Text>
-                          </View>
+          crops_.map((c, ci) => {
+            const open = openCrop === c.crop;
+            const days = [...c.days.values()].sort((a, b) => (a.date < b.date ? 1 : -1));
+            return (
+              <Card key={c.crop} style={{ padding: 0, overflow: "hidden" }}>
+                <Pressable
+                  onPress={() => setOpenCrop(open ? null : c.crop)}
+                  style={styles.cropRow}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: open }}
+                >
+                  <IconChip icon={Leaf} index={ci} size={44} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.harvestCrop}>{c.crop}</Text>
+                    <Text style={styles.harvestMeta}>{days.length} {days.length === 1 ? "day" : "days"} of picking</Text>
+                  </View>
+                  <Text style={styles.cropKg}>{Math.round(c.kg).toLocaleString("en-IN")} kg</Text>
+                  {open ? <ChevronUp size={18} color={colors.textMuted} /> : <ChevronDown size={18} color={colors.textMuted} />}
+                </Pressable>
+                {open
+                  ? days.map((d) => (
+                      <View key={`${d.date}-${d.group}`} style={styles.dayRow}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.dayDate}>{fmtDay(d.date)}</Text>
+                          <Text style={styles.harvestMeta}>
+                            {d.group ?? "No group"} · {d.people} {d.people === 1 ? "person" : "people"}
+                          </Text>
                         </View>
-                        <Text style={styles.harvestMeta}>
-                          {h.date}{h.blockName ? ` · ${h.blockName}` : ""}{h.buyer ? ` · ${h.buyer}` : ""}
-                        </Text>
-                        <Text style={styles.harvestQty}>
-                          {Number(h.weightKg).toLocaleString("en-IN")} kg × ₹{h.pricePerKg ?? 0}/kg
-                        </Text>
+                        <Text style={styles.dayKg}>{d.kg.toLocaleString("en-IN")} kg</Text>
                       </View>
-                      <View style={{ alignItems: "flex-end", gap: spacing.xs }}>
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
-                          <TrendingUp size={13} color={colors.primary} />
-                          <Text style={styles.harvestIncome}>{inr(Number(h.totalIncome ?? 0))}</Text>
-                        </View>
-                        <Pressable onPress={() => confirmDelete(h)} hitSlop={10}>
-                          <Trash2 size={15} color={colors.textMuted} />
-                        </Pressable>
-                      </View>
-                    </View>
-                  </Card>
-                ))}
-              </View>
-            )}
-          </>
+                    ))
+                  : null}
+              </Card>
+            );
+          })
         )}
-      </ScrollView>
 
-      {openFolder !== null ? (
-        <View style={[styles.footer, { paddingBottom: spacing.md + insets.bottom }]}>
-          <Button title="Add Harvest" icon={Plus} onPress={() => openForm(null)} />
-        </View>
-      ) : null}
+        <SectionLabel>Sales</SectionLabel>
+        {sold.length === 0 ? (
+          <Card>
+            <Text style={styles.emptyText}>No sales recorded yet. Tap "Sold harvest" when you sell.</Text>
+          </Card>
+        ) : (
+          <View style={{ gap: spacing.sm }}>
+            {sold.map((h) => (
+              <Card key={h.id}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+                      <Text style={styles.harvestCrop}>{h.cropName ?? "—"}</Text>
+                      {h.grade ? <View style={styles.gradeBadge}><Text style={styles.gradeBadgeText}>{h.grade}</Text></View> : null}
+                    </View>
+                    <Text style={styles.harvestMeta}>
+                      {fmtDay(h.date)}{h.blockName ? ` · ${h.blockName}` : ""}{h.buyer ? ` · ${h.buyer}` : ""}
+                    </Text>
+                    <Text style={styles.harvestQty}>
+                      {Number(h.weightKg).toLocaleString("en-IN")} kg × ₹{Number(h.pricePerKg ?? 0)}/kg
+                    </Text>
+                  </View>
+                  <View style={{ alignItems: "flex-end", gap: spacing.xs }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+                      <TrendingUp size={13} color={colors.primary} />
+                      <Text style={styles.harvestIncome}>{inr(Number(h.totalIncome ?? 0))}</Text>
+                    </View>
+                    <Pressable onPress={() => confirmDelete(h)} hitSlop={10} accessibilityLabel="Delete this sale">
+                      <Trash2 size={15} color={colors.textMuted} />
+                    </Pressable>
+                  </View>
+                </View>
+              </Card>
+            ))}
+          </View>
+        )}
+        {earlier.length > 0 ? (
+          <>
+            <SectionLabel>Earlier entries (added by hand)</SectionLabel>
+            <View style={{ gap: spacing.sm }}>
+              {earlier.map((h) => (
+                <Card key={h.id}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.harvestCrop}>{h.cropName ?? "—"}</Text>
+                      <Text style={styles.harvestMeta}>{fmtDay(h.date)}{h.blockName ? ` · ${h.blockName}` : ""}</Text>
+                    </View>
+                    <Text style={styles.dayKg}>{Number(h.weightKg).toLocaleString("en-IN")} kg</Text>
+                    <Pressable onPress={() => confirmDelete(h)} hitSlop={10} accessibilityLabel="Delete this entry">
+                      <Trash2 size={15} color={colors.textMuted} />
+                    </Pressable>
+                  </View>
+                </Card>
+              ))}
+            </View>
+          </>
+        ) : null}
+      </ScrollView>
 
       <Modal visible={showForm} transparent animationType="slide" onRequestClose={() => setShowForm(false)}>
         <Pressable style={styles.backdrop} onPress={() => setShowForm(false)} />
@@ -229,7 +250,7 @@ export function HarvestsScreen() {
                 {quickAdd === "sold" ? "Record Sold Harvest" : quickAdd === "general" ? "Record General Harvest" : "Record Harvest"}
               </Text>
               <Text style={styles.formSubtitle}>
-                {quickAdd === "sold" ? "Sold — adds to Total income" : quickAdd === "general" ? "General — adds to Total yield" : openFolder?.id != null ? `${openFolder.name}` : "General"}
+                Sold — adds to Income
               </Text>
             </View>
             <Pressable onPress={() => setShowForm(false)} hitSlop={10}>
@@ -297,6 +318,12 @@ const styles = StyleSheet.create({
   harvestQty: { fontSize: 14.5, color: colors.text, marginTop: 3 },
   harvestIncome: { fontSize: 15.5, fontWeight: "700", color: colors.primary },
 
+  cropRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, padding: spacing.md, minHeight: 64 },
+  cropKg: { fontSize: 16.5, fontWeight: "800", color: colors.primary },
+  dayRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, borderTopWidth: 1, borderTopColor: colors.border },
+  dayDate: { fontSize: 15, fontWeight: "600", color: colors.text },
+  dayKg: { fontSize: 15, fontWeight: "700", color: colors.text },
+  emptyText: { fontSize: 14.5, color: colors.textMuted, lineHeight: 20 },
   footer: { padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.bg },
 
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
