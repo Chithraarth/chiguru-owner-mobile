@@ -244,7 +244,11 @@ function UpdatesStack() {
 
 function AccountsStack() {
   return (
-    <AccountsStackNav.Navigator initialRouteName="FarmAccounts" screenOptions={{ ...harvestHeaderOptions, ...headerOptions }}>
+    // Switch farm only on the Accounts tab's first screen, not on every record screen.
+    <AccountsStackNav.Navigator
+      initialRouteName="FarmAccounts"
+      screenOptions={({ route }) => ({ ...harvestHeaderOptions, ...(route.name === "FarmAccounts" ? headerOptions : {}) })}
+    >
       {registerSharedScreens(AccountsStackNav)}
     </AccountsStackNav.Navigator>
   );
