@@ -28,9 +28,9 @@ export function createEstate(data: {
   return apiMutate<Estate>("POST", "/estates", data);
 }
 
-/** 0 = Sunday ... 6 = Saturday: the day the farm's pay week starts. */
-export function setFarmPayWeekStart(id: number, payWeekStart: number) {
-  return apiMutate<Estate>("PATCH", `/estates/${id}`, { payWeekStart });
+/** The farm's pay cycle (see PayCycle in features/labour-records/period). */
+export function setFarmPayCycle(id: number, c: { cycle: string; from: number; to: number; toNextMonth: boolean }) {
+  return apiMutate<Estate>("PATCH", `/estates/${id}`, { payCycle: c.cycle, payFrom: c.from, payTo: c.to, payToNextMonth: c.toNextMonth });
 }
 
 export function renameEstate(id: number, farmName: string) {

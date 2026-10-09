@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { CalendarDays, Check, ChevronLeft, ChevronRight, Pencil, Wallet, X } from "lucide-react-native";
+import { CalendarDays, ChevronLeft, ChevronRight, Pencil, Wallet, X } from "lucide-react-native";
 import { Text } from "../../components/Text";
 import { Button } from "../../components/Button";
 import { colors, radius, shadow, spacing } from "../../components/theme";
@@ -9,9 +9,22 @@ import { colors, radius, shadow, spacing } from "../../components/theme";
 export const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const DAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-/** The period the labour screens show. A "week" follows whichever pay week applies (farm or group). */
+/**
+ * How a farm (or one work group) pays: "weekly" from weekday `from` to
+ * weekday `to` (0 = Sunday), or "monthly" from day `from` to day `to` of the
+ * same month, or of the next month when `toNextMonth`.
+ */
+export interface PayCycle {
+  cycle: "weekly" | "monthly";
+  from: number;
+  to: number;
+  toNextMonth: boolean;
+}
+export const DEFAULT_PAY_CYCLE: PayCycle = { cycle: "weekly", from: 6, to: 5, toNextMonth: false };
+
+/** The period the labour screens show. "cycle" is the pay cycle containing `anchor`. */
 export type Period =
-  | { kind: "week"; anchor: string }
+  | { kind: "cycle"; anchor: string }
   | { kind: "range"; from: string; to: string }
   | { kind: "all" };
 
@@ -34,32 +47,63 @@ function fmt(iso: string, withYear = false) {
     ...(withYear ? { year: "numeric" } : {}),
   });
 }
-
-/** "Sat → Fri" for a week starting on `start` (0 = Sunday). */
-export function payWeekLabel(start: number) {
-  return `${DAY_SHORT[start]} → ${DAY_SHORT[(start + 6) % 7]}`;
+function ordinal(n: number) {
+  const s = n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th";
+  return `${n}${s}`;
+}
+/** Day `day` of month index `mi` (year*12 + month), clamped to the month's length. */
+function dayOfMonth(mi: number, day: number) {
+  const y = Math.floor(mi / 12);
+  const m = mi % 12;
+  const last = new Date(y, m + 1, 0).getDate();
+  return isoOf(new Date(y, m, Math.min(day, last)));
 }
 
-/** Concrete dates for a period; `to` is the pay day of a week. */
-export function resolvePeriod(p: Period, weekStart: number): { from: string | null; to: string | null; label: string } {
-  if (p.kind === "all") return { from: null, to: null, label: "Whole season" };
-  if (p.kind === "range") {
-    return { from: p.from, to: p.to, label: p.from === p.to ? fmt(p.from, true) : `${fmt(p.from)} – ${fmt(p.to)}` };
+/** "Mon → Sat" or "3rd → 30th next month". */
+export function payCycleLabel(c: PayCycle) {
+  if (c.cycle === "weekly") return `${DAY_SHORT[c.from]} → ${DAY_SHORT[c.to]}`;
+  return `${ordinal(c.from)} → ${ordinal(c.to)}${c.toNextMonth ? " next month" : ""}`;
+}
+
+/** The pay cycle that contains `anchor` (or the latest one starting before it). */
+function cycleDates(anchor: string, c: PayCycle): { from: string; to: string } {
+  if (c.cycle === "weekly") {
+    const back = (new Date(`${anchor}T00:00:00`).getDay() - c.from + 7) % 7;
+    const from = addDays(anchor, -back);
+    return { from, to: addDays(from, (c.to - c.from + 7) % 7) };
   }
-  const a = new Date(`${p.anchor}T00:00:00`);
-  const back = (a.getDay() - weekStart + 7) % 7;
-  const from = addDays(p.anchor, -back);
-  const to = addDays(from, 6);
-  return { from, to, label: `${fmt(from)} – ${fmt(to)}` };
+  const span = c.toNextMonth ? 1 : 0;
+  const step = monthStep(c);
+  const a = new Date(`${anchor}T00:00:00`);
+  let mi = a.getFullYear() * 12 + a.getMonth();
+  mi -= ((mi % step) + step) % step;
+  if (dayOfMonth(mi, c.from) > anchor) mi -= step;
+  return { from: dayOfMonth(mi, c.from), to: dayOfMonth(mi + span, c.to) };
+}
+/** Months between one monthly cycle's start and the next. */
+function monthStep(c: PayCycle) {
+  return (c.toNextMonth ? 1 : 0) + (c.to >= c.from ? 1 : 0);
+}
+
+/** Concrete dates for a period; for a cycle, `to` is pay day. */
+export function resolvePeriod(p: Period, c: PayCycle): { from: string | null; to: string | null; label: string } {
+  if (p.kind === "all") return { from: null, to: null, label: "Whole season" };
+  const r = p.kind === "range" ? { from: p.from, to: p.to } : cycleDates(p.anchor, c);
+  return { ...r, label: r.from === r.to ? fmt(r.from, true) : `${fmt(r.from)} – ${fmt(r.to)}` };
 }
 
 export function inPeriod(date: string, r: { from: string | null; to: string | null }) {
   return (r.from == null || date >= r.from) && (r.to == null || date <= r.to);
 }
 
-/** Move a period back (-1) or forward (+1) by its own length. */
-function stepPeriod(p: Period, dir: -1 | 1): Period {
-  if (p.kind === "week") return { kind: "week", anchor: addDays(p.anchor, dir * 7) };
+/** Move a period back (-1) or forward (+1): a whole pay cycle, or the same number of days. */
+function stepPeriod(p: Period, dir: -1 | 1, c: PayCycle): Period {
+  if (p.kind === "cycle") {
+    const { from } = cycleDates(p.anchor, c);
+    if (c.cycle === "weekly") return { kind: "cycle", anchor: addDays(from, dir * 7) };
+    const d = new Date(`${from}T00:00:00`);
+    return { kind: "cycle", anchor: dayOfMonth(d.getFullYear() * 12 + d.getMonth() + dir * monthStep(c), c.from) };
+  }
   if (p.kind === "range") {
     const len = Math.round((new Date(`${p.to}T00:00:00`).getTime() - new Date(`${p.from}T00:00:00`).getTime()) / 86_400_000) + 1;
     return { kind: "range", from: addDays(p.from, dir * len), to: addDays(p.to, dir * len) };
@@ -68,17 +112,17 @@ function stepPeriod(p: Period, dir: -1 | 1): Period {
 }
 
 /** ‹ Sat 3 Oct – Fri 9 Oct › — tap the dates to choose another period. */
-export function PeriodBar({ period, weekStart, onChange }: { period: Period; weekStart: number; onChange: (p: Period) => void }) {
+export function PeriodBar({ period, cycle, onChange }: { period: Period; cycle: PayCycle; onChange: (p: Period) => void }) {
   const [open, setOpen] = useState(false);
-  const r = resolvePeriod(period, weekStart);
+  const r = resolvePeriod(period, cycle);
   const canStep = period.kind !== "all";
-  const nextFrom = canStep ? resolvePeriod(stepPeriod(period, 1), weekStart).from : null;
+  const nextFrom = canStep ? resolvePeriod(stepPeriod(period, 1, cycle), cycle).from : null;
   const canNext = canStep && nextFrom != null && nextFrom <= todayIso();
   return (
     <>
       <View style={styles.bar}>
         <Pressable
-          onPress={() => canStep && onChange(stepPeriod(period, -1))}
+          onPress={() => canStep && onChange(stepPeriod(period, -1, cycle))}
           disabled={!canStep}
           style={[styles.arrow, !canStep && { opacity: 0.3 }]}
           accessibilityRole="button"
@@ -91,7 +135,7 @@ export function PeriodBar({ period, weekStart, onChange }: { period: Period; wee
           <Text style={styles.dateText} numberOfLines={1}>{r.label}</Text>
         </Pressable>
         <Pressable
-          onPress={() => canNext && onChange(stepPeriod(period, 1))}
+          onPress={() => canNext && onChange(stepPeriod(period, 1, cycle))}
           disabled={!canNext}
           style={[styles.arrow, !canNext && { opacity: 0.3 }]}
           accessibilityRole="button"
@@ -101,7 +145,7 @@ export function PeriodBar({ period, weekStart, onChange }: { period: Period; wee
         </Pressable>
       </View>
       {open ? (
-        <PeriodSheet visible period={period} weekStart={weekStart} onClose={() => setOpen(false)} onPick={(p) => { onChange(p); setOpen(false); }} />
+        <PeriodSheet visible period={period} cycle={cycle} onClose={() => setOpen(false)} onPick={(p) => { onChange(p); setOpen(false); }} />
       ) : null}
     </>
   );
@@ -110,24 +154,24 @@ export function PeriodBar({ period, weekStart, onChange }: { period: Period; wee
 function PeriodSheet({
   visible,
   period,
-  weekStart,
+  cycle,
   onClose,
   onPick,
 }: {
   visible: boolean;
   period: Period;
-  weekStart: number;
+  cycle: PayCycle;
   onClose: () => void;
   onPick: (p: Period) => void;
 }) {
-  const r = resolvePeriod(period, weekStart);
+  const r = resolvePeriod(period, cycle);
   const [from, setFrom] = useState(r.from ?? todayIso());
   const [to, setTo] = useState(r.to ?? todayIso());
   const [picking, setPicking] = useState<"from" | "to" | null>(null);
   const today = todayIso();
   const quick: { label: string; p: Period }[] = [
-    { label: "This pay week", p: { kind: "week", anchor: today } },
-    { label: "Last pay week", p: { kind: "week", anchor: addDays(today, -7) } },
+    { label: "This pay period", p: { kind: "cycle", anchor: today } },
+    { label: "Last pay period", p: stepPeriod({ kind: "cycle", anchor: today }, -1, cycle) },
     { label: "This month", p: { kind: "range", from: `${today.slice(0, 7)}-01`, to: today } },
     { label: "This year", p: { kind: "range", from: `${today.slice(0, 4)}-01-01`, to: today } },
     { label: "Whole season", p: { kind: "all" } },
@@ -189,25 +233,25 @@ function PeriodSheet({
 }
 
 /**
- * "💰 Pay week: Sat → Fri ✎". `inherit` adds a "Same as farm" option (for a
- * work group); `value` null means it follows the farm.
+ * "💰 Pay: Weekly · Mon → Sat ✎". `inherit` (a work group) adds "Same as
+ * farm"; `value` null means it follows the farm.
  */
-export function PayWeekChip({
+export function PayCycleChip({
   value,
-  farmStart,
+  farm,
   inherit = false,
   editable = true,
   onChange,
 }: {
-  value: number | null;
-  farmStart: number;
+  value: PayCycle | null;
+  farm: PayCycle;
   inherit?: boolean;
   editable?: boolean;
-  onChange: (start: number | null) => void;
+  onChange: (c: PayCycle | null) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const start = value ?? farmStart;
-  const label = inherit && value == null ? `${payWeekLabel(start)} · same as farm` : payWeekLabel(start);
+  const shown = value ?? farm;
+  const label = `${shown.cycle === "weekly" ? "Weekly" : "Monthly"} · ${payCycleLabel(shown)}${inherit && value == null ? " · same as farm" : ""}`;
   return (
     <>
       <Pressable
@@ -215,41 +259,113 @@ export function PayWeekChip({
         disabled={!editable}
         style={styles.payChip}
         accessibilityRole="button"
-        accessibilityLabel={`Pay week ${label}. ${editable ? "Change" : ""}`}
+        accessibilityLabel={`Pay ${label}. ${editable ? "Change" : ""}`}
       >
         <Wallet size={16} color={colors.primary} />
         <Text style={styles.payChipText} numberOfLines={1}>
-          Pay week: <Text style={{ fontWeight: "800", color: colors.text }}>{label}</Text>
+          Pay: <Text style={{ fontWeight: "800", color: colors.text }}>{label}</Text>
         </Text>
         {editable ? <Pencil size={15} color={colors.textMuted} /> : null}
       </Pressable>
-      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setOpen(false)} accessibilityLabel="Close" />
-        <View style={styles.sheet}>
-          <View style={styles.sheetHead}>
-            <Text style={styles.sheetTitle}>{inherit ? "Pay week for this group" : "Pay week for the farm"}</Text>
-            <Pressable onPress={() => setOpen(false)} hitSlop={10} accessibilityLabel="Close"><X size={22} color={colors.textMuted} /></Pressable>
-          </View>
-          <Text style={styles.sheetHint}>The week starts on this day and you pay on the last day.</Text>
-          <ScrollView contentContainerStyle={{ paddingBottom: spacing.lg }}>
-            {inherit ? (
-              <Pressable onPress={() => { onChange(null); setOpen(false); }} style={styles.dayRow} accessibilityRole="button">
-                <Text style={styles.dayText}>Same as farm ({payWeekLabel(farmStart)})</Text>
-                {value == null ? <Check size={20} color={colors.primary} /> : null}
-              </Pressable>
-            ) : null}
-            {DAY_NAMES.map((name, d) => (
-              <Pressable key={d} onPress={() => { onChange(d); setOpen(false); }} style={styles.dayRow} accessibilityRole="button">
-                <Text style={styles.dayText}>
-                  {name} → {DAY_NAMES[(d + 6) % 7]} <Text style={styles.dayMeta}>· pay on {DAY_NAMES[(d + 6) % 7]}</Text>
-                </Text>
-                {value === d || (!inherit && value == null && d === farmStart) ? <Check size={20} color={colors.primary} /> : null}
+      {open ? (
+        <PayCycleSheet
+          initial={shown}
+          inherit={inherit}
+          farm={farm}
+          onClose={() => setOpen(false)}
+          onSave={(c) => {
+            onChange(c);
+            setOpen(false);
+          }}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function PayCycleSheet({
+  initial,
+  inherit,
+  farm,
+  onClose,
+  onSave,
+}: {
+  initial: PayCycle;
+  inherit: boolean;
+  farm: PayCycle;
+  onClose: () => void;
+  onSave: (c: PayCycle | null) => void;
+}) {
+  const [c, setC] = useState<PayCycle>(initial);
+  const weekly = c.cycle === "weekly";
+  function setCycle(cycle: PayCycle["cycle"]) {
+    if (cycle === c.cycle) return;
+    setC(cycle === "weekly" ? { cycle, from: 1, to: 6, toNextMonth: false } : { cycle, from: 1, to: 30, toNextMonth: false });
+  }
+  const invalid = !weekly && !c.toNextMonth && c.to < c.from;
+  const days = weekly ? DAY_SHORT.map((d, i) => ({ label: d, v: i })) : Array.from({ length: 31 }, (_, i) => ({ label: String(i + 1), v: i + 1 }));
+  return (
+    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close" />
+      <View style={styles.sheet}>
+        <View style={styles.sheetHead}>
+          <Text style={styles.sheetTitle}>{inherit ? "Pay cycle for this group" : "Pay cycle for the farm"}</Text>
+          <Pressable onPress={onClose} hitSlop={10} accessibilityLabel="Close"><X size={22} color={colors.textMuted} /></Pressable>
+        </View>
+        <ScrollView contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.lg }}>
+          {inherit ? (
+            <Pressable onPress={() => onSave(null)} style={styles.dayRow} accessibilityRole="button">
+              <Text style={styles.dayText}>Same as farm ({farm.cycle === "weekly" ? "weekly" : "monthly"} · {payCycleLabel(farm)})</Text>
+            </Pressable>
+          ) : null}
+          <View style={styles.toggle}>
+            {(["weekly", "monthly"] as const).map((k) => (
+              <Pressable key={k} onPress={() => setCycle(k)} style={[styles.toggleBtn, c.cycle === k && styles.toggleOn]} accessibilityRole="button" accessibilityState={{ selected: c.cycle === k }}>
+                <Text style={[styles.toggleText, c.cycle === k && styles.toggleTextOn]}>{k === "weekly" ? "Weekly" : "Monthly"}</Text>
               </Pressable>
             ))}
-          </ScrollView>
-        </View>
-      </Modal>
-    </>
+          </View>
+          {(["from", "to"] as const).map((which) => (
+            <View key={which} style={{ gap: 6 }}>
+              <Text style={styles.pickTitle}>
+                {which === "from" ? (weekly ? "From (first working day)" : "From date") : weekly ? "To (pay day)" : "To date (pay day)"}
+              </Text>
+              <View style={styles.dayGrid}>
+                {days.map((d) => {
+                  const on = c[which] === d.v;
+                  return (
+                    <Pressable
+                      key={d.v}
+                      onPress={() => setC({ ...c, [which]: d.v })}
+                      style={[weekly ? styles.dayChipWide : styles.dayChip, on && styles.dayChipOn]}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: on }}
+                    >
+                      <Text style={[styles.dayChipText, on && styles.dayChipTextOn]}>{d.label}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          ))}
+          {!weekly ? (
+            <View style={styles.toggle}>
+              {[false, true].map((next) => (
+                <Pressable key={String(next)} onPress={() => setC({ ...c, toNextMonth: next })} style={[styles.toggleBtn, c.toNextMonth === next && styles.toggleOn]} accessibilityRole="button">
+                  <Text style={[styles.toggleText, c.toNextMonth === next && styles.toggleTextOn]}>{next ? "To date in next month" : "Same month"}</Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+          <Text style={[styles.sheetHint, invalid && { color: colors.danger }]}>
+            {invalid
+              ? "The To date is before the From date - choose \"To date in next month\"."
+              : `Pay for ${payCycleLabel(c)}${weekly ? `, on ${DAY_NAMES[c.to]}` : ""}.`}
+          </Text>
+          <Button title="Save" onPress={() => onSave(c)} disabled={invalid} />
+        </ScrollView>
+      </View>
+    </Modal>
   );
 }
 
@@ -276,4 +392,15 @@ const styles = StyleSheet.create({
   dayRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 52, borderBottomWidth: 1, borderBottomColor: colors.border },
   dayText: { fontSize: 16, fontWeight: "700", color: colors.text, flexShrink: 1 },
   dayMeta: { fontSize: 14, fontWeight: "400", color: colors.textMuted },
+  toggle: { flexDirection: "row", backgroundColor: colors.muted, borderRadius: radius.pill, padding: 4, gap: 4 },
+  toggleBtn: { flex: 1, minHeight: 42, borderRadius: radius.pill, alignItems: "center", justifyContent: "center", paddingHorizontal: 6 },
+  toggleOn: { backgroundColor: colors.card },
+  toggleText: { fontSize: 14.5, fontWeight: "600", color: colors.textMuted, textAlign: "center" },
+  toggleTextOn: { color: colors.text, fontWeight: "800" },
+  dayGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  dayChip: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
+  dayChipWide: { minWidth: 48, height: 44, paddingHorizontal: 8, borderRadius: 22, borderWidth: 2, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
+  dayChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  dayChipText: { fontSize: 14.5, fontWeight: "700", color: colors.text },
+  dayChipTextOn: { color: "#fff" },
 });

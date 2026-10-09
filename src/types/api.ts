@@ -44,8 +44,11 @@ export interface DeviceLimitError {
 export interface Estate {
   id: number;
   farmName: string;
-  /** Day the pay week starts, 0 = Sunday ... 6 = Saturday. */
-  payWeekStart?: number;
+  /** Pay cycle: weekly (from/to weekdays 0-6) or monthly (from/to days 1-31). */
+  payCycle?: "weekly" | "monthly";
+  payFrom?: number;
+  payTo?: number;
+  payToNextMonth?: boolean;
 }
 
 /** An estate as returned by /me/estates — tagged with how this person relates to it. */
@@ -130,8 +133,11 @@ export interface WorkGroup {
   estateId: number;
   name: string;
   cropId: number | null;
-  /** This group's own pay-week start day (0-6), or null to follow the farm. */
-  payWeekStart?: number | null;
+  /** This group's own pay cycle, or payCycle null to follow the farm. */
+  payCycle?: "weekly" | "monthly" | null;
+  payFrom?: number | null;
+  payTo?: number | null;
+  payToNextMonth?: boolean | null;
   /** Name of the group's crop (joined by GET /work-groups). */
   cropName?: string | null;
   blockName: string | null;

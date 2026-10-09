@@ -1,10 +1,10 @@
 import React, { useLayoutEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useInnerBack } from "../../../navigation/useInnerBack";
-import { PayWeekChip, PeriodBar, inPeriod, resolvePeriod, todayIso, type Period } from "../period";
+import { DEFAULT_PAY_CYCLE, PayCycleChip, PeriodBar, inPeriod, resolvePeriod, todayIso, type PayCycle, type Period } from "../period";
 import { useMyEstates } from "../../estate/hooks/useMyEstates";
 import { useEstateStore } from "../../estate/store/estateStore";
-import { setFarmPayWeekStart } from "../../../api/endpoints/estates";
+import { setFarmPayCycle } from "../../../api/endpoints/estates";
 import { Text } from "../../../components/Text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -68,11 +68,13 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   );
   // Which dates the screen shows: this pay week by default. Chosen on the
   // group list and kept when a group is opened.
-  const [period, setPeriod] = useState<Period>({ kind: "week", anchor: todayIso() });
+  const [period, setPeriod] = useState<Period>({ kind: "cycle", anchor: todayIso() });
   const view = period.kind === "all" ? "final" : "period";
   const activeEstateId = useEstateStore((s) => s.activeEstateId);
   const myEstate = (useMyEstates().data ?? []).find((e) => e.id === activeEstateId);
-  const farmStart = myEstate?.payWeekStart ?? 6;
+  const farmCycle: PayCycle = myEstate?.payCycle
+    ? { cycle: myEstate.payCycle, from: myEstate.payFrom ?? 6, to: myEstate.payTo ?? 5, toNextMonth: !!myEstate.payToNextMonth }
+    : DEFAULT_PAY_CYCLE;
   const canEditFarm = myEstate?.relationship !== "invited";
   const [showPaySheet, setShowPaySheet] = useState(false);
   const qc = useQueryClient();
@@ -91,18 +93,28 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
     queryFn: getAllAttendance,
   });
   const { data: workGroups = [] } = useQuery({ queryKey: ["work-groups"], queryFn: getWorkGroups });
-  const farmPayWeek = useMutation({
-    mutationFn: (start: number) => setFarmPayWeekStart(activeEstateId as number, start),
+  const farmPayCycle = useMutation({
+    mutationFn: (c: PayCycle) => setFarmPayCycle(activeEstateId as number, c),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["my-estates"] }),
     onError: () => Alert.alert("Couldn't save the pay week", "Please try again."),
   });
-  const groupPayWeek = useMutation({
-    mutationFn: (v: { id: number; start: number | null }) => updateWorkGroup(v.id, { payWeekStart: v.start }),
+  const groupPayCycle = useMutation({
+    mutationFn: (v: { id: number; c: PayCycle | null }) =>
+      updateWorkGroup(
+        v.id,
+        v.c
+          ? { payCycle: v.c.cycle, payFrom: v.c.from, payTo: v.c.to, payToNextMonth: v.c.toNextMonth }
+          : { payCycle: null }
+      ),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["work-groups"] }),
     onError: () => Alert.alert("Couldn't save the pay week", "Please try again."),
   });
-  const startOf = (groupId: number | null) =>
-    workGroups.find((g) => g.id === groupId)?.payWeekStart ?? farmStart;
+  // A group's own pay cycle, or null when it follows the farm's.
+  const ownCycleOf = (groupId: number | null): PayCycle | null => {
+    const g = workGroups.find((x) => x.id === groupId);
+    return g?.payCycle ? { cycle: g.payCycle, from: g.payFrom ?? 1, to: g.payTo ?? 6, toNextMonth: !!g.payToNextMonth } : null;
+  };
+  const startOf = (groupId: number | null): PayCycle => ownCycleOf(groupId) ?? farmCycle;
 
   const groupOpen = openFolder != null && openFolder.id != null;
 
@@ -197,7 +209,7 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
       const paid = allPayments
         .filter((pm) => pm.workGroupId === g.id && inPeriod(pm.paymentDate, range))
         .reduce((s, pm) => s + Number(pm.amount), 0);
-      const ownWeek = period.kind === "week" && workGroups.find((x) => x.id === g.id)?.payWeekStart != null;
+      const ownWeek = period.kind === "cycle" && ownCycleOf(g.id) != null;
       const subtitle =
         recs.length === 0
           ? "No work in these dates"
@@ -208,13 +220,13 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
       id: null,
       name: "General Records",
       subtitle: (() => {
-        const range = resolvePeriod(period, farmStart);
+        const range = resolvePeriod(period, farmCycle);
         const recs = generalRecords.filter((r) => inPeriod(r.date, range));
         if (recs.length === 0) return "Records without a group";
         const wage = recs.reduce((s, r) => s + Number(r.wageAmount ?? 0), 0);
         return wage > 0 ? `${inr(wage)} wages` : `${recs.length} entries`;
       })(),
-      count: generalRecords.filter((r) => inPeriod(r.date, resolvePeriod(period, farmStart))).length,
+      count: generalRecords.filter((r) => inPeriod(r.date, resolvePeriod(period, farmCycle))).length,
     },
   ];
 
@@ -304,15 +316,15 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   })();
 
   if (openFolder === null) {
-    const farmRange = resolvePeriod(period, farmStart);
+    const farmRange = resolvePeriod(period, farmCycle);
     const shown = records.filter((r) => inPeriod(r.date, resolvePeriod(period, startOf(r.workGroupId ?? null))));
     const allWages = shown.reduce((sum, r) => sum + (r.wageAmount != null && r.wageAmount !== "" ? Number(r.wageAmount) : 0), 0);
     const workerCount = new Set(shown.map((r) => r.workerId).filter((id) => id != null)).size;
     return (
       <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
-        <PayWeekChip value={farmStart} farmStart={farmStart} editable={canEditFarm && activeEstateId != null} onChange={(d) => d != null && farmPayWeek.mutate(d)} />
-        <PeriodBar period={period} weekStart={farmStart} onChange={setPeriod} />
-        {period.kind === "week" && farmRange.to ? (
+        <PayCycleChip value={farmCycle} farm={farmCycle} editable={canEditFarm && activeEstateId != null} onChange={(c) => c && farmPayCycle.mutate(c)} />
+        <PeriodBar period={period} cycle={farmCycle} onChange={setPeriod} />
+        {period.kind === "cycle" && farmRange.to ? (
           <Text style={styles.payOnText}>
             {farmRange.to === todayIso() ? "Pay day is today" : `Pay on ${formatDate(farmRange.to)}`}
           </Text>
@@ -584,27 +596,27 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
       <ScrollView contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
         {groupOpen ? (
           <>
-            <PayWeekChip
-              value={group?.payWeekStart ?? null}
-              farmStart={farmStart}
+            <PayCycleChip
+              value={ownCycleOf(openFolder!.id)}
+              farm={farmCycle}
               inherit
               editable={!isCleared}
-              onChange={(d) => groupPayWeek.mutate({ id: openFolder!.id as number, start: d })}
+              onChange={(c) => groupPayCycle.mutate({ id: openFolder!.id as number, c })}
             />
-            <PeriodBar period={period} weekStart={groupStart} onChange={setPeriod} />
+            <PeriodBar period={period} cycle={groupStart} onChange={setPeriod} />
           </>
         ) : (
-          <PeriodBar period={period} weekStart={groupStart} onChange={setPeriod} />
+          <PeriodBar period={period} cycle={groupStart} onChange={setPeriod} />
         )}
 
         {groupOpen && !isCleared ? (
           <Card style={{ padding: 0, overflow: "hidden" }}>
             <View style={styles.dueHeader}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.blockTitleLight}>{period.kind === "week" ? "PAY WEEK" : "PAYMENT FOR THESE DATES"}</Text>
+                <Text style={styles.blockTitleLight}>{period.kind === "cycle" ? "PAY PERIOD" : "PAYMENT FOR THESE DATES"}</Text>
                 <Text style={styles.dueSubtitle}>
                   {range.label}
-                  {period.kind === "week" && range.to ? (range.to === todayIso() ? " · pay today" : ` · pay on ${formatDate(range.to)}`) : ""}
+                  {period.kind === "cycle" && range.to ? (range.to === todayIso() ? " · pay today" : ` · pay on ${formatDate(range.to)}`) : ""}
                 </Text>
               </View>
               <Text style={styles.dueHeaderValue}>{inr(Math.max(0, dueWages))}</Text>
