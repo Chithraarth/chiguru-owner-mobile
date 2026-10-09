@@ -309,7 +309,7 @@ function PayCycleSheet({
       <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close" />
       <View style={styles.sheet}>
         <View style={styles.sheetHead}>
-          <Text style={styles.sheetTitle}>{inherit ? "Pay cycle for this group" : "Pay cycle for the farm"}</Text>
+          <Text style={styles.sheetTitle}>Pay cycle for this group</Text>
           <Pressable onPress={onClose} hitSlop={10} accessibilityLabel="Close"><X size={22} color={colors.textMuted} /></Pressable>
         </View>
         <ScrollView contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.lg }}>

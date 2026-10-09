@@ -4,7 +4,6 @@ import { useInnerBack } from "../../../navigation/useInnerBack";
 import { DEFAULT_PAY_CYCLE, PayCycleChip, PeriodBar, inPeriod, resolvePeriod, todayIso, type PayCycle, type Period } from "../period";
 import { useMyEstates } from "../../estate/hooks/useMyEstates";
 import { useEstateStore } from "../../estate/store/estateStore";
-import { setFarmPayCycle } from "../../../api/endpoints/estates";
 import { Text } from "../../../components/Text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -75,7 +74,6 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   const farmCycle: PayCycle = myEstate?.payCycle
     ? { cycle: myEstate.payCycle, from: myEstate.payFrom ?? 6, to: myEstate.payTo ?? 5, toNextMonth: !!myEstate.payToNextMonth }
     : DEFAULT_PAY_CYCLE;
-  const canEditFarm = myEstate?.relationship !== "invited";
   const [showPaySheet, setShowPaySheet] = useState(false);
   const qc = useQueryClient();
   const { t } = useT();
@@ -93,11 +91,6 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
     queryFn: getAllAttendance,
   });
   const { data: workGroups = [] } = useQuery({ queryKey: ["work-groups"], queryFn: getWorkGroups });
-  const farmPayCycle = useMutation({
-    mutationFn: (c: PayCycle) => setFarmPayCycle(activeEstateId as number, c),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["my-estates"] }),
-    onError: () => Alert.alert("Couldn't save the pay week", "Please try again."),
-  });
   const groupPayCycle = useMutation({
     mutationFn: (v: { id: number; c: PayCycle | null }) =>
       updateWorkGroup(
@@ -203,30 +196,20 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
 
   const folders = [
     ...groupList.map((g) => {
-      const range = resolvePeriod(period, startOf(g.id));
-      const recs = records.filter((r) => r.workGroupId === g.id && inPeriod(r.date, range));
+      const recs = records.filter((r) => r.workGroupId === g.id);
       const wage = recs.reduce((s, r) => s + Number(r.wageAmount ?? 0), 0);
-      const paid = allPayments
-        .filter((pm) => pm.workGroupId === g.id && inPeriod(pm.paymentDate, range))
-        .reduce((s, pm) => s + Number(pm.amount), 0);
-      const ownWeek = period.kind === "cycle" && ownCycleOf(g.id) != null;
-      const subtitle =
-        recs.length === 0
-          ? "No work in these dates"
-          : `${inr(wage)} wages${paid > 0 ? ` · ${inr(paid)} paid` : ""}${ownWeek ? ` · ${range.label}` : ""}`;
+      const subtitle = recs.length === 0 ? "No records yet" : `${inr(wage)} wages`;
       return { id: g.id as number | null, name: g.name, subtitle, count: recs.length };
     }),
     {
       id: null,
       name: "General Records",
       subtitle: (() => {
-        const range = resolvePeriod(period, farmCycle);
-        const recs = generalRecords.filter((r) => inPeriod(r.date, range));
-        if (recs.length === 0) return "Records without a group";
-        const wage = recs.reduce((s, r) => s + Number(r.wageAmount ?? 0), 0);
-        return wage > 0 ? `${inr(wage)} wages` : `${recs.length} entries`;
+        if (generalRecords.length === 0) return "Records without a group";
+        const wage = generalRecords.reduce((s, r) => s + Number(r.wageAmount ?? 0), 0);
+        return wage > 0 ? `${inr(wage)} wages` : `${generalRecords.length} entries`;
       })(),
-      count: generalRecords.filter((r) => inPeriod(r.date, resolvePeriod(period, farmCycle))).length,
+      count: generalRecords.length,
     },
   ];
 
@@ -316,23 +299,15 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   })();
 
   if (openFolder === null) {
-    const farmRange = resolvePeriod(period, farmCycle);
-    const shown = records.filter((r) => inPeriod(r.date, resolvePeriod(period, startOf(r.workGroupId ?? null))));
+    const shown = records;
     const allWages = shown.reduce((sum, r) => sum + (r.wageAmount != null && r.wageAmount !== "" ? Number(r.wageAmount) : 0), 0);
     const workerCount = new Set(shown.map((r) => r.workerId).filter((id) => id != null)).size;
     return (
       <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
-        <PayCycleChip value={farmCycle} farm={farmCycle} editable={canEditFarm && activeEstateId != null} onChange={(c) => c && farmPayCycle.mutate(c)} />
-        <PeriodBar period={period} cycle={farmCycle} onChange={setPeriod} />
-        {period.kind === "cycle" && farmRange.to ? (
-          <Text style={styles.payOnText}>
-            {farmRange.to === todayIso() ? "Pay day is today" : `Pay on ${formatDate(farmRange.to)}`}
-          </Text>
-        ) : null}
         <StatTiles
           items={[
-            { label: "Workers", value: String(workerCount), sub: "worked" },
-            { label: "Wages", value: shortRupees(allWages), sub: period.kind === "all" ? "season" : "these dates" },
+            { label: "Workers", value: String(workerCount), sub: "on record" },
+            { label: "Wages", value: shortRupees(allWages), sub: "season" },
             { label: "Groups", value: String(groupList.length), sub: "active" },
           ]}
         />
@@ -351,7 +326,10 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
                 </View>
               }
               divider={i < folders.length - 1}
-              onPress={() => setOpenFolder({ id: f.id, name: f.name })}
+              onPress={() => {
+                setPeriod({ kind: "cycle", anchor: todayIso() });
+                setOpenFolder({ id: f.id, name: f.name });
+              }}
             />
           ))}
         </ListCard>
@@ -597,9 +575,8 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
         {groupOpen ? (
           <>
             <PayCycleChip
-              value={ownCycleOf(openFolder!.id)}
+              value={groupStart}
               farm={farmCycle}
-              inherit
               editable={!isCleared}
               onChange={(c) => groupPayCycle.mutate({ id: openFolder!.id as number, c })}
             />
@@ -971,7 +948,6 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  payOnText: { fontSize: 14.5, fontWeight: "700", color: colors.primary, marginTop: -4 },
   sectionLabel: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.6, marginBottom: spacing.sm },
   folderRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   folderIcon: { width: 46, height: 46, borderRadius: 23, backgroundColor: "#9FD8EA", alignItems: "center", justifyContent: "center" },
