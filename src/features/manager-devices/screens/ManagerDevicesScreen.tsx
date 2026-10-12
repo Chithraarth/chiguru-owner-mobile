@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Alert, FlatList, Pressable, StyleSheet, View } from "react-native";
+import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from "react-native";
 import { Text } from "../../../components/Text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "../../../components/Card";
@@ -90,9 +90,10 @@ export function ManagerDevicesScreen() {
 
   if (query.isLoading) return <LoadingView label="Loading invitees..." />;
 
-  return (
-    <View style={styles.container}>
-      <Card style={{ marginHorizontal: 20, marginTop: spacing.md, gap: 4, padding: 18 }}>
+  // The form scrolls with the list, so the keyboard never hides "Send invite";
+  // dragging the list closes the keyboard.
+  const form = (
+      <Card style={{ gap: 4, padding: 18, marginBottom: spacing.sm }}>
         <Text style={styles.sectionTitle}>Invite someone</Text>
         <TextField label={t("profile.name")} value={name} onChangeText={setName} />
 
@@ -123,13 +124,23 @@ export function ManagerDevicesScreen() {
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <Button title="Send invite" onPress={invite} loading={inviteMutation.isPending} />
       </Card>
+  );
 
+  return (
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={100}>
       <FlatList
         data={query.data ?? []}
         keyExtractor={(m) => String(m.id)}
         contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: spacing.xl }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
         ListEmptyComponent={<EmptyState title="No invitees yet" />}
-        ListHeaderComponent={(query.data ?? []).length > 0 ? <SectionLabel>Your invitees</SectionLabel> : null}
+        ListHeaderComponent={
+          <>
+            {form}
+            {(query.data ?? []).length > 0 ? <SectionLabel>Your invitees</SectionLabel> : null}
+          </>
+        }
         renderItem={({ item, index }) => (
           <Card style={styles.row}>
             <Avatar name={item.name} index={index} />
@@ -149,7 +160,7 @@ export function ManagerDevicesScreen() {
           </Card>
         )}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
