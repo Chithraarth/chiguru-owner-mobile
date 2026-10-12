@@ -278,6 +278,9 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
     },
     { base: 0, ot: 0, otHours: 0, bonus: 0, kgAbove: 0 }
   );
+  // "works × ₹rate" only when everyone was paid the group rate; workers on
+  // their own daily wage make that sum misleading.
+  const sameRateForAll = isPerDay && groupRate > 0 && Math.abs(dueSplit.base - dueDays * groupRate) < 1;
   const dueAdvance = dueDays * advPerDay;
   // Advance-structure groups pay only the advance-per-day now; the rest is
   // held for the Final Account. Other groups pay everything earned since.
@@ -606,7 +609,7 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
               <>
                 <View style={styles.simpleRow}>
                   <Text style={styles.simpleRowMutedLabel}>
-                    {`Base wages (${dueDays} work${dueDays !== 1 ? "s" : ""}${isPerDay && groupRate > 0 ? ` × ${inr(groupRate)}` : ""})`}
+                    {`Base wages (${dueDays} work${dueDays !== 1 ? "s" : ""}${sameRateForAll ? ` × ${inr(groupRate)}` : ""})`}
                   </Text>
                   <Text style={styles.simpleRowTitle}>{inr(dueSplit.base)}</Text>
                 </View>
@@ -632,7 +635,7 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
                 <Text style={styles.simpleRowMutedLabel}>
                   {hasAdvanceStructure
                     ? `Advance due (${dueDays} × ${inr(advPerDay)})`
-                    : `Wages due (${dueDays} work${dueDays !== 1 ? "s" : ""}${isPerDay && groupRate > 0 ? ` · ${inr(groupRate)}/day` : ""})`}
+                    : `Wages due (${dueDays} work${dueDays !== 1 ? "s" : ""}${sameRateForAll ? ` · ${inr(groupRate)}/day` : ""})`}
                 </Text>
                 <Text style={[styles.simpleRowTitle, { color: colors.primary }]}>
                   {inr(hasAdvanceStructure ? dueAdvance : dueEarned)}

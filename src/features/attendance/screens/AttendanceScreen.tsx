@@ -314,11 +314,19 @@ export function AttendanceScreen({ route }: { route: any }) {
   const threshold = num(pickThreshold);
   const bonusPerKg = num(pickBonus);
 
-  /** Day's pay before extras: kg x rate for per-kg groups, else the group rate. */
+  /** A worker's own daily wage, when set; it takes the place of the group rate. */
+  function ownWage(workerId: number): number {
+    return Number(workers.find((w) => w.id === workerId)?.wageRate ?? 0);
+  }
+
+  /** Day's pay before extras: kg x rate for per-kg groups; otherwise the
+   *  worker's own daily wage if set (per-hour groups: that wage over 8 hours),
+   *  else the group rate. */
   function baseFor(workerId: number): number {
     if (isHarvestGroup) return num(harvestKg[workerId]) * rate;
-    const base = paymentType === "Per hour" ? rate * hoursNum : rate;
-    return base || Number(workers.find((w) => w.id === workerId)?.wageRate ?? 0);
+    const own = ownWage(workerId);
+    if (paymentType === "Per hour") return own > 0 ? (own / 8) * hoursNum : rate * hoursNum;
+    return own > 0 ? own : rate;
   }
 
   /** Overtime and picking bonus on top of the base pay (same rules as the web app). */
@@ -640,7 +648,8 @@ export function AttendanceScreen({ route }: { route: any }) {
       await updateWorker(worker.id, {
         name,
         phone: editPhone.trim() || null,
-        ...(Number(editWage) > 0 ? { wageRate: String(Number(editWage)) } : {}),
+        // Blank = back to the group rate.
+        wageRate: Number(editWage) > 0 ? String(Number(editWage)) : "0",
         workGroupId: editGroupId,
       });
       setEditingWorkerId(null);
@@ -888,7 +897,7 @@ export function AttendanceScreen({ route }: { route: any }) {
                   />
                   <TextField
                     label="Daily wage ₹ (optional)"
-                    placeholder="e.g. 350"
+                    placeholder={!isHarvestGroup && rate > 0 ? `Blank = group rate ₹${rate}` : "e.g. 350"}
                     keyboardType="number-pad"
                     value={newWorkerWage}
                     onChangeText={(v) => setNewWorkerWage(v.replace(/[^0-9]/g, ""))}
@@ -1298,7 +1307,9 @@ export function AttendanceScreen({ route }: { route: any }) {
                         <Text style={styles.markedLabel}>{isSelected ? "Editing entry…" : "Marked present · tap to edit"}</Text>
                       ) : (
                         <Text style={styles.workerMeta}>
-                          {paymentType === "Per day" ? "Daily" : paymentType} · ₹{rate}
+                          {!isHarvestGroup && ownWage(item.id) > 0
+                            ? `Daily · ₹${ownWage(item.id)} (own wage)`
+                            : `${paymentType === "Per day" ? "Daily" : paymentType} · ₹${rate}`}
                         </Text>
                       )}
                     </View>
@@ -1325,6 +1336,7 @@ export function AttendanceScreen({ route }: { route: any }) {
                     />
                     <TextField
                       label="Daily wage ₹"
+                      placeholder={!isHarvestGroup && rate > 0 ? `Blank = group rate ₹${rate}` : undefined}
                       keyboardType="number-pad"
                       value={editWage}
                       onChangeText={(v) => setEditWage(v.replace(/[^0-9]/g, ""))}
