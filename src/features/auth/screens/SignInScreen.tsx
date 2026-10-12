@@ -14,13 +14,12 @@ import { ArrowRight, Check, ChevronLeft, Eye, EyeOff, Mail, Phone } from "lucide
 import { Logo } from "../../../components/Logo";
 import { RoundButton } from "../../../components/harvest";
 import { Enter, LivingHills, Wiggle, useReducedMotion } from "../../../components/motion";
-import { RecaptchaModal, type RecaptchaModalHandle } from "../../../components/RecaptchaModal";
+import { getAuth as getNativeAuth, verifyPhoneNumber } from "@react-native-firebase/auth";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { colors, radius, shadow, spacing } from "../../../components/theme";
 import {
   confirmPhoneOtp,
-  firebaseConfig,
   signInWithEmail,
   signUpWithEmail,
 } from "../../../lib/firebase";
@@ -77,7 +76,6 @@ export function SignInScreen() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
-  const recaptchaVerifier = useRef<RecaptchaModalHandle>(null);
   const { canSignIn: canGoogleSignIn, promptAsync: promptGoogle } = useGoogleSignIn(setError);
   const { canSignIn: canAppleSignIn, promptAsync: promptApple } = useAppleSignIn(setError);
 
@@ -124,8 +122,11 @@ export function SignInScreen() {
     }
     setLoading(true);
     try {
-      if (!recaptchaVerifier.current) throw new Error("Verifier not ready, try again");
-      const id = await recaptchaVerifier.current.sendOtp(phone);
+      // Native Firebase checks the device silently (Apple push / Play
+      // Integrity), so there is no "I'm not a robot" step. The verification
+      // id it returns is finished below with the JS SDK, same as before.
+      const snap = await verifyPhoneNumber(getNativeAuth(), phone, !!verificationId);
+      const id = snap.verificationId;
       setVerificationId(id);
       setOtp("");
       setResendIn(RESEND_SECONDS);
@@ -180,15 +181,6 @@ export function SignInScreen() {
     </>
   );
 
-  const recaptcha = (
-    <RecaptchaModal
-      ref={recaptchaVerifier}
-      apiKey={firebaseConfig.apiKey ?? ""}
-      authDomain={firebaseConfig.authDomain ?? ""}
-      projectId={firebaseConfig.projectId ?? ""}
-      appId={firebaseConfig.appId ?? ""}
-    />
-  );
 
   // ── OTP step ────────────────────────────────────────────────────────────
   if (tab === "phone" && verificationId) {
@@ -227,7 +219,6 @@ export function SignInScreen() {
             </Text>
           </Enter>
         </ScrollView>
-        {recaptcha}
       </KeyboardAvoidingView>
     );
   }
@@ -326,7 +317,6 @@ export function SignInScreen() {
           </View>
         </Enter>
       </ScrollView>
-      {recaptcha}
     </KeyboardAvoidingView>
   );
 }

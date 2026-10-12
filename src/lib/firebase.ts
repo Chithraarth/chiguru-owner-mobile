@@ -52,9 +52,9 @@ export async function getIdToken(forceRefresh = false): Promise<string | null> {
   return user.getIdToken(forceRefresh);
 }
 
-// Phone-OTP sign-in: the send-OTP step (real reCAPTCHA) runs inside a
-// WebView (see components/RecaptchaModal.tsx) which hands back a portable
-// verificationId string. This finishes the sign-in natively using that id.
+// Phone-OTP sign-in: native Firebase (@react-native-firebase/auth) sends the
+// code without reCAPTCHA and hands back a portable verificationId string.
+// This finishes the sign-in in the JS SDK using that id.
 export function confirmPhoneOtp(verificationId: string, code: string) {
   const credential = PhoneAuthProvider.credential(verificationId, code);
   return signInWithCredential(auth, credential);
