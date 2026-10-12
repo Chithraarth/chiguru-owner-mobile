@@ -13,6 +13,7 @@ import { colors, spacing } from "../../../../components/theme";
 import { useAttendance, useAdvancePayments, useWorkGroups } from "../hooks/useAttendance";
 import { getAttendanceByGroup } from "../../api";
 import { countWorkersFromPhoto } from "../../api";
+import { addWorkSessionUpdatePhoto, createOrUpdateWorkSession } from "../../../../api/endpoints/workGroups";
 import { compressToDataUrl } from "../../../../lib/imageCompression";
 import { describeDevice } from "../../../../lib/device";
 import { fmtMoney } from "../../currency";
@@ -90,6 +91,18 @@ export function AttendanceWorkersScreen({ route }: { route: any }) {
 
   // Take one photo of the work gang, AI-count them, and auto-select that many
   // unmarked workers so the manager doesn't have to tap each one by one.
+  async function saveScanPhoto(uri: string, count: number) {
+    try {
+      const photo = await compressToDataUrl(uri, "record");
+      const session = await createOrUpdateWorkSession(workGroupId, { date, checkInPhoto: photo, headcountIn: count });
+      if (session && session.checkInPhoto !== photo && (session.updatePhotos?.length ?? 0) < 2) {
+        await addWorkSessionUpdatePhoto(session.id, { photo });
+      }
+    } catch {
+      // The headcount still worked; the photo is retried from the offline queue if it was queued.
+    }
+  }
+
   async function scanGroupPhoto() {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) return;
@@ -100,6 +113,9 @@ export function AttendanceWorkersScreen({ route }: { route: any }) {
     try {
       const dataUrl = await compressToDataUrl(result.assets[0].uri, "ai");
       const { count } = await countWorkersFromPhoto(dataUrl);
+      // Keep the photo for the owner: it becomes today's work-session photo
+      // (or an extra one if work already started), same as the owner's scan.
+      void saveScanPhoto(result.assets[0].uri, count);
       const unmarked = eligibleWorkers.filter((w) => !markedIds.has(w.id) && !selected.has(w.id));
       const toSelect = unmarked.slice(0, count).map((w) => w.id);
       if (toSelect.length === 0) {

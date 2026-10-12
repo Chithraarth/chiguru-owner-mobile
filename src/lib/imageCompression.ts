@@ -1,6 +1,7 @@
 // expo-file-system's default export moved to a new API in SDK 54+; the old
 // readAsStringAsync/EncodingType surface we use here now lives under /legacy.
 import * as FileSystem from "expo-file-system/legacy";
+import { Image } from "react-native";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import { isLowSizePhoto } from "./settings";
 
@@ -25,7 +26,13 @@ export async function compressToDataUrl(
   preset: CompressionPreset
 ): Promise<string> {
   const { maxDim, quality } = isLowSizePhoto() ? LOW_SIZE_PRESETS[preset] : PRESETS[preset];
-  const result = await manipulateAsync(uri, [{ resize: { width: maxDim } }], {
+  // maxDim caps the LONGER side, so an upright phone photo is not left
+  // 1.3x taller than intended (and over the server's upload limit).
+  const size = await new Promise<{ width: number; height: number } | null>((resolve) =>
+    Image.getSize(uri, (width, height) => resolve({ width, height }), () => resolve(null))
+  );
+  const resize = size && size.height > size.width ? { height: maxDim } : { width: maxDim };
+  const result = await manipulateAsync(uri, [{ resize }], {
     compress: quality,
     format: SaveFormat.JPEG,
     base64: true,
