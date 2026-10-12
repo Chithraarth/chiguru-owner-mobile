@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Alert, ScrollView, StyleSheet, View } from "react-native";
 import { Text } from "../../../../components/Text";
-import { UserCheck, Camera, BookOpen, CalendarClock, LogOut, RefreshCw } from "lucide-react-native";
+import { UserCheck, Camera, BookOpen, CalendarClock, CalendarCheck, LogOut, RefreshCw, Users } from "lucide-react-native";
 import { Button } from "../../../../components/Button";
 import { BigTiles, Pill, RoundButton, SectionLabel } from "../../../../components/harvest";
 import { Enter } from "../../../../components/motion";
@@ -76,6 +76,8 @@ export function HomeScreen({ navigation }: { navigation: any }) {
                 { icon: Camera, title: "Work update", sub: "Photo of today’s work", onPress: () => navigation.navigate("WorkUpdate") },
                 { icon: BookOpen, title: "Expenses", sub: "Log with a receipt", onPress: () => navigation.navigate("Expenses") },
                 { icon: CalendarClock, title: "Work plan", sub: "Owner’s schedule", onPress: () => navigation.navigate("WorkPlan") },
+                { icon: Users, title: "Labour Payments & Records", sub: "Wages & advances", onPress: () => navigation.navigate("LabourRecords") },
+                { icon: CalendarCheck, title: "Employee Attendance", sub: "Days worked", onPress: () => navigation.navigate("EmployeeAttendance") },
               ]}
             />
           </Enter>

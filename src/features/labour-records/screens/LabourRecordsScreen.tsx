@@ -71,6 +71,9 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   const view = period.kind === "all" ? "final" : "period";
   const activeEstateId = useEstateStore((s) => s.activeEstateId);
   const myEstate = (useMyEstates().data ?? []).find((e) => e.id === activeEstateId);
+  // An invitee can see and record payments, but deleting a payment and
+  // changing the pay day stay with the owner.
+  const isInvitee = myEstate?.relationship === "invited";
   const farmCycle: PayCycle = myEstate?.payCycle
     ? { cycle: myEstate.payCycle, from: myEstate.payFrom ?? 6, to: myEstate.payTo ?? 5, toNextMonth: !!myEstate.payToNextMonth }
     : DEFAULT_PAY_CYCLE;
@@ -578,7 +581,7 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
             <PayCycleChip
               value={groupStart}
               farm={farmCycle}
-              editable={!isCleared}
+              editable={!isCleared && !isInvitee}
               onChange={(c) => groupPayCycle.mutate({ id: openFolder!.id as number, c })}
             />
             <PeriodBar period={period} cycle={groupStart} onChange={setPeriod} />
@@ -918,9 +921,11 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
                   </Text>
                 </View>
                 <Text style={[styles.simpleRowValue, { color: "#1F9E92" }]}>{inr(Number(pm.amount))}</Text>
-                <Pressable onPress={() => confirmDeletePayment(pm.id)} hitSlop={10} style={{ marginLeft: spacing.sm }}>
-                  <Trash2 size={14} color={colors.textMuted} />
-                </Pressable>
+                {isInvitee ? null : (
+                  <Pressable onPress={() => confirmDeletePayment(pm.id)} hitSlop={10} style={{ marginLeft: spacing.sm }}>
+                    <Trash2 size={14} color={colors.textMuted} />
+                  </Pressable>
+                )}
               </View>
             ))}
           </Card>

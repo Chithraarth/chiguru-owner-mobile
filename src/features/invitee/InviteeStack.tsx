@@ -12,11 +12,14 @@ import { AttendanceWorkersScreen } from "./attendance/screens/AttendanceWorkersS
 import { WorkUpdateScreen } from "./work-update/screens/WorkUpdateScreen";
 import { ExpenseListScreen } from "./expenses/screens/ExpenseListScreen";
 import { ExpenseFormScreen } from "./expenses/screens/ExpenseFormScreen";
+import { LabourRecordsScreen } from "../labour-records/screens/LabourRecordsScreen";
+import { EmployeeAttendanceScreen } from "../labour-records/screens/EmployeeAttendanceScreen";
 
 const Stack = createNativeStackNavigator();
 
-// What someone sees while working on a farm they were invited to: exactly
-// the old Manager app's screens, nothing from the Owner app. The backend
+// What someone sees while working on a farm they were invited to: the old
+// Manager app's screens plus Farm Accounts' Labour Payments & Records and
+// Employee Attendance. The backend
 // enforces the same limits (chiguru-backend's middlewares/inviteeAccess.ts).
 export function InviteeStack() {
   const activeEstateId = useEstateStore((s) => s.activeEstateId);
@@ -40,6 +43,8 @@ export function InviteeStack() {
       <Stack.Screen name="WorkUpdate" component={WorkUpdateScreen} options={{ title: "Work Update" }} />
       <Stack.Screen name="Expenses" component={ExpenseListScreen} options={{ title: "Expenses" }} />
       <Stack.Screen name="ExpenseForm" component={ExpenseFormScreen} options={{ title: "New Expense" }} />
+      <Stack.Screen name="LabourRecords" component={LabourRecordsScreen} options={{ title: "Labour Payments & Records" }} />
+      <Stack.Screen name="EmployeeAttendance" component={EmployeeAttendanceScreen} options={{ title: "Employee Attendance" }} />
     </Stack.Navigator>
   );
 }
