@@ -228,6 +228,7 @@ export function AttendanceScreen({ route }: { route: any }) {
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editWage, setEditWage] = useState("");
+  const [editGroupId, setEditGroupId] = useState<number>(workGroupId);
   const [savingEdit, setSavingEdit] = useState(false);
 
   // ── Advance payment form state ──────────────────────────────────────────────
@@ -248,8 +249,7 @@ export function AttendanceScreen({ route }: { route: any }) {
   const [loanPhotoBusy, setLoanPhotoBusy] = useState(false);
   const [loanNameFocused, setLoanNameFocused] = useState(false);
   const [creatingLoanWorker, setCreatingLoanWorker] = useState(false);
-  // "+ Add worker": workers belong to the whole farm, so one added here also
-  // shows in every other group's list.
+  // "+ Add worker": the new worker belongs to this group and is listed only here.
   const [showAddWorker, setShowAddWorker] = useState(false);
   const [newWorkerName, setNewWorkerName] = useState("");
   const [newWorkerPhone, setNewWorkerPhone] = useState("");
@@ -270,7 +270,11 @@ export function AttendanceScreen({ route }: { route: any }) {
     [attendance, workGroupId]
   );
 
-  const eligibleWorkers = workers.filter((w) => w.isActive);
+  // Only this group's workers (plus anyone already marked in it, so past days
+  // still show them).
+  const eligibleWorkers = workers.filter(
+    (w) => w.isActive && (w.workGroupId === workGroupId || markedIds.has(w.id))
+  );
   const presentIds = markedIds;
 
   function toggle(workerId: number) {
@@ -625,6 +629,7 @@ export function AttendanceScreen({ route }: { route: any }) {
     setEditName(worker.name);
     setEditPhone(worker.phone ?? "");
     setEditWage(worker.wageRate && Number(worker.wageRate) > 0 ? String(Number(worker.wageRate)) : "");
+    setEditGroupId(worker.workGroupId ?? workGroupId);
   }
 
   async function saveWorkerEdit(worker: Worker) {
@@ -636,6 +641,7 @@ export function AttendanceScreen({ route }: { route: any }) {
         name,
         phone: editPhone.trim() || null,
         ...(Number(editWage) > 0 ? { wageRate: String(Number(editWage)) } : {}),
+        workGroupId: editGroupId,
       });
       setEditingWorkerId(null);
       refetch();
@@ -691,6 +697,7 @@ export function AttendanceScreen({ route }: { route: any }) {
     setAddingWorker(true);
     try {
       const w = await createWorker(name, {
+        workGroupId,
         ...(newWorkerPhone.trim() ? { phone: newWorkerPhone.trim() } : {}),
         ...(wage && Number(wage) > 0 ? { wageRate: String(Number(wage)) } : {}),
       });
@@ -730,7 +737,7 @@ export function AttendanceScreen({ route }: { route: any }) {
     if (workerId == null) {
       setCreatingLoanWorker(true);
       try {
-        const w = await createWorker(name);
+        const w = await createWorker(name, { workGroupId });
         if (!w) throw new Error("no response");
         workerId = w.id;
       } catch {
@@ -1323,6 +1330,17 @@ export function AttendanceScreen({ route }: { route: any }) {
                       onChangeText={(v) => setEditWage(v.replace(/[^0-9]/g, ""))}
                       containerStyle={{ marginBottom: 0 }}
                     />
+                    {(workGroups ?? []).length > 1 ? (
+                      <ChipSelect
+                        label="Work group"
+                        options={(workGroups ?? []).map((g) => g.name)}
+                        value={(workGroups ?? []).find((g) => g.id === editGroupId)?.name ?? ""}
+                        onChange={(n) => {
+                          const g = (workGroups ?? []).find((x) => x.name === n);
+                          if (g) setEditGroupId(g.id);
+                        }}
+                      />
+                    ) : null}
                     <Button title="Save changes" onPress={() => saveWorkerEdit(item)} loading={savingEdit} disabled={!editName.trim()} />
                     {marked ? (
                       <Button title={isToday ? "Mark absent today" : "Mark absent this day"} variant="secondary" icon={UserX} onPress={() => confirmMarkAbsent(item)} />

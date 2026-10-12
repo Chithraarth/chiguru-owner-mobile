@@ -48,6 +48,8 @@ export interface CreateWorkGroupRequest {
 }
 
 export interface Worker {
+  /** The work group this worker belongs to (only that group lists them). */
+  workGroupId?: number | null;
   id: number;
   estateId: number;
   name: string;

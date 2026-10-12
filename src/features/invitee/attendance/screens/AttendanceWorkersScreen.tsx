@@ -56,7 +56,10 @@ export function AttendanceWorkersScreen({ route }: { route: any }) {
     [attendance, workGroupId]
   );
 
-  const eligibleWorkers = workers.filter((w) => w.isActive);
+  // Only this group's workers (plus anyone already marked in it today).
+  const eligibleWorkers = workers.filter(
+    (w) => w.isActive && (w.workGroupId === workGroupId || markedIds.has(w.id))
+  );
 
   function toggle(workerId: number) {
     setSelected((prev) => {

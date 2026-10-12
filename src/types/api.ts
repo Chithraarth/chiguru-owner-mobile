@@ -186,6 +186,8 @@ export interface CreateWorkGroupRequest {
 export interface Worker {
   id: number;
   estateId: number;
+  /** The work group this worker belongs to (only that group lists them). */
+  workGroupId?: number | null;
   name: string;
   phone: string | null;
   type: string | null;
