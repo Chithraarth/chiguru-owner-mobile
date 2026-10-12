@@ -8,7 +8,9 @@ import { HomeScreen } from "./home/screens/HomeScreen";
 import { WorkPlanScreen } from "./home/screens/WorkPlanScreen";
 import { AttendanceGroupsScreen } from "./attendance/screens/AttendanceGroupsScreen";
 import { CreateWorkGroupScreen } from "./attendance/screens/CreateWorkGroupScreen";
-import { AttendanceWorkersScreen } from "./attendance/screens/AttendanceWorkersScreen";
+// Marking a group uses the owner's Attendance screen, so an invitee has the
+// same tools: overtime, picking kg and bonus, history, advances, loans.
+import { AttendanceScreen } from "../attendance/screens/AttendanceScreen";
 import { WorkUpdateScreen } from "./work-update/screens/WorkUpdateScreen";
 import { ExpenseListScreen } from "./expenses/screens/ExpenseListScreen";
 import { ExpenseFormScreen } from "./expenses/screens/ExpenseFormScreen";
@@ -37,7 +39,7 @@ export function InviteeStack() {
       <Stack.Screen name="CreateWorkGroup" component={CreateWorkGroupScreen} options={{ title: "New Work Group" }} />
       <Stack.Screen
         name="AttendanceWorkers"
-        component={AttendanceWorkersScreen}
+        component={AttendanceScreen}
         options={({ route }: any) => ({ title: route.params?.workGroupName ?? "Attendance" })}
       />
       <Stack.Screen name="WorkUpdate" component={WorkUpdateScreen} options={{ title: "Work Update" }} />
