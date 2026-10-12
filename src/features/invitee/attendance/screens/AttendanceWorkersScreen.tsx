@@ -3,10 +3,12 @@ import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, View } from "re
 import { Text } from "../../../../components/Text";
 import { useQuery } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
-import { ChevronDown, ChevronUp, Minus, Plus, Camera, Check, CheckCircle2 } from "lucide-react-native";
+import { ChevronDown, ChevronUp, Minus, Plus, Camera, Check, CheckCircle2, UserPlus } from "lucide-react-native";
 import { Card } from "../../../../components/Card";
 import { Button } from "../../../../components/Button";
 import { TextField } from "../../../../components/TextField";
+import { PhoneField } from "../../../../components/PhoneField";
+import { createWorker } from "../../../../api/endpoints/workers";
 import { EmptyState, LoadingView } from "../../../../components/StateViews";
 import { Avatar } from "../../../../components/harvest";
 import { colors, spacing } from "../../../../components/theme";
@@ -40,6 +42,12 @@ export function AttendanceWorkersScreen({ route }: { route: any }) {
   const [harvestKg, setHarvestKg] = useState<Record<number, string>>({});
   const [refreshing, setRefreshing] = useState(false);
   const [scanning, setScanning] = useState(false);
+  // "+ Add worker": the new worker belongs to this group.
+  const [showAdd, setShowAdd] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [newWage, setNewWage] = useState("");
+  const [adding, setAdding] = useState(false);
   const isOnline = useSyncStore((s) => s.isOnline);
 
   const advancesQuery = useAdvancePayments(workGroupId);
@@ -100,6 +108,37 @@ export function AttendanceWorkersScreen({ route }: { route: any }) {
       }
     } catch {
       // The headcount still worked; the photo is retried from the offline queue if it was queued.
+    }
+  }
+
+  async function saveNewWorker() {
+    const name = newName.trim();
+    if (!name || adding) return;
+    if (eligibleWorkers.some((w) => w.name.trim().toLowerCase() === name.toLowerCase())) {
+      Alert.alert("Already in the list", `${name} is already in this group.`);
+      return;
+    }
+    setAdding(true);
+    try {
+      const w = await createWorker(name, {
+        workGroupId,
+        ...(newPhone ? { phone: newPhone } : {}),
+        ...(Number(newWage) > 0 ? { wageRate: String(Number(newWage)) } : {}),
+      });
+      setShowAdd(false);
+      setNewName("");
+      setNewPhone("");
+      setNewWage("");
+      if (!w) {
+        Alert.alert("Saved offline", `${name} will be added when you're back online.`);
+        return;
+      }
+      await refetch();
+      setSelected((prev) => new Set(prev).add(w.id));
+    } catch {
+      Alert.alert("Could not add worker", "Please try again.");
+    } finally {
+      setAdding(false);
     }
   }
 
@@ -198,10 +237,26 @@ export function AttendanceWorkersScreen({ route }: { route: any }) {
               </Card>
             ) : null}
             <Button title="Scan group photo to select workers" icon={Camera} variant="light" onPress={scanGroupPhoto} loading={scanning} />
+            <Button title={showAdd ? "Cancel" : "Add worker"} icon={UserPlus} variant="light" onPress={() => setShowAdd((v) => !v)} />
+            {showAdd ? (
+              <Card style={{ gap: spacing.sm }}>
+                <TextField label="Name" value={newName} onChangeText={setNewName} autoFocus autoCapitalize="words" containerStyle={{ marginBottom: 0 }} />
+                <PhoneField label="Phone (optional)" value={newPhone} onChange={setNewPhone} containerStyle={{ marginBottom: 0 }} />
+                <TextField
+                  label="Daily wage (optional)"
+                  placeholder={rate > 0 ? String(rate) : "e.g. 350"}
+                  keyboardType="number-pad"
+                  value={newWage}
+                  onChangeText={(v) => setNewWage(v.replace(/[^0-9]/g, ""))}
+                  containerStyle={{ marginBottom: 0 }}
+                />
+                <Button title="Save worker" onPress={saveNewWorker} loading={adding} disabled={!newName.trim()} />
+              </Card>
+            ) : null}
           </View>
         }
         ListEmptyComponent={
-          <EmptyState title="No workers yet" subtitle="Ask the owner to add workers before marking attendance." />
+          <EmptyState title="No workers yet" subtitle="Tap “Add worker” above to add the first one." />
         }
         renderItem={({ item, index }) => {
           const marked = markedIds.has(item.id);
