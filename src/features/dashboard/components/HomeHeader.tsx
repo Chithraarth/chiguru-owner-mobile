@@ -7,11 +7,10 @@ import { HillsArt, Pill, RoundButton } from "../../../components/harvest";
 import { colors } from "../../../components/theme";
 
 /**
- * Big yellow band at the top of Home: ☰, a greeting, the farm name, a
+ * Big yellow band at the top of Home: ☰, the farm name, a
  * "My farm / Invited farm" badge and a Switch farm pill, over rolling hills.
  */
 export function HomeHeader({
-  greetingName,
   farmName,
   subtitle,
   badge,
@@ -19,7 +18,6 @@ export function HomeHeader({
   onSwitch,
   right,
 }: {
-  greetingName?: string | null;
   farmName: string;
   subtitle?: string | null;
   badge: string;
@@ -37,9 +35,6 @@ export function HomeHeader({
         {right}
       </View>
       <View style={styles.body}>
-        <Text style={styles.greet} numberOfLines={1}>
-          नमस्कार{greetingName ? `, ${greetingName}` : ""}
-        </Text>
         <Text style={styles.farm} numberOfLines={2}>
           {farmName}
         </Text>
@@ -73,7 +68,6 @@ const styles = StyleSheet.create({
   },
   topRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   body: { paddingTop: 14 },
-  greet: { fontSize: 18, fontWeight: "700", color: colors.accentInkSoft },
   farm: { fontSize: 32, fontWeight: "800", color: colors.accentInk, lineHeight: 36, textTransform: "capitalize" },
   sub: { fontSize: 15, fontWeight: "600", color: colors.accentInkSoft, marginTop: 2 },
   badges: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 8 },

@@ -31,7 +31,6 @@ import { colors, radius, shadow, spacing } from "../../../components/theme";
 import { BigTiles, IconChip, ListCard, ListRow, Pill, RoundButton, SectionLabel, StatTiles, shortRupees } from "../../../components/harvest";
 import { AppDrawer } from "../../../components/AppDrawer";
 import { EstateSwitcherModal } from "../../estate/components/EstateSwitcherModal";
-import { useSessionStore } from "../../../store/sessionStore";
 import { useSyncStore } from "../../../store/syncStore";
 import { HomeHeader } from "../components/HomeHeader";
 import { getDashboardSummary, getRecentAds } from "../../../api/endpoints/dashboard";
@@ -83,7 +82,6 @@ export function DashboardScreen({ navigation }: { navigation: any }) {
   const activeEstateId = useEstateStore((s) => s.activeEstateId);
   const estatesQuery = useEstates();
   const queryClient = useQueryClient();
-  const user = useSessionStore((s) => s.user);
   const pendingCount = useSyncStore((s) => s.pendingCount);
   const lastSyncTime = useSyncStore((s) => s.lastSyncTime);
   const [refreshing, setRefreshing] = useState(false);
@@ -139,7 +137,6 @@ export function DashboardScreen({ navigation }: { navigation: any }) {
   const needsSetup = hasNoEstate;
   const profile = profileQuery.data;
   const summary = summaryQuery.data;
-  const firstName = user?.displayName?.split(" ")[0] ?? null;
   const place = [profile?.village, profile?.district].filter(Boolean).join(", ");
   const subtitle = needsSetup ? null : [profile?.totalAcres ? `${profile.totalAcres} acres` : null, place || null].filter(Boolean).join(" · ");
   const workers = (summary?.totalJobWorkers ?? 0) + (summary?.totalContractWorkers ?? 0);
@@ -163,7 +160,6 @@ export function DashboardScreen({ navigation }: { navigation: any }) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <HomeHeader
-          greetingName={firstName}
           farmName={needsSetup ? "Welcome to Chiguru" : profile?.farmName || "My farm"}
           subtitle={subtitle}
           badge={needsSetup ? "New here" : "My farm"}

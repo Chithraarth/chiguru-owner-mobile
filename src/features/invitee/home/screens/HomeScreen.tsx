@@ -7,7 +7,6 @@ import { BigTiles, Pill, RoundButton, SectionLabel } from "../../../../component
 import { Enter } from "../../../../components/motion";
 import { colors, spacing } from "../../../../components/theme";
 import { HomeHeader } from "../../../dashboard/components/HomeHeader";
-import { useInviteeMe } from "../../hooks/useInviteeMe";
 import { useSyncStore } from "../../../../store/syncStore";
 import { useMyEstates } from "../../../estate/hooks/useMyEstates";
 import { useEstateStore } from "../../../estate/store/estateStore";
@@ -17,7 +16,6 @@ import { signOutUser } from "../../../../lib/firebase";
 
 /** Home while helping on someone else's farm: only the old Manager app's four jobs. */
 export function HomeScreen({ navigation }: { navigation: any }) {
-  const managerMe = useInviteeMe();
   const { pendingCount, isSyncing, isOnline, lastSyncTime } = useSyncStore();
   const { data: estates } = useMyEstates();
   const activeEstateId = useEstateStore((s) => s.activeEstateId);
@@ -53,7 +51,6 @@ export function HomeScreen({ navigation }: { navigation: any }) {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xl }}>
         <HomeHeader
-          greetingName={managerMe?.name?.split(" ")[0] ?? null}
           farmName={activeEstate?.farmName ?? "Select farm"}
           subtitle={today}
           badge="Invited farm"
