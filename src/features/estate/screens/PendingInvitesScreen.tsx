@@ -20,6 +20,7 @@ const CAN_DO = [
   "Post work updates with photos",
   "Add expenses with receipts",
   "See the owner’s work plan",
+  "Labour payments, wages, advances and loans",
 ];
 
 // ── Pending Invites ───────────────────────────────────────────────────────
@@ -79,7 +80,7 @@ export function PendingInvitesScreen({ onDone }: { onDone: () => void }) {
           </Enter>
         ))}
         <Enter delay={600}>
-          <Text style={styles.note}>You won’t see their money, loans, subscription or other farms. You can leave any time.</Text>
+          <Text style={styles.note}>You won’t see their income, harvest sales, subscription or other farms. You can leave any time.</Text>
         </Enter>
       </ScrollView>
     </View>
