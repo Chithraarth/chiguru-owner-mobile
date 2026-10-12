@@ -127,7 +127,7 @@ export function ManagerDevicesScreen() {
   );
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={100}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <FlatList
         data={query.data ?? []}
         keyExtractor={(m) => String(m.id)}
