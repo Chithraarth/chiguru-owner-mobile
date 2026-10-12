@@ -28,13 +28,19 @@ import { useGoogleSignIn } from "../hooks/useGoogleSignIn";
 import { useAppleSignIn } from "../hooks/useAppleSignIn";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { useT } from "../../../lib/i18n";
+import { PhoneField } from "../../../components/PhoneField";
+import { splitPhone } from "../../../components/countries";
 
 type Tab = "email" | "phone";
 
 const RESEND_SECONDS = 30;
 type EmailMode = "signin" | "signup";
 
-const COUNTRY_CODE = "+91";
+// Full number with country code; India needs 10 digits, elsewhere 6-14.
+function phoneOk(full: string) {
+  const { country, local } = splitPhone(full);
+  return country.dial === "+91" ? local.length === 10 : local.length >= 6 && local.length <= 14;
+}
 
 // Firebase Auth error codes -> plain-language copy. Falls back to the raw
 // (prefix-stripped) message for anything not mapped here, so unexpected
@@ -48,7 +54,7 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
   "auth/weak-password": "Password should be at least 6 characters.",
   "auth/too-many-requests": "Too many attempts. Please wait a bit before trying again.",
   "auth/network-request-failed": "Network error. Check your internet connection and try again.",
-  "auth/invalid-phone-number": "Enter a valid 10-digit mobile number.",
+  "auth/invalid-phone-number": "Enter a valid mobile number.",
   "auth/missing-phone-number": "Enter your mobile number first.",
   "auth/invalid-verification-code": "That OTP doesn't look right. Please check and try again.",
   "auth/code-expired": "This OTP has expired. Tap \"Resend OTP\" to get a new one.",
@@ -112,15 +118,14 @@ export function SignInScreen() {
 
   async function handleSendOtp() {
     clearMessages();
-    const digits = phone.trim().replace(/\D/g, "");
-    if (digits.length !== 10) {
-      setError("Enter a valid 10-digit mobile number.");
+    if (!phoneOk(phone)) {
+      setError("Enter a valid mobile number.");
       return;
     }
     setLoading(true);
     try {
       if (!recaptchaVerifier.current) throw new Error("Verifier not ready, try again");
-      const id = await recaptchaVerifier.current.sendOtp(`${COUNTRY_CODE}${digits}`);
+      const id = await recaptchaVerifier.current.sendOtp(phone);
       setVerificationId(id);
       setOtp("");
       setResendIn(RESEND_SECONDS);
@@ -193,7 +198,7 @@ export function SignInScreen() {
           <RoundButton icon={ChevronLeft} label="Change number" onPress={changeNumber} />
           <View style={{ flex: 1 }}>
             <Text style={styles.bandSub}>
-              OTP sent to {COUNTRY_CODE} {phone}
+              OTP sent to {phone}
             </Text>
             <Text style={styles.bandTitle}>Enter the code</Text>
           </View>
@@ -297,17 +302,9 @@ export function SignInScreen() {
               <>
                 <Text style={styles.heading}>Sign in</Text>
                 <Text style={styles.subheading}>Use the mobile number you farm with.</Text>
-                <TextField
-                  label="Mobile number"
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                  placeholder="98765 43210"
-                  value={phone}
-                  onChangeText={(v) => setPhone(v.replace(/\D/g, "").slice(0, 10))}
-                  leftElement={<Text style={styles.countryCode}>{COUNTRY_CODE}</Text>}
-                />
+                <PhoneField label="Mobile number" value={phone} onChange={setPhone} />
                 {messages}
-                <Button title="Send OTP" icon={ArrowRight} onPress={handleSendOtp} loading={loading} disabled={phone.trim().length !== 10} />
+                <Button title="Send OTP" icon={ArrowRight} onPress={handleSendOtp} loading={loading} disabled={!phoneOk(phone)} />
                 <View style={styles.dividerRow}>
                   <View style={styles.dividerLine} />
                   <Text style={styles.dividerText}>or</Text>
@@ -403,7 +400,6 @@ const styles = StyleSheet.create({
   segmentTextActive: { color: colors.text, fontWeight: "800" },
   error: { color: colors.danger, fontSize: 14.5, fontWeight: "600" },
   info: { color: colors.primary, fontSize: 14.5, fontWeight: "600" },
-  countryCode: { color: colors.text, fontSize: 17, fontWeight: "700" },
   link: { color: colors.primary, fontSize: 15, fontWeight: "800" },
   muted: { color: colors.textMuted, fontSize: 15 },
   dividerRow: { flexDirection: "row", alignItems: "center", gap: 12 },

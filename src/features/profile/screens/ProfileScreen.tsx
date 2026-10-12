@@ -7,6 +7,7 @@ import { Check, CloudOff, CloudUpload, Copy, LogOut, Phone, RotateCcw, ShieldChe
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
+import { PhoneField } from "../../../components/PhoneField";
 import { Avatar } from "../../../components/harvest";
 import { colors, radius, spacing } from "../../../components/theme";
 import { useSessionStore } from "../../../store/sessionStore";
@@ -232,11 +233,9 @@ export function ProfileScreen({ navigation }: { navigation: any }) {
             <Text style={styles.cardSubtitle}>{t("profile.phoneHint")}</Text>
             <View style={{ flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm, alignItems: "flex-end" }}>
               <View style={{ flex: 1 }}>
-                <TextField
+                <PhoneField
                   value={phone}
-                  onChangeText={(v) => { setPhone(v); setPhoneDirty(true); }}
-                  placeholder="98765 43210"
-                  keyboardType="phone-pad"
+                  onChange={(v) => { setPhone(v); setPhoneDirty(true); }}
                   containerStyle={{ marginBottom: 0 }}
                 />
               </View>
@@ -244,12 +243,11 @@ export function ProfileScreen({ navigation }: { navigation: any }) {
                 <Text style={styles.saveBtnText}>{t("profile.save")}</Text>
               </Pressable>
             </View>
-            <TextField
+            <PhoneField
               label="Alternate phone (optional)"
               value={alternatePhone}
-              onChangeText={(v) => { setAlternatePhone(v); setPhoneDirty(true); }}
+              onChange={(v) => { setAlternatePhone(v); setPhoneDirty(true); }}
               placeholder="A family member's number"
-              keyboardType="phone-pad"
               containerStyle={{ marginTop: spacing.sm, marginBottom: 0 }}
             />
           </View>

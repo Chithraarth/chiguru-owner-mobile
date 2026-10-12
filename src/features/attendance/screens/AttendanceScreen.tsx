@@ -44,6 +44,7 @@ import { Button } from "../../../components/Button";
 import { ChipSelect } from "../../../components/ChipSelect";
 import { SelectOrType } from "../../../components/SelectOrType";
 import { TextField } from "../../../components/TextField";
+import { PhoneField } from "../../../components/PhoneField";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
 import { colors, radius, shadow, spacing } from "../../../components/theme";
 import { Avatar, Pill, RoundButton } from "../../../components/harvest";
@@ -872,12 +873,10 @@ export function AttendanceScreen({ route }: { route: any }) {
                     autoFocus
                     containerStyle={{ marginBottom: 0 }}
                   />
-                  <TextField
+                  <PhoneField
                     label="Phone (optional)"
-                    placeholder="98765 43210"
-                    keyboardType="phone-pad"
                     value={newWorkerPhone}
-                    onChangeText={setNewWorkerPhone}
+                    onChange={setNewWorkerPhone}
                     containerStyle={{ marginBottom: 0 }}
                   />
                   <TextField
@@ -1311,11 +1310,10 @@ export function AttendanceScreen({ route }: { route: any }) {
                 {editMode && editingWorkerId === item.id ? (
                   <View style={styles.extraFields}>
                     <TextField label="Name" value={editName} onChangeText={setEditName} autoCorrect={false} autoCapitalize="words" containerStyle={{ marginBottom: 0 }} />
-                    <TextField
+                    <PhoneField
                       label="Phone"
-                      keyboardType="phone-pad"
                       value={editPhone}
-                      onChangeText={setEditPhone}
+                      onChange={setEditPhone}
                       containerStyle={{ marginBottom: 0 }}
                     />
                     <TextField

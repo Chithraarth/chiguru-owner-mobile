@@ -5,6 +5,7 @@ import { Camera } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
+import { PhoneField } from "../../../components/PhoneField";
 import { ChipSelect } from "../../../components/ChipSelect";
 import { FormFooter } from "../../../components/harvest";
 import { colors, spacing } from "../../../components/theme";
@@ -77,8 +78,8 @@ export function EquipmentFormScreen({ navigation }: { navigation: any }) {
       <ChipSelect label="Category" options={CATEGORIES} value={category} onChange={setCategory} />
       <TextField label="Price (₹) *" keyboardType="decimal-pad" value={price} onChangeText={setPrice} placeholder="150000" />
       <TextField label="Your name *" value={sellerName} onChangeText={setSellerName} />
-      <TextField label="Contact phone *" keyboardType="phone-pad" value={phone} onChangeText={setPhone} placeholder="9XXXXXXXXX" />
-      <TextField label="WhatsApp (optional)" keyboardType="phone-pad" value={whatsapp} onChangeText={setWhatsapp} placeholder="Same as phone" />
+      <PhoneField label="Contact phone *" value={phone} onChange={setPhone} />
+      <PhoneField label="WhatsApp (optional)" value={whatsapp} onChange={setWhatsapp} placeholder="Same as phone" />
       <TextField label="Location *" value={location} onChangeText={setLocation} placeholder="Village, District" />
       <TextField label="Description (optional)" value={description} onChangeText={setDescription} multiline numberOfLines={2} placeholder="Year, hours used, condition, accessories, etc." />
       {error ? <Text style={styles.error}>{error}</Text> : null}

@@ -6,6 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import { CheckCircle2, FileText, Upload } from "lucide-react-native";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
+import { PhoneField } from "../../../components/PhoneField";
 import { ChipSelect } from "../../../components/ChipSelect";
 import { FormFooter } from "../../../components/harvest";
 import { colors, radius, spacing, shadow } from "../../../components/theme";
@@ -96,7 +97,7 @@ export function AgriDoctorRegisterScreen({ navigation }: { navigation: any }) {
       <TextField label="Where do you work" value={workplace} onChangeText={setWorkplace} placeholder="Agricultural University / KVK / Private" />
       <TextField label="Town, district *" value={location} onChangeText={setLocation} placeholder="Mudigere, Chikkamagaluru, Karnataka" />
       <TextField label="Languages" value={languages} onChangeText={setLanguages} placeholder="Hindi, English" />
-      <TextField label="Phone number farmers can call *" value={contactPhone} onChangeText={setContactPhone} keyboardType="phone-pad" placeholder="+91 ..." />
+      <PhoneField label="Phone number farmers can call *" value={contactPhone} onChange={setContactPhone} />
       <TextField label="About you" value={bio} onChangeText={setBio} multiline numberOfLines={3} placeholder="How you help farmers improve their yield…" />
 
       <View style={styles.certBox}>

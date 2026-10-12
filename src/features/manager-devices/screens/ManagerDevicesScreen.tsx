@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
+import { PhoneField } from "../../../components/PhoneField";
 import { ChipSelect } from "../../../components/ChipSelect";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
 import { Avatar, Pill, SectionLabel } from "../../../components/harvest";
@@ -114,9 +115,9 @@ export function ManagerDevicesScreen() {
         </View>
 
         {mode === "phone" ? (
-          <TextField label="Phone (+91...)" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
+          <PhoneField label="Phone" value={phone} onChange={(v) => { setPhone(v); setError(null); }} />
         ) : (
-          <TextField label="Email address" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
+          <TextField label="Email address" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={(v) => { setEmail(v); setError(null); }} />
         )}
 
         {error ? <Text style={styles.error}>{error}</Text> : null}

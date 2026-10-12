@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MapPin } from "lucide-react-native";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
+import { PhoneField } from "../../../components/PhoneField";
 import { ChipSelect } from "../../../components/ChipSelect";
 import { FormFooter } from "../../../components/harvest";
 import { colors, spacing } from "../../../components/theme";
@@ -123,8 +124,8 @@ export function HireFormScreen({ navigation, route }: { navigation: any; route: 
         <TextField label="Workers needed" keyboardType="number-pad" value={workersNeeded} onChangeText={setWorkersNeeded} placeholder="10" />
       ) : null}
       <TextField label="Your name *" value={posterName} onChangeText={setPosterName} />
-      <TextField label="Contact phone *" keyboardType="phone-pad" value={phone} onChangeText={setPhone} placeholder="9XXXXXXXXX" />
-      <TextField label="WhatsApp (optional)" keyboardType="phone-pad" value={whatsapp} onChangeText={setWhatsapp} placeholder="Same as phone" />
+      <PhoneField label="Contact phone *" value={phone} onChange={setPhone} />
+      <PhoneField label="WhatsApp (optional)" value={whatsapp} onChange={setWhatsapp} placeholder="Same as phone" />
 
       <Pressable style={styles.locationBtn} onPress={useMyLocation} disabled={locating}>
         <MapPin size={15} color={colors.primary} />

@@ -6,6 +6,7 @@ import { CheckCircle2, Clock, HelpCircle, LifeBuoy, Lightbulb, MessageCircleQues
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
+import { PhoneField } from "../../../components/PhoneField";
 import { colors, radius, spacing } from "../../../components/theme";
 import { getHelpMessages, postHelpMessage } from "../../../api/endpoints/help";
 import type { HelpMessage } from "../../../types/api";
@@ -79,13 +80,10 @@ export function HelpScreen() {
           maxLength={2000}
           style={{ minHeight: 90, textAlignVertical: "top" }}
         />
-        <TextField
+        <PhoneField
           label="Phone number (optional — if you want a call back)"
-          placeholder="e.g. 98765 43210"
           value={phone}
-          onChangeText={setPhone}
-          keyboardType="phone-pad"
-          maxLength={20}
+          onChange={setPhone}
         />
         <Button
           title={sendMutation.isPending ? "Sending..." : type === "question" ? "Send question" : "Send suggestion"}
