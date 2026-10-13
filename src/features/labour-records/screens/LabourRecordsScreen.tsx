@@ -249,10 +249,13 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   ];
   const dueRecords = folderRecords;
   const paidInPeriod = moneyOut.filter((m) => inPeriod(m.date, range)).reduce((s, m) => s + m.amount, 0);
+  // Advance groups owe advPerDay a work now (the rest waits for the Final
+  // Account); other groups owe everything earned.
+  const owedNow = (r: AttendanceRecord) => (hasAdvanceStructure ? advPerDay : earnOf(r));
   const earlierPending = range.from
     ? Math.max(
         0,
-        allFolderRecords.filter((r) => r.date < range.from!).reduce((s, r) => s + earnOf(r), 0) -
+        allFolderRecords.filter((r) => r.date < range.from!).reduce((s, r) => s + owedNow(r), 0) -
           moneyOut.filter((m) => m.date < range.from!).reduce((s, m) => s + m.amount, 0)
       )
     : 0;
@@ -284,7 +287,8 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
   const dueAdvance = dueDays * advPerDay;
   // Advance-structure groups pay only the advance-per-day now; the rest is
   // held for the Final Account. Other groups pay everything earned since.
-  const dueWages = hasAdvanceStructure ? dueAdvance : Math.max(0, dueEarned + earlierPending - paidInPeriod);
+  // Payments made in these dates (to the group or to one worker) come off.
+  const dueWages = Math.max(0, (hasAdvanceStructure ? dueAdvance : dueEarned) + earlierPending - paidInPeriod);
 
   const byDate = folderRecords.reduce<Record<string, AttendanceRecord[]>>((acc, r) => {
     (acc[r.date] = acc[r.date] || []).push(r);
@@ -642,13 +646,13 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
                 </Text>
               </View>
             )}
-            {!hasAdvanceStructure && earlierPending > 0 ? (
+            {earlierPending > 0 ? (
               <View style={[styles.simpleRow, styles.periodRowBorder]}>
                 <Text style={styles.simpleRowMutedLabel}>Still unpaid from earlier</Text>
                 <Text style={[styles.simpleRowTitle, { color: colors.warning }]}>+ {inr(earlierPending)}</Text>
               </View>
             ) : null}
-            {!hasAdvanceStructure && paidInPeriod > 0 ? (
+            {paidInPeriod > 0 ? (
               <View style={[styles.simpleRow, styles.periodRowBorder]}>
                 <Text style={styles.simpleRowMutedLabel}>Already paid in these dates</Text>
                 <Text style={[styles.simpleRowTitle, { color: "#1F9E92" }]}>− {inr(paidInPeriod)}</Text>
@@ -691,8 +695,9 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
             .map((pp) => {
               const recs = allFolderRecords.filter((r) => r.date >= pp.from && r.date <= pp.to);
               const wages = recs.reduce((s2, r) => s2 + earnOf(r), 0);
+              const owed = recs.reduce((s2, r) => s2 + owedNow(r), 0);
               const paid = moneyOut.filter((m) => m.date >= pp.from && m.date <= pp.to).reduce((s2, m) => s2 + m.amount, 0);
-              return { ...pp, works: recs.length, wages, paid };
+              return { ...pp, works: recs.length, wages, owed, paid };
             })
             .filter((r) => r.works > 0 || r.paid > 0);
           if (rows.length === 0) return null;
@@ -701,7 +706,7 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
               <Text style={styles.blockTitle}>PAY HISTORY</Text>
               {rows.map((r, i) => {
                 const open = period.kind === "cycle" && range.from === r.from;
-                const left = Math.max(0, r.wages - r.paid);
+                const left = Math.max(0, r.owed - r.paid);
                 return (
                   <Pressable
                     key={r.from}
@@ -719,6 +724,9 @@ export function LabourRecordsScreen({ navigation }: { navigation: any }) {
                       <Text style={styles.periodMeta}>{r.works} work{r.works !== 1 ? "s" : ""}</Text>
                       <Text style={[styles.periodMeta, { color: colors.primary }]}>earned {inr(r.wages)}</Text>
                       {r.paid > 0 ? <Text style={[styles.periodMeta, { color: "#1F9E92" }]}>paid {inr(r.paid)}</Text> : null}
+                      {hasAdvanceStructure && r.wages > r.owed ? (
+                        <Text style={styles.periodMeta}>held {inr(r.wages - r.owed)} for final</Text>
+                      ) : null}
                     </View>
                   </Pressable>
                 );
