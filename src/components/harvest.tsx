@@ -1,7 +1,9 @@
 // Small building blocks of the Harvest Sun design, shared by every screen:
 // round header buttons, pastel icon circles, status pills, stat tiles, list
 // cards and the rolling-hills illustration used on the yellow bands.
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
+import { BottomTabBarHeightContext } from "@react-navigation/bottom-tabs";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 import { Text } from "./Text";
@@ -350,7 +352,11 @@ export function ProgressBar({ value }: { value: number }) {
 
 /** Save / submit button pinned to the bottom of a form, over a cream fade. */
 export function FormFooter({ children }: { children: React.ReactNode }) {
-  return <View style={formFooterStyle}>{children}</View>;
+  // Outside the tabs (e.g. an invitee's screens) nothing sits below the
+  // footer, so it must clear the phone's own navigation bar / home indicator.
+  const inTabs = useContext(BottomTabBarHeightContext) != null;
+  const { bottom } = useSafeAreaInsets();
+  return <View style={[formFooterStyle, { paddingBottom: 20 + (inTabs ? 0 : bottom) }]}>{children}</View>;
 }
 
 const formFooterStyle = {

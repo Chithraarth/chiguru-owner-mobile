@@ -1,4 +1,5 @@
-import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import React, { useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { BottomTabBarHeightContext } from "@react-navigation/bottom-tabs";
 import {
   ActivityIndicator,
   Alert,
@@ -213,6 +214,9 @@ export function AttendanceScreen({ route }: { route: any }) {
   const [historyShown, setHistoryShown] = useState(7);
   const isOnline = useSyncStore((s) => s.isOnline);
   const insets = useSafeAreaInsets();
+  // Inside the owner's tabs the tab bar sits under the Save bar; on screens
+  // without it (an invitee's) the bar must clear the phone's own nav bar.
+  const inTabs = useContext(BottomTabBarHeightContext) != null;
 
   // ── AI Group Attendance state ──────────────────────────────────────────────
   const [aiScanning, setAiScanning] = useState(false);
@@ -1907,7 +1911,7 @@ export function AttendanceScreen({ route }: { route: any }) {
       ) : null}
 
       {tab === "attendance" && eligibleWorkers.length > 0 ? (
-        <View style={[styles.bottomBar, { paddingBottom: 14 }]}>
+        <View style={[styles.bottomBar, { paddingBottom: 14 + (inTabs ? 0 : insets.bottom) }]}>
           <View>
             <Text style={styles.bottomCount}>
               {presentCount} present · {absentCount} absent
