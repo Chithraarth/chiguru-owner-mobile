@@ -12,7 +12,10 @@
       "appleTeamId": "UZKCN9NQ7G",
       "buildNumber": "15",
       "usesAppleSignIn": true,
-      "googleServicesFile": "./ios/Chiguru/GoogleService-Info.plist"
+      "googleServicesFile": "./ios/Chiguru/GoogleService-Info.plist",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.thechiguru.owner",
