@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Switch, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
-import { Flag, X } from "lucide-react-native";
+import { Check, Flag, X } from "lucide-react-native";
 import { Text } from "./Text";
 import { Button } from "./Button";
 import { TextField } from "./TextField";
@@ -76,13 +76,18 @@ function ReportSheet({ board, listingId, title, onClose }: { board: ReportBoard;
             </Pressable>
           ))}
           <TextField label="More details (optional)" value={details} onChangeText={setDetails} multiline maxLength={1000} style={{ minHeight: 70, textAlignVertical: "top" }} containerStyle={{ marginBottom: 0 }} />
-          <View style={styles.blockRow}>
+          <Pressable
+            onPress={() => setBlock((v) => !v)}
+            style={[styles.blockRow, block && styles.blockRowOn]}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: block }}
+          >
+            <View style={[styles.check, block && styles.checkOn]}>{block ? <Check size={16} color="#fff" strokeWidth={3} /> : null}</View>
             <View style={{ flex: 1 }}>
               <Text style={styles.blockTitle}>Block this person</Text>
               <Text style={styles.blockSub}>Hide every ad they post from you.</Text>
             </View>
-            <Switch value={block} onValueChange={setBlock} trackColor={{ true: colors.primary, false: colors.border }} accessibilityLabel="Block this person" />
-          </View>
+          </Pressable>
           <Button title={block ? "Report and block" : "Send report"} onPress={send} loading={sending} disabled={!reason} />
         </ScrollView>
       </View>
@@ -104,7 +109,10 @@ const styles = StyleSheet.create({
   radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: colors.border },
   radioOn: { borderColor: colors.primary, backgroundColor: colors.primary },
   reasonText: { fontSize: 16, color: colors.text, fontWeight: "600" },
-  blockRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.dangerBg, borderRadius: radius.md, padding: 12 },
+  blockRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.dangerBg, borderRadius: radius.md, padding: 12, borderWidth: 2, borderColor: colors.dangerBg },
+  blockRowOn: { borderColor: colors.danger },
+  check: { width: 26, height: 26, borderRadius: 8, borderWidth: 2, borderColor: colors.danger, alignItems: "center", justifyContent: "center", backgroundColor: colors.card },
+  checkOn: { backgroundColor: colors.danger },
   blockTitle: { fontSize: 16, fontWeight: "700", color: colors.danger },
   blockSub: { fontSize: 13, color: colors.textMuted },
 });
