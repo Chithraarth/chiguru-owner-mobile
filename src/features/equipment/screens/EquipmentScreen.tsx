@@ -10,6 +10,7 @@ import { HeaderAddButton, Pill } from "../../../components/harvest";
 import { LoadingView } from "../../../components/StateViews";
 import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { getEquipmentListings } from "../../../api/endpoints/equipment";
+import { ReportButton } from "../../../components/ReportSheet";
 
 const CATEGORIES = [
   { key: "tractor", label: "Tractor", emoji: "🚜" },
@@ -120,6 +121,7 @@ export function EquipmentScreen({ navigation }: { navigation: any }) {
                       <Text style={styles.waText}>WhatsApp</Text>
                     </Pressable>
                   </View>
+                  {l.mine ? null : <ReportButton board="equipment" listingId={l.id} title={l.title} />}
                 </Card>
               );
             })}

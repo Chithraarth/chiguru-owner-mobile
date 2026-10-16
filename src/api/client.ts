@@ -3,6 +3,7 @@ import { getIdToken } from "../lib/firebase";
 import { getActiveEstateId } from "../features/estate/store/estateStore";
 import * as offlineQueue from "../lib/offlineQueue";
 import { ApiError, isGateError } from "./errors";
+import { getOrCreateOwnerKey } from "../lib/ownerKey";
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
@@ -31,6 +32,9 @@ export async function buildHeaders(extra?: HeadersInit): Promise<Headers> {
   if (estateId != null) headers.set("X-Estate-Id", String(estateId));
   const token = await getIdToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);
+  // Anonymous per-phone key for the open listing boards: marks "your ad" and
+  // hides listings this phone reported or whose poster it blocked.
+  if (!headers.has("X-Owner-Key")) headers.set("X-Owner-Key", await getOrCreateOwnerKey());
   return headers;
 }
 

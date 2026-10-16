@@ -28,6 +28,7 @@ import { useInnerBack } from "../../../navigation/useInnerBack";
 import { getMyHireListings } from "../../../api/endpoints/hire";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { HireListing } from "../../../types/api";
+import { ReportButton } from "../../../components/ReportSheet";
 
 type Tab = "rental" | "job";
 
@@ -163,6 +164,7 @@ function ListingCard({ listing, dist, tab, onDelete }: { listing: HireListing; d
           </Pressable>
         ) : null}
       </View>
+      {listing.mine ? null : <ReportButton board="hire" listingId={listing.id} title={listing.title} />}
     </Card>
   );
 }

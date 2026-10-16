@@ -9,6 +9,7 @@ import { HeaderAddButton, Pill } from "../../../components/harvest";
 import { LoadingView } from "../../../components/StateViews";
 import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { useMarketplace } from "../hooks/useMarketplace";
+import { ReportButton } from "../../../components/ReportSheet";
 
 const CATEGORIES = [
   { key: "coffee", label: "Coffee", emoji: "☕" },
@@ -112,6 +113,7 @@ export function MarketplaceScreen({ navigation }: { navigation: any }) {
                       <Text style={styles.waText}>WhatsApp</Text>
                     </Pressable>
                   </View>
+                  {l.mine ? null : <ReportButton board="produce" listingId={l.id} title={l.productName} />}
                 </Card>
               );
             })}
