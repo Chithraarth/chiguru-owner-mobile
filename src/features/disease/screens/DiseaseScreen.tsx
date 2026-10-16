@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import * as ImagePicker from "expo-image-picker";
 import {
   AlertTriangle,
@@ -16,11 +17,12 @@ import {
 import { Button } from "../../../components/Button";
 import { Card } from "../../../components/Card";
 import { TextField } from "../../../components/TextField";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { diagnoseDisease, submitDiagnosisOutcome } from "../../../api/endpoints/ai";
 import { createSpray } from "../../../api/endpoints/sprays";
 import { compressToDataUrl } from "../../../lib/imageCompression";
 import type { DiagnosisResult } from "../../../types/api";
+import { isGateError } from "../../../api/errors";
 
 const CROPS = [
   "Coffee", "Pepper (Black Pepper)", "Cardamom", "Arecanut (Supari)", "Sugarcane", "Banana",
@@ -77,6 +79,7 @@ export function DiseaseScreen({ navigation }: { navigation: any }) {
       const diagnosis = await diagnoseDisease(dataUrl, selectedCrop || undefined);
       setResult(diagnosis);
     } catch (err) {
+      if (isGateError(err)) return; // the plan/wallet prompt already explained it
       setError(err instanceof Error ? err.message : "Analysis failed. Please try again with a clearer photo.");
     } finally {
       setDiagnosing(false);
@@ -135,7 +138,7 @@ export function DiseaseScreen({ navigation }: { navigation: any }) {
       {!result && !diagnosing ? (
         <View style={styles.hero}>
           <View style={styles.heroIconWrap}>
-            <FlaskConical size={24} color="#fff" />
+            <FlaskConical size={24} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.heroTitle}>Plant Disease Detector</Text>
@@ -172,7 +175,7 @@ export function DiseaseScreen({ navigation }: { navigation: any }) {
               </Pressable>
               {selectedCrop ? (
                 <View style={styles.photoCropTag}>
-                  <Text style={styles.photoCropTagText}>🌱 {selectedCrop}</Text>
+                  <Text style={styles.photoCropTagText}>{selectedCrop}</Text>
                 </View>
               ) : null}
             </View>
@@ -224,7 +227,7 @@ export function DiseaseScreen({ navigation }: { navigation: any }) {
               <Image source={{ uri: photoUri }} style={styles.thumb} />
               <View>
                 <Text style={styles.thumbLabel}>Analyzed photo</Text>
-                {selectedCrop ? <Text style={styles.thumbCrop}>🌱 {selectedCrop}</Text> : null}
+                {selectedCrop ? <Text style={styles.thumbCrop}>{selectedCrop}</Text> : null}
                 <Pressable onPress={reset}>
                   <Text style={styles.thumbLink}>← Analyze another photo</Text>
                 </Pressable>
@@ -256,7 +259,7 @@ export function DiseaseScreen({ navigation }: { navigation: any }) {
               ) : null}
               {result.affectedCrop ? (
                 <View style={[styles.pill, { backgroundColor: "#E4EEFB" }]}>
-                  <Text style={[styles.pillText, { color: "#5B8CD6" }]}>🌱 {result.affectedCrop}</Text>
+                  <Text style={[styles.pillText, { color: "#5B8CD6" }]}>{result.affectedCrop}</Text>
                 </View>
               ) : null}
               {urgency && result.isDisease ? (
@@ -311,25 +314,25 @@ export function DiseaseScreen({ navigation }: { navigation: any }) {
 
           {result.immediateSteps && result.immediateSteps.length > 0 && !isHealthy ? (
             <Card>
-              <Text style={styles.blockTitle}>👀 Do this first (free)</Text>
+              <Text style={styles.blockTitle}>Do this first (free)</Text>
               {result.immediateSteps.map((s, i) => (
-                <Text key={i} style={styles.checkItem}>✓ {s}</Text>
+                <Text key={i} style={styles.checkItem}>{s}</Text>
               ))}
             </Card>
           ) : null}
 
           {result.doNotDo && result.doNotDo.length > 0 && !isHealthy ? (
             <Card style={{ backgroundColor: "#FDEAEA", borderColor: "#F5C6C6" }}>
-              <Text style={[styles.blockTitle, { color: colors.danger }]}>🚫 Do NOT do this</Text>
+              <Text style={[styles.blockTitle, { color: colors.danger }]}>Do NOT do this</Text>
               {result.doNotDo.map((s, i) => (
-                <Text key={i} style={[styles.checkItem, { color: colors.danger }]}>✕ {s}</Text>
+                <Text key={i} style={[styles.checkItem, { color: colors.danger }]}>{s}</Text>
               ))}
             </Card>
           ) : null}
 
           {result.treatmentSteps?.length > 0 && result.isDisease ? (
             <Card>
-              <Text style={styles.blockTitle}>💊 Treatment Steps</Text>
+              <Text style={styles.blockTitle}>Treatment Steps</Text>
               {result.treatmentSteps.map((s, i) => (
                 <View key={i} style={{ flexDirection: "row", gap: spacing.sm, marginTop: spacing.xs }}>
                   <View style={styles.stepNum}><Text style={styles.stepNumText}>{i + 1}</Text></View>
@@ -341,7 +344,7 @@ export function DiseaseScreen({ navigation }: { navigation: any }) {
 
           {result.preventionTips?.length > 0 ? (
             <Card style={{ backgroundColor: "#E4EEFB", borderColor: "#C7DCF5" }}>
-              <Text style={[styles.blockTitle, { color: "#3E6FB0" }]}>🛡️ Prevention Tips</Text>
+              <Text style={[styles.blockTitle, { color: "#3E6FB0" }]}>Prevention Tips</Text>
               {result.preventionTips.map((s, i) => (
                 <Text key={i} style={[styles.checkItem, { color: "#3E6FB0" }]}>• {s}</Text>
               ))}
@@ -350,7 +353,7 @@ export function DiseaseScreen({ navigation }: { navigation: any }) {
 
           <Card style={{ backgroundColor: colors.muted }}>
             <Text style={styles.kvkText}>
-              💡 <Text style={{ fontWeight: "600" }}>Expert tip:</Text> For confirmation, take a sample to your nearest{" "}
+              <Text style={{ fontWeight: "600" }}>Expert tip:</Text> For confirmation, take a sample to your nearest{" "}
               <Text style={{ fontWeight: "600", color: colors.primary }}>KVK (Krishi Vigyan Kendra)</Text> or contact the
               state agriculture department helpline.
             </Text>
@@ -367,13 +370,13 @@ export function DiseaseScreen({ navigation }: { navigation: any }) {
 
           <Pressable style={styles.doctorCta} onPress={() => navigation.navigate("AgriDoctor")}>
             <View style={styles.doctorIconWrap}>
-              <FlaskConical size={18} color={colors.accent} />
+              <FlaskConical size={18} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.doctorCtaTitle}>Want a second opinion?</Text>
-              <Text style={styles.doctorCtaSubtitle}>Consult an agriculture doctor to confirm & improve yield</Text>
+              <Text style={styles.doctorCtaSubtitle}>Call an agriculture doctor near you to confirm</Text>
             </View>
-            <ChevronRight size={16} color={colors.accent} />
+            <ChevronRight size={16} color={colors.primary} />
           </Pressable>
 
           {result.id != null ? (
@@ -384,19 +387,19 @@ export function DiseaseScreen({ navigation }: { navigation: any }) {
                   style={[styles.feedbackBtn, outcome === "helpful" && { backgroundColor: colors.primary, borderColor: colors.primary }]}
                   onPress={() => submitOutcome("helpful")}
                 >
-                  <Text style={[styles.feedbackBtnText, outcome === "helpful" && { color: "#fff" }]}>👍 Helpful</Text>
+                  <Text style={[styles.feedbackBtnText, outcome === "helpful" && { color: "#fff" }]}>Helpful</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.feedbackBtn, outcome === "not-helpful" && { backgroundColor: colors.danger, borderColor: colors.danger }]}
                   onPress={() => submitOutcome("not-helpful")}
                 >
-                  <Text style={[styles.feedbackBtnText, outcome === "not-helpful" && { color: "#fff" }]}>👎 Not helpful</Text>
+                  <Text style={[styles.feedbackBtnText, outcome === "not-helpful" && { color: "#fff" }]}>Not helpful</Text>
                 </Pressable>
                 <Pressable
-                  style={[styles.feedbackBtn, outcome === "agronomist-confirmed" && { backgroundColor: colors.accent, borderColor: colors.accent }]}
+                  style={[styles.feedbackBtn, outcome === "agronomist-confirmed" && { backgroundColor: colors.primary, borderColor: colors.primary }]}
                   onPress={() => submitOutcome("agronomist-confirmed")}
                 >
-                  <Text style={[styles.feedbackBtnText, outcome === "agronomist-confirmed" && { color: "#fff" }]}>✅ Confirmed</Text>
+                  <Text style={[styles.feedbackBtnText, outcome === "agronomist-confirmed" && { color: "#fff" }]}>Confirmed</Text>
                 </Pressable>
               </View>
             </Card>
@@ -440,84 +443,84 @@ export function DiseaseScreen({ navigation }: { navigation: any }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
-  hero: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md },
-  heroIconWrap: { width: 44, height: 44, borderRadius: radius.sm, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
-  heroTitle: { color: "#fff", fontSize: 15, fontWeight: "700" },
-  heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 11.5, marginTop: 2 },
+  hero: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.accent, borderRadius: 28, padding: spacing.md },
+  heroIconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
+  heroTitle: { color: colors.accentInk, fontSize: 18, fontWeight: "800" },
+  heroSubtitle: { color: colors.accentInkSoft, fontSize: 13.5, marginTop: 2 },
 
-  sectionLabel: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5 },
+  sectionLabel: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.5 },
   cropPicker: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 2, borderColor: colors.border, backgroundColor: "#fff", borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 4 },
   cropPickerActive: { borderColor: colors.primary, backgroundColor: colors.bg },
-  cropPickerText: { flex: 1, fontSize: 13.5, color: colors.textMuted },
+  cropPickerText: { flex: 1, fontSize: 15, color: colors.textMuted },
 
   photoPreviewWrap: { borderRadius: radius.md, overflow: "hidden", borderWidth: 1, borderColor: colors.border },
   photoPreview: { width: "100%", height: 220 },
   photoRemove: { position: "absolute", top: spacing.sm, right: spacing.sm, backgroundColor: "rgba(0,0,0,0.5)", borderRadius: 16, padding: 6 },
   photoCropTag: { position: "absolute", bottom: spacing.sm, left: spacing.sm, backgroundColor: "rgba(0,0,0,0.6)", borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 3 },
-  photoCropTagText: { color: "#fff", fontSize: 11 },
+  photoCropTagText: { color: "#fff", fontSize: 13 },
 
   dropzone: { borderWidth: 2, borderStyle: "dashed", borderColor: colors.border, backgroundColor: colors.bg, borderRadius: radius.md, padding: spacing.lg, alignItems: "center", gap: spacing.sm },
   dropzoneIcon: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
-  dropzoneTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
-  dropzoneSubtitle: { fontSize: 11.5, color: colors.textMuted, textAlign: "center" },
-  dropzoneChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#fff", borderWidth: 1, borderColor: colors.border, borderRadius: radius.pill, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs },
-  dropzoneChipText: { fontSize: 11, color: colors.textMuted },
+  dropzoneTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text },
+  dropzoneSubtitle: { fontSize: 13.5, color: colors.textMuted, textAlign: "center" },
+  dropzoneChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#fff", ...shadow, borderRadius: radius.pill, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs },
+  dropzoneChipText: { fontSize: 13, color: colors.textMuted },
 
-  errorText: { color: colors.danger, fontSize: 12.5 },
+  errorText: { color: colors.danger, fontSize: 14.5 },
 
   loadingWrap: { alignItems: "center", gap: spacing.xs, paddingVertical: spacing.xl },
-  loadingTitle: { fontSize: 14, fontWeight: "700", color: colors.text, marginTop: spacing.sm },
-  loadingCrop: { fontSize: 12, color: colors.primary, fontWeight: "600" },
-  loadingSubtitle: { fontSize: 12, color: colors.textMuted },
+  loadingTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text, marginTop: spacing.sm },
+  loadingCrop: { fontSize: 14, color: colors.primary, fontWeight: "600" },
+  loadingSubtitle: { fontSize: 14, color: colors.textMuted },
 
   thumb: { width: 60, height: 60, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border },
-  thumbLabel: { fontSize: 11, color: colors.textMuted },
-  thumbCrop: { fontSize: 11, color: colors.primary, fontWeight: "600" },
-  thumbLink: { fontSize: 11, color: colors.primary, fontWeight: "600", marginTop: 2 },
+  thumbLabel: { fontSize: 13, color: colors.textMuted },
+  thumbCrop: { fontSize: 13, color: colors.primary, fontWeight: "600" },
+  thumbLink: { fontSize: 13, color: colors.primary, fontWeight: "600", marginTop: 2 },
 
   resultCard: { gap: 0 },
-  diseaseName: { fontSize: 15, fontWeight: "700", color: colors.text, lineHeight: 20 },
-  scientificName: { fontSize: 11, color: colors.textMuted, fontStyle: "italic" },
+  diseaseName: { fontSize: 16.5, fontWeight: "700", color: colors.text, lineHeight: 20 },
+  scientificName: { fontSize: 13, color: colors.textMuted, fontStyle: "italic" },
   pill: { borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
-  pillText: { fontSize: 11, fontWeight: "600" },
-  description: { fontSize: 13, color: colors.text, marginTop: spacing.sm, lineHeight: 19 },
-  symptomsText: { fontSize: 11.5, color: colors.textMuted, marginTop: spacing.sm, lineHeight: 16 },
+  pillText: { fontSize: 13, fontWeight: "600" },
+  description: { fontSize: 14.5, color: colors.text, marginTop: spacing.sm, lineHeight: 19 },
+  symptomsText: { fontSize: 13.5, color: colors.textMuted, marginTop: spacing.sm, lineHeight: 16 },
   warningBox: { flexDirection: "row", gap: spacing.xs, backgroundColor: "#FFF3E6", borderWidth: 1, borderColor: "#FBD9AE", borderRadius: radius.sm, padding: spacing.sm + 2, marginTop: spacing.sm },
-  warningText: { flex: 1, fontSize: 11.5, color: "#95530F", lineHeight: 16 },
+  warningText: { flex: 1, fontSize: 13.5, color: "#95530F", lineHeight: 16 },
   differentialsBox: { backgroundColor: colors.muted, borderRadius: radius.sm, padding: spacing.sm + 2, marginTop: spacing.sm, gap: 4 },
-  differentialsTitle: { fontSize: 11.5, fontWeight: "700", color: colors.text },
-  differentialItem: { fontSize: 11.5, color: colors.textMuted, lineHeight: 16 },
+  differentialsTitle: { fontSize: 13.5, fontWeight: "700", color: colors.text },
+  differentialItem: { fontSize: 13.5, color: colors.textMuted, lineHeight: 16 },
   productBox: { flexDirection: "row", gap: spacing.xs, backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", borderRadius: radius.sm, padding: spacing.sm + 2, marginTop: spacing.sm },
-  productLabel: { fontSize: 11, fontWeight: "700", color: "#92600E" },
-  productName: { fontSize: 13, fontWeight: "600", color: "#7A4A0D", marginTop: 2 },
+  productLabel: { fontSize: 13, fontWeight: "700", color: "#92600E" },
+  productName: { fontSize: 14.5, fontWeight: "600", color: "#7A4A0D", marginTop: 2 },
 
-  blockTitle: { fontSize: 14, fontWeight: "700", color: colors.text, marginBottom: spacing.xs },
-  checkItem: { fontSize: 13, color: colors.text, marginTop: spacing.xs, lineHeight: 18 },
-  stepNum: { width: 22, height: 22, borderRadius: 11, backgroundColor: "#E3E0EC", alignItems: "center", justifyContent: "center" },
-  stepNumText: { fontSize: 11, fontWeight: "700", color: colors.primary },
-  stepText: { flex: 1, fontSize: 13, color: colors.text, lineHeight: 18 },
+  blockTitle: { fontSize: 15.5, fontWeight: "700", color: colors.text, marginBottom: spacing.xs },
+  checkItem: { fontSize: 14.5, color: colors.text, marginTop: spacing.xs, lineHeight: 18 },
+  stepNum: { width: 22, height: 22, borderRadius: 11, backgroundColor: "#FBF2D9", alignItems: "center", justifyContent: "center" },
+  stepNumText: { fontSize: 13, fontWeight: "700", color: colors.primary },
+  stepText: { flex: 1, fontSize: 14.5, color: colors.text, lineHeight: 18 },
 
-  kvkText: { fontSize: 11.5, color: colors.textMuted, lineHeight: 16 },
+  kvkText: { fontSize: 13.5, color: colors.textMuted, lineHeight: 16 },
   disclaimer: { flexDirection: "row", gap: spacing.xs, backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FDE68A", borderRadius: radius.sm, padding: spacing.sm + 2 },
-  disclaimerText: { flex: 1, fontSize: 11, color: "#92600E", lineHeight: 15 },
+  disclaimerText: { flex: 1, fontSize: 13, color: "#92600E", lineHeight: 15 },
 
-  doctorCta: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: "#F3EEFB", borderWidth: 1, borderColor: "#DDD0F0", borderRadius: radius.md, padding: spacing.sm + 4 },
-  doctorIconWrap: { width: 36, height: 36, borderRadius: radius.sm, backgroundColor: "#E3D5F5", alignItems: "center", justifyContent: "center" },
-  doctorCtaTitle: { fontSize: 13, fontWeight: "700", color: colors.accent },
-  doctorCtaSubtitle: { fontSize: 11, color: colors.accent },
+  doctorCta: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: "#FFF0C2", borderWidth: 1, borderColor: "#F0E4C2", borderRadius: radius.md, padding: spacing.sm + 4 },
+  doctorIconWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#FFF0C2", alignItems: "center", justifyContent: "center" },
+  doctorCtaTitle: { fontSize: 14.5, fontWeight: "700", color: colors.primary },
+  doctorCtaSubtitle: { fontSize: 13, color: colors.primary },
 
-  feedbackTitle: { fontSize: 12, fontWeight: "600", color: colors.textMuted, textAlign: "center" },
-  feedbackBtn: { flex: 1, alignItems: "center", paddingVertical: spacing.sm, borderWidth: 1, borderColor: colors.border, backgroundColor: "#fff", borderRadius: radius.sm },
-  feedbackBtnText: { fontSize: 11.5, fontWeight: "600", color: colors.text },
+  feedbackTitle: { fontSize: 14, fontWeight: "600", color: colors.textMuted, textAlign: "center" },
+  feedbackBtn: { flex: 1, alignItems: "center", paddingVertical: spacing.sm, ...shadow, backgroundColor: "#fff", borderRadius: 22 },
+  feedbackBtnText: { fontSize: 13.5, fontWeight: "600", color: colors.text },
 
-  analyzeAnother: { textAlign: "center", fontSize: 13, color: colors.textMuted, paddingVertical: spacing.sm },
+  analyzeAnother: { textAlign: "center", fontSize: 14.5, color: colors.textMuted, paddingVertical: spacing.sm },
 
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
   cropSheet: { position: "absolute", left: 0, right: 0, bottom: 0, maxHeight: "80%", backgroundColor: colors.card, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg },
   cropSheetHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.sm },
-  cropSheetTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
-  cropChip: { paddingHorizontal: spacing.sm + 4, paddingVertical: spacing.xs + 2, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: "#fff" },
+  cropSheetTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
+  cropChip: { paddingHorizontal: spacing.sm + 4, paddingVertical: spacing.xs + 2, borderRadius: radius.pill, ...shadow, backgroundColor: "#fff" },
   cropChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  cropChipText: { fontSize: 12.5, color: colors.text },
+  cropChipText: { fontSize: 14.5, color: colors.text },
   cropChipTextActive: { color: "#fff", fontWeight: "600" },
 });

@@ -1,7 +1,10 @@
-import React, { useMemo, useState } from "react";
-import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import React, { useMemo, useState, useLayoutEffect } from "react";
+import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
+import { Plus, Trash2, Leaf, Sprout } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Card } from "../../../components/Card";
+import { HeaderAddButton, IconChip, Pill } from "../../../components/harvest";
 import { Button } from "../../../components/Button";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
 import { colors, radius, spacing } from "../../../components/theme";
@@ -64,6 +67,12 @@ export function CropsScreen({ navigation }: { navigation: any }) {
     );
   }
 
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => <HeaderAddButton label={t("estate.addCrop")} onPress={() => navigation.navigate("CropForm")} />,
+    });
+  });
+
   if (estatesQuery.isLoading) return <LoadingView label="Loading your farms..." />;
 
   const estates = estatesQuery.data ?? [];
@@ -77,7 +86,7 @@ export function CropsScreen({ navigation }: { navigation: any }) {
           title="No farms yet"
           subtitle="Create your first estate to start tracking crops, sprays, and harvests."
         />
-        <Button title="+ Create New Estate" onPress={() => navigation.navigate("Onboarding")} />
+        <Button title="Create New Estate" icon={Plus} onPress={() => navigation.navigate("Onboarding")} />
       </View>
     );
   }
@@ -87,27 +96,28 @@ export function CropsScreen({ navigation }: { navigation: any }) {
       <FlatList
         data={data ?? []}
         keyExtractor={(c) => String(c.id)}
-        contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+        contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: spacing.xl }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListHeaderComponent={
           <View style={{ marginBottom: spacing.md }}>
-            <Text style={styles.sectionLabel}>YOUR FARMS</Text>
+            <Text style={styles.sectionLabel}>Your farms</Text>
             {estates.map((e) => (
               <Pressable key={e.id} onPress={() => estatesQuery.switchEstate(e.id)}>
                 <Card style={[styles.estateRow, e.id === activeEstateId && styles.estateRowActive]}>
+                  <IconChip icon={Leaf} index={1} size={42} />
                   <Text style={styles.estateName}>{e.farmName}</Text>
-                  {e.id === activeEstateId ? <Text style={styles.activeBadge}>{t("estate.active")}</Text> : null}
+                  {e.id === activeEstateId ? <Pill text={t("estate.active")} tone="good" /> : null}
                 </Card>
               </Pressable>
             ))}
             <View style={{ height: spacing.sm }} />
             <Button
-              title="+ Create New Estate"
-              variant="secondary"
+              title="Create New Estate" icon={Plus}
+              variant="light"
               onPress={() => navigation.navigate("Onboarding")}
             />
             <View style={{ height: spacing.md }} />
-            <Text style={styles.sectionLabel}>CROPS ON THIS FARM</Text>
+            <Text style={styles.sectionLabel}>Crops on this farm</Text>
           </View>
         }
         ListEmptyComponent={
@@ -117,7 +127,7 @@ export function CropsScreen({ navigation }: { navigation: any }) {
             <EmptyState title="No crops yet" subtitle="Add a crop to start tracking sprays and harvests." />
           )
         }
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
           const isMergeTarget = mergeSource != null && mergeSource.id !== item.id;
           return (
             <Pressable
@@ -126,6 +136,7 @@ export function CropsScreen({ navigation }: { navigation: any }) {
               }
             >
               <Card style={[styles.row, isMergeTarget && styles.mergeTargetRow]}>
+                <IconChip icon={Sprout} index={index} size={46} />
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
                     <Text style={styles.name}>{item.name}</Text>
@@ -146,7 +157,7 @@ export function CropsScreen({ navigation }: { navigation: any }) {
                   <Text style={styles.mergeHere}>Merge here</Text>
                 ) : (
                   <Pressable onPress={() => confirmDelete(item)} hitSlop={10}>
-                    <Text style={styles.delete}>Delete</Text>
+                    <Trash2 size={18} color={colors.danger} />
                   </Pressable>
                 )}
               </Card>
@@ -162,44 +173,30 @@ export function CropsScreen({ navigation }: { navigation: any }) {
           </Pressable>
         </View>
       ) : null}
-      <View style={[styles.footer, { paddingBottom: spacing.md + insets.bottom }]}>
-        <Button title={`+ ${t("estate.addCrop")}`} onPress={() => navigation.navigate("CropForm")} />
-      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: colors.textMuted,
-    letterSpacing: 0.6,
-    marginBottom: spacing.sm,
-  },
-  estateRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: spacing.sm,
-  },
-  estateRowActive: { borderColor: colors.primary, borderWidth: 2 },
-  estateName: { fontSize: 15, fontWeight: "600", color: colors.text },
-  activeBadge: { fontSize: 12, color: colors.primary, fontWeight: "700" },
-  row: { flexDirection: "row", alignItems: "center" },
+  sectionLabel: { fontSize: 20, fontWeight: "800", color: colors.text, marginBottom: spacing.sm },
+  estateRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: spacing.sm, borderWidth: 3, borderColor: "transparent" },
+  estateRowActive: { borderColor: colors.primary },
+  estateName: { flex: 1, fontSize: 17, fontWeight: "800", color: colors.text, textTransform: "capitalize" },
+  activeBadge: { fontSize: 14, color: colors.primary, fontWeight: "700" },
+  row: { flexDirection: "row", alignItems: "center", gap: 12 },
   mergeTargetRow: { borderColor: colors.primary, borderWidth: 2 },
-  name: { fontSize: 16, fontWeight: "600", color: colors.text },
-  meta: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
-  delete: { color: colors.danger, fontSize: 13 },
+  name: { fontSize: 18, fontWeight: "800", color: colors.text },
+  meta: { fontSize: 14.5, color: colors.textMuted, marginTop: 2 },
+  delete: { color: colors.danger, fontSize: 14.5 },
   dupBadge: {
     backgroundColor: colors.amberBg,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
   },
-  dupBadgeText: { fontSize: 10.5, fontWeight: "700", color: colors.warning },
-  mergeHere: { color: colors.primary, fontSize: 13, fontWeight: "700" },
+  dupBadgeText: { fontSize: 12.5, fontWeight: "700", color: colors.warning },
+  mergeHere: { color: colors.primary, fontSize: 14.5, fontWeight: "700" },
   mergeBanner: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -209,7 +206,7 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.md,
     borderRadius: radius.sm,
   },
-  mergeBannerText: { flex: 1, fontSize: 12.5, color: colors.text, marginRight: spacing.sm },
-  mergeCancel: { color: colors.danger, fontWeight: "700", fontSize: 13 },
+  mergeBannerText: { flex: 1, fontSize: 14.5, color: colors.text, marginRight: spacing.sm },
+  mergeCancel: { color: colors.danger, fontWeight: "700", fontSize: 14.5 },
   footer: { padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
 });

@@ -1,9 +1,13 @@
 import React, { useState } from "react";
-import { Image, ScrollView, StyleSheet, Text } from "react-native";
+import { Image, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
+import { Camera } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
+import { PhoneField } from "../../../components/PhoneField";
 import { ChipSelect } from "../../../components/ChipSelect";
+import { FormFooter } from "../../../components/harvest";
 import { colors, spacing } from "../../../components/theme";
 import { useEquipment } from "../hooks/useEquipment";
 import { compressToDataUrl } from "../../../lib/imageCompression";
@@ -58,27 +62,32 @@ export function EquipmentFormScreen({ navigation }: { navigation: any }) {
         description: description.trim() || undefined,
         photoUrl: photoDataUrl ?? undefined,
       },
-      { onSuccess: () => navigation.goBack() }
+      // Equipment for sale shows in the Shop.
+      { onSuccess: () => navigation.popTo("Shop") }
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 110 }}>
       {photoUri ? <Image source={{ uri: photoUri }} style={styles.preview} /> : (
-        <Button title="📷 Add equipment photo" variant="secondary" onPress={pickPhoto} />
+        <Button title="Add equipment photo" icon={Camera} variant="light" onPress={pickPhoto} />
       )}
       <TextField label="What are you selling? *" value={title} onChangeText={setTitle} placeholder="e.g. Mahindra 575 Tractor" />
       <ChipSelect label="Condition" options={["used", "new"]} value={condition} onChange={(v) => setCondition(v as "new" | "used")} />
       <ChipSelect label="Category" options={CATEGORIES} value={category} onChange={setCategory} />
       <TextField label="Price (₹) *" keyboardType="decimal-pad" value={price} onChangeText={setPrice} placeholder="150000" />
       <TextField label="Your name *" value={sellerName} onChangeText={setSellerName} />
-      <TextField label="Contact phone *" keyboardType="phone-pad" value={phone} onChangeText={setPhone} placeholder="9XXXXXXXXX" />
-      <TextField label="WhatsApp (optional)" keyboardType="phone-pad" value={whatsapp} onChangeText={setWhatsapp} placeholder="Same as phone" />
+      <PhoneField label="Contact phone *" value={phone} onChange={setPhone} />
+      <PhoneField label="WhatsApp (optional)" value={whatsapp} onChange={setWhatsapp} placeholder="Same as phone" />
       <TextField label="Location *" value={location} onChangeText={setLocation} placeholder="Village, District" />
       <TextField label="Description (optional)" value={description} onChangeText={setDescription} multiline numberOfLines={2} placeholder="Year, hours used, condition, accessories, etc." />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Button title="Post listing" onPress={submit} loading={createListing.isPending} />
     </ScrollView>
+    <FormFooter>
+      <Button title="Post listing" onPress={submit} loading={createListing.isPending} />
+    </FormFooter>
+    </View>
   );
 }
 

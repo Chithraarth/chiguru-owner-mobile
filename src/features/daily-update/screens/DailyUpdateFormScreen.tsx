@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
+import { Camera } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { ChipSelect } from "../../../components/ChipSelect";
+import { FormFooter } from "../../../components/harvest";
 import { colors, spacing } from "../../../components/theme";
 import { useEstateUpdates } from "../hooks/useEstateUpdates";
 import { useWorkGroups } from "../../work-groups/hooks/useWorkGroups";
@@ -56,7 +59,7 @@ export function DailyUpdateFormScreen({ navigation }: { navigation: any }) {
     try {
       const { count } = await countWorkersInUpdatePhoto(dataUrl);
       setAttendanceCount(String(count));
-      setAiHint(`🤖 AI detected ${count} workers`);
+      setAiHint(`AI detected ${count} workers`);
     } catch {
       // best-effort only, matches the web app's silent failure here
     }
@@ -89,11 +92,12 @@ export function DailyUpdateFormScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 110 }}>
       {photoUri ? (
         <Image source={{ uri: photoUri }} style={styles.preview} />
       ) : (
-        <Button title="📷 Take a photo" variant="secondary" onPress={takePhoto} />
+        <Button title="Take a photo" icon={Camera} variant="light" onPress={takePhoto} />
       )}
       {aiHint ? <Text style={styles.aiHint}>{aiHint}</Text> : null}
 
@@ -125,22 +129,25 @@ export function DailyUpdateFormScreen({ navigation }: { navigation: any }) {
       <TextField label="Notes" multiline numberOfLines={2} value={notes} onChangeText={setNotes} />
 
       <Text style={styles.locationStatus}>
-        {locationStatus === "locating" && "📍 Getting location..."}
-        {locationStatus === "attached" && "📍 Location attached"}
-        {locationStatus === "none" && "📍 Location not available"}
+        {locationStatus === "locating" && "Getting location..."}
+        {locationStatus === "attached" && "Location attached"}
+        {locationStatus === "none" && "Location not available"}
       </Text>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <Button title="Post update" onPress={submit} loading={createUpdate.isPending} />
     </ScrollView>
+    <FormFooter>
+      <Button title="Post update" onPress={submit} loading={createUpdate.isPending} />
+    </FormFooter>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   preview: { width: "100%", height: 220, borderRadius: 12, marginBottom: spacing.sm },
-  aiHint: { color: colors.primary, fontSize: 13, marginTop: spacing.xs },
-  locationStatus: { color: colors.textMuted, fontSize: 12, marginBottom: spacing.md },
+  aiHint: { color: colors.primary, fontSize: 14.5, marginTop: spacing.xs },
+  locationStatus: { color: colors.textMuted, fontSize: 14, marginBottom: spacing.md },
   error: { color: colors.danger, marginBottom: spacing.md },
 });

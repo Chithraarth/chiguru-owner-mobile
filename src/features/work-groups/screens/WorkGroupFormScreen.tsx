@@ -1,15 +1,19 @@
 import React, { useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text } from "react-native";
+import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
+import { Camera } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
 import { ChipSelect } from "../../../components/ChipSelect";
 import { SelectOrType } from "../../../components/SelectOrType";
+import { FormFooter } from "../../../components/harvest";
 import { colors, spacing } from "../../../components/theme";
 import { useWorkGroups } from "../hooks/useWorkGroups";
 import { countWorkersFromPhoto } from "../../../api/endpoints/workGroups";
 import { compressToDataUrl } from "../../../lib/imageCompression";
 import type { PayFrequency, PaymentType } from "../../../types/api";
+import { isGateError } from "../../../api/errors";
 
 const CATEGORIES = [
   "Harvest / Cutting",
@@ -53,7 +57,8 @@ export function WorkGroupFormScreen({ navigation }: { navigation: any }) {
       const dataUrl = await compressToDataUrl(result.assets[0].uri, "ai");
       const { count } = await countWorkersFromPhoto(dataUrl);
       setExpectedWorkers(String(count));
-    } catch {
+    } catch (err) {
+      if (isGateError(err)) return; // the plan/wallet prompt already explained it
       Alert.alert("AI headcount failed", "Could not count workers from that photo. Try again or enter manually.");
     } finally {
       setScanning(false);
@@ -91,7 +96,8 @@ export function WorkGroupFormScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 110 }}>
       <TextField label="Work name *" value={name} onChangeText={setName} />
       <TextField label="Block / area" value={blockName} onChangeText={setBlockName} />
       <SelectOrType label="Category" options={CATEGORIES} value={category} onChange={setCategory} />
@@ -135,22 +141,25 @@ export function WorkGroupFormScreen({ navigation }: { navigation: any }) {
         value={expectedWorkers}
         onChangeText={setExpectedWorkers}
       />
-      <Button title="📷 Scan headcount with AI" variant="secondary" onPress={scanHeadcount} loading={scanning} />
+      <Button title="Scan headcount with AI" icon={Camera} variant="light" onPress={scanHeadcount} loading={scanning} />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <Button
-        title="Create work group"
-        onPress={submit}
-        loading={createWorkGroup.isPending}
-        disabled={scanning}
-      />
     </ScrollView>
+    <FormFooter>
+      <Button
+          title="Create work group"
+          onPress={submit}
+          loading={createWorkGroup.isPending}
+          disabled={scanning}
+        />
+    </FormFooter>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   error: { color: colors.danger, marginBottom: spacing.md },
-  heldPreview: { fontSize: 12, color: colors.textMuted, marginTop: -spacing.sm, marginBottom: spacing.md },
+  heldPreview: { fontSize: 14, color: colors.textMuted, marginTop: -spacing.sm, marginBottom: spacing.md },
 });

@@ -1,7 +1,10 @@
-import React, { useState } from "react";
-import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import React, { useState, useLayoutEffect } from "react";
+import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
+import { Plus, Trash2, Receipt } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Card } from "../../../components/Card";
+import { HeaderAddButton, IconChip } from "../../../components/harvest";
 import { Button } from "../../../components/Button";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
 import { NoEstateNotice } from "../../../components/NoEstateNotice";
@@ -16,6 +19,12 @@ export function ExpenseListScreen({ navigation }: { navigation: any }) {
   const [refreshing, setRefreshing] = useState(false);
   const insets = useSafeAreaInsets();
   const { t } = useT();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => <HeaderAddButton label="Add expense" onPress={() => navigation.navigate("ExpenseForm")} />,
+    });
+  });
 
   if (activeEstateId == null) return <NoEstateNotice />;
 
@@ -45,11 +54,12 @@ export function ExpenseListScreen({ navigation }: { navigation: any }) {
       <FlatList
         data={data ?? []}
         keyExtractor={(e) => String(e.id)}
-        contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+        contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: spacing.xl }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={<EmptyState title="No expenses yet" subtitle="Add your first expense with a receipt photo." />}
-        renderItem={({ item }) => (
+        renderItem={({ item, index }) => (
           <Card style={styles.row}>
+            <IconChip icon={Receipt} index={index} size={44} />
             <View style={{ flex: 1 }}>
               <Text style={styles.category}>{item.category}</Text>
               <Text style={styles.meta}>
@@ -60,27 +70,24 @@ export function ExpenseListScreen({ navigation }: { navigation: any }) {
             </View>
             <Text style={styles.amount}>₹{item.amount}</Text>
             <Pressable onPress={() => confirmDelete(item.id)} hitSlop={10}>
-              <Text style={styles.delete}>Delete</Text>
+              <Trash2 size={18} color={colors.danger} />
             </Pressable>
           </Card>
         )}
       />
-      <View style={[styles.footer, { paddingBottom: spacing.md + insets.bottom }]}>
-        <Button title="+ Add expense" onPress={() => navigation.navigate("ExpenseForm")} />
-      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  totalCard: { margin: spacing.md, alignItems: "center" },
-  totalLabel: { color: colors.textMuted, fontSize: 13 },
-  totalValue: { fontSize: 24, fontWeight: "700", color: colors.primaryDark, marginTop: spacing.xs },
+  totalCard: { marginHorizontal: 20, marginTop: spacing.md, alignItems: "center", padding: 18 },
+  totalLabel: { color: colors.textMuted, fontSize: 16, fontWeight: "700" },
+  totalValue: { fontSize: 34, fontWeight: "800", color: colors.primary, marginTop: 2 },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  category: { fontSize: 14, fontWeight: "600", color: colors.text },
-  meta: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
-  amount: { fontSize: 15, fontWeight: "700", color: colors.text },
-  delete: { color: colors.danger, fontSize: 13 },
+  category: { fontSize: 16.5, fontWeight: "800", color: colors.text },
+  meta: { fontSize: 14, color: colors.textMuted, marginTop: 2 },
+  amount: { fontSize: 18, fontWeight: "800", color: colors.text },
+  delete: { color: colors.danger, fontSize: 14.5 },
   footer: { padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
 });

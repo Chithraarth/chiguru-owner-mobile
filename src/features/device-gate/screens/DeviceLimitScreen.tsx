@@ -1,8 +1,13 @@
 import React from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Lock, LogOut, Smartphone } from "lucide-react-native";
+import { Text } from "../../../components/Text";
 import { Button } from "../../../components/Button";
-import { Card } from "../../../components/Card";
-import { colors, spacing } from "../../../components/theme";
+import { HeaderBand } from "../../../components/HarvestHeader";
+import { IconChip, ListCard, ListRow, SectionLabel } from "../../../components/harvest";
+import { Enter, Float } from "../../../components/motion";
+import { colors } from "../../../components/theme";
 import { removeDevice } from "../../../api/endpoints/auth";
 import { signOutUser } from "../../../lib/firebase";
 import { useT } from "../../../lib/i18n";
@@ -18,6 +23,7 @@ export function DeviceLimitScreen({
   onFreedSlot: () => void;
 }) {
   const { t } = useT();
+  const insets = useSafeAreaInsets();
   async function handleRemove(id: number) {
     await removeDevice(id);
     onFreedSlot();
@@ -25,39 +31,44 @@ export function DeviceLimitScreen({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Device limit reached</Text>
-      <Text style={styles.subtitle}>
-        Chiguru allows up to {maxDevices} devices per account. Sign out one of the
-        devices below to continue on this one.
-      </Text>
-      <FlatList
-        data={devices}
-        keyExtractor={(d) => String(d.id)}
-        contentContainerStyle={{ gap: spacing.sm }}
-        renderItem={({ item }) => (
-          <Card style={styles.deviceRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.deviceName}>{item.deviceName ?? "Unknown device"}</Text>
-              <Text style={styles.deviceMeta}>
-                Last seen {new Date(item.lastSeenAt).toLocaleString()}
-              </Text>
-            </View>
-            <Button title={t("menu.signOut")} variant="danger" onPress={() => handleRemove(item.id)} />
-          </Card>
-        )}
-      />
-      <View style={{ marginTop: spacing.lg }}>
-        <Button title="Sign out on this device instead" variant="secondary" onPress={() => signOutUser()} />
+      <Enter kind="down">
+        <HeaderBand title="Too many phones" subtitle={`Your plan allows ${maxDevices} phones at a time`} />
+      </Enter>
+      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 110 }]}>
+        <Enter kind="pop" delay={250} style={{ alignItems: "center", paddingVertical: 10 }}>
+          <Float delay={900}>
+            <IconChip icon={Lock} index={0} size={96} />
+          </Float>
+        </Enter>
+        <Enter delay={400}>
+          <Text style={styles.text}>To keep your farm data safe, remove an old phone to use Chiguru on this one.</Text>
+        </Enter>
+        <SectionLabel>Signed-in phones</SectionLabel>
+        <Enter delay={550}>
+          <ListCard>
+            {devices.map((item, i) => (
+              <ListRow
+                key={item.id}
+                title={item.deviceName ?? "Unknown device"}
+                subtitle={`Last used ${new Date(item.lastSeenAt).toLocaleString()}`}
+                left={<IconChip icon={Smartphone} index={3} size={44} />}
+                right={<Button title="Remove" variant="light" size="compact" onPress={() => handleRemove(item.id)} />}
+                divider={i < devices.length - 1}
+              />
+            ))}
+          </ListCard>
+        </Enter>
+      </ScrollView>
+      <View style={[styles.cta, { paddingBottom: insets.bottom + 20 }]}>
+        <Button title={`${t("menu.signOut")} on this phone`} variant="secondary" icon={LogOut} onPress={() => signOutUser()} />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.lg },
-  title: { fontSize: 20, fontWeight: "700", color: colors.text, marginBottom: spacing.sm },
-  subtitle: { color: colors.textMuted, marginBottom: spacing.lg },
-  deviceRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  deviceName: { fontSize: 15, fontWeight: "600", color: colors.text },
-  deviceMeta: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  container: { flex: 1, backgroundColor: colors.bg },
+  body: { padding: 20, gap: 14 },
+  text: { fontSize: 16.5, color: colors.textMuted, lineHeight: 24, textAlign: "center" },
+  cta: { position: "absolute", left: 20, right: 20, bottom: 0 },
 });

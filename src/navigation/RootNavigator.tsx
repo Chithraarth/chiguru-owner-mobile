@@ -1,7 +1,9 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import NetInfo from "@react-native-community/netinfo";
 import * as Notifications from "expo-notifications";
-import { NavigationContainer, NavigationContainerRef } from "@react-navigation/native";
+import { NavigationContainer } from "@react-navigation/native";
+import { navigationRef } from "./navigationRef";
+import { useGatePrompts } from "../lib/planGate";
 import { useAuthListener } from "../features/auth/hooks/useAuth";
 import { useDeviceRegistration } from "../features/device-gate/hooks/useDeviceRegistration";
 import { DeviceLimitScreen } from "../features/device-gate/screens/DeviceLimitScreen";
@@ -15,13 +17,17 @@ import { useSessionStore } from "../store/sessionStore";
 import { useSyncStore } from "../store/syncStore";
 import { runSync } from "../lib/syncManager";
 import { usePushStore } from "../lib/push";
-import { LoadingView } from "../components/StateViews";
+import { SplashView } from "../features/intro/SplashView";
+import { useWelcomeStore } from "../features/welcome/store/welcomeStore";
 import { AuthStack } from "./AuthStack";
 import { MainTabs } from "./MainTabs";
 import { InviteeStack } from "../features/invitee/InviteeStack";
+import { navTheme } from "./navTheme";
 
 export function RootNavigator() {
   useAuthListener();
+  // "Subscription needed" / "Wallet balance too low" prompts, app-wide.
+  useGatePrompts();
 
   const user = useSessionStore((s) => s.user);
   const authLoading = useSessionStore((s) => s.authLoading);
@@ -30,10 +36,11 @@ export function RootNavigator() {
   const activeEstateId = useEstateStore((s) => s.activeEstateId);
   const setActiveEstate = useEstateStore((s) => s.setActiveEstate);
   const setOnline = useSyncStore((s) => s.setOnline);
+  const welcomeHydrated = useWelcomeStore((s) => s.hydrated);
+  const hydrateWelcome = useWelcomeStore((s) => s.hydrate);
 
   const { blocked, devices, maxDevices, recheck } = useDeviceRegistration(!!user);
   const hydratePush = usePushStore((s) => s.hydrate);
-  const navRef = useRef<NavigationContainerRef<any>>(null);
 
   // Every estate this person may act on (their own + anything they're
   // invited to), so we know up front whether a Choose Estate step is even
@@ -62,7 +69,7 @@ export function RootNavigator() {
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       if (response.notification.request.content.data?.type === "plan-reminder") {
-        navRef.current?.navigate("DashboardTab", { screen: "YearPlan" });
+        if (navigationRef.isReady()) navigationRef.navigate("DashboardTab", { screen: "YearPlan" });
       }
     });
     return () => sub.remove();
@@ -75,7 +82,8 @@ export function RootNavigator() {
 
   useEffect(() => {
     hydrateEstate();
-  }, [hydrateEstate]);
+    hydrateWelcome();
+  }, [hydrateEstate, hydrateWelcome]);
 
   // Auto-pick the (only) estate when there's exactly one relationship, or
   // self-heal a stale activeEstateId (deleted farm, revoked invite) back to
@@ -109,13 +117,13 @@ export function RootNavigator() {
     return unsubscribe;
   }, [user, setOnline]);
 
-  if (authLoading || (user && !estateHydrated)) {
-    return <LoadingView label="Loading..." />;
+  if (authLoading || !welcomeHydrated || (user && !estateHydrated)) {
+    return <SplashView />;
   }
 
   if (!user) {
     return (
-      <NavigationContainer>
+      <NavigationContainer theme={navTheme}>
         <AuthStack />
       </NavigationContainer>
     );
@@ -126,7 +134,7 @@ export function RootNavigator() {
   }
 
   if (myEstatesQuery.isLoading || myInvitesQuery.isLoading) {
-    return <LoadingView label="Loading your farms..." />;
+    return <SplashView label="Loading your farms…" />;
   }
 
   // Any invite this person hasn't yet accepted/declined must be resolved
@@ -172,14 +180,14 @@ export function RootNavigator() {
   // farm gets the full Owner app. Keyed so switching resets navigation.
   if (isInvitedEstate) {
     return (
-      <NavigationContainer key="invitee">
+      <NavigationContainer key="invitee" theme={navTheme}>
         <InviteeStack />
       </NavigationContainer>
     );
   }
 
   return (
-    <NavigationContainer key="owner" ref={navRef}>
+    <NavigationContainer key="owner" ref={navigationRef} theme={navTheme}>
       <MainTabs />
     </NavigationContainer>
   );

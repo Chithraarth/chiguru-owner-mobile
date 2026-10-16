@@ -1,8 +1,10 @@
 import React, { useState } from "react";
-import { Alert, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { MapPin, Megaphone, Pencil, Tag, Trash2 } from "lucide-react-native";
-import { colors, radius, spacing } from "../../../components/theme";
+import { MapPin, Megaphone, Pencil, Tag, Trash2, Truck, HardHat, ShoppingBasket, Tractor, Sprout } from "lucide-react-native";
+import { BigTiles } from "../../../components/harvest";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { useT } from "../../../lib/i18n";
 import { getMyProduceListings, deleteProduceListing } from "../../../api/endpoints/marketplace";
 import { getMyEquipmentListings, deleteEquipmentListing } from "../../../api/endpoints/equipment";
@@ -11,11 +13,11 @@ import type { EquipmentListing, HireListing, ProduceListing } from "../../../typ
 
 function getPostOptions(t: (key: string) => string) {
   return [
-    { emoji: "🚛", label: t("myAds.postMachine"), screen: "HireForm", params: { listingType: "rental" }, bg: "#EAE8EF" },
-    { emoji: "👷", label: t("myAds.postWorker"), screen: "HireForm", params: { listingType: "job" }, bg: "#FFEBD6" },
-    { emoji: "🧺", label: t("myAds.sellProduce"), screen: "MarketplaceForm", params: undefined, bg: "#EDEBF7" },
-    { emoji: "🚜", label: t("myAds.sellEquipment"), screen: "EquipmentForm", params: undefined, bg: colors.secondary },
-    { emoji: "🌱", label: t("myAds.sellPlants"), screen: "Nursery", params: undefined, bg: "#E3E0EC" },
+    { icon: Truck, label: t("myAds.postMachine"), screen: "HireForm", params: { listingType: "rental" } },
+    { icon: HardHat, label: t("myAds.postWorker"), screen: "HireForm", params: { listingType: "job" } },
+    { icon: ShoppingBasket, label: t("myAds.sellProduce"), screen: "MarketplaceForm", params: undefined },
+    { icon: Tractor, label: t("myAds.sellEquipment"), screen: "EquipmentForm", params: undefined },
+    { icon: Sprout, label: t("myAds.sellPlants"), screen: "Nursery", params: undefined },
   ];
 }
 
@@ -125,12 +127,12 @@ export function MyAdsScreen({ navigation }: { navigation: any }) {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}
+      contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       <View style={styles.hero}>
         <View style={styles.heroIconWrap}>
-          <Megaphone size={22} color="#fff" />
+          <Megaphone size={22} color={colors.primary} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.heroTitle}>{t("menu.myAds")}</Text>
@@ -139,28 +141,20 @@ export function MyAdsScreen({ navigation }: { navigation: any }) {
       </View>
 
       <Text style={styles.chooseLabel}>{t("myAds.chooseType")}</Text>
-      <View style={{ flexDirection: "row", gap: spacing.xs }}>
-        {postOptions.map((o) => (
-          <Pressable
-            key={o.label}
-            style={[styles.postOption, { backgroundColor: o.bg }]}
-            onPress={() => navigation.navigate(o.screen, o.params)}
-          >
-            <Text style={{ fontSize: 20 }}>{o.emoji}</Text>
-            <Text style={styles.postOptionText} numberOfLines={3}>{o.label}</Text>
-          </Pressable>
-        ))}
-      </View>
+      <BigTiles
+        columns={3}
+        items={postOptions.map((o) => ({ icon: o.icon, title: o.label, onPress: () => navigation.navigate(o.screen, o.params) }))}
+      />
 
       {isLoading ? null : total === 0 ? (
         <View style={{ alignItems: "center", paddingVertical: spacing.xl }}>
           <Megaphone size={36} color={colors.border} />
-          <Text style={{ color: colors.textMuted, marginTop: spacing.sm, fontSize: 13 }}>{t("myAds.empty")}</Text>
+          <Text style={{ color: colors.textMuted, marginTop: spacing.sm, fontSize: 14.5 }}>{t("myAds.empty")}</Text>
         </View>
       ) : (
         <View style={{ gap: spacing.lg }}>
           {jobs.length > 0 ? (
-            <Section title={`👷 ${t("myAds.workerAds")}`}>
+            <Section title={`${t("myAds.workerAds")}`}>
               {jobs.map((l) => (
                 <AdCard
                   key={l.id}
@@ -175,7 +169,7 @@ export function MyAdsScreen({ navigation }: { navigation: any }) {
             </Section>
           ) : null}
           {rentals.length > 0 ? (
-            <Section title={`🚛 ${t("myAds.machineAds")}`}>
+            <Section title={`${t("myAds.machineAds")}`}>
               {rentals.map((l) => (
                 <AdCard
                   key={l.id}
@@ -190,7 +184,7 @@ export function MyAdsScreen({ navigation }: { navigation: any }) {
             </Section>
           ) : null}
           {produceAds.length > 0 ? (
-            <Section title={`🧺 ${t("myAds.produceAds")}`}>
+            <Section title={`${t("myAds.produceAds")}`}>
               {produceAds.map((l) => (
                 <AdCard
                   key={l.id}
@@ -204,7 +198,7 @@ export function MyAdsScreen({ navigation }: { navigation: any }) {
             </Section>
           ) : null}
           {equipmentAds.length > 0 ? (
-            <Section title={`🚜 ${t("myAds.equipmentAds")}`}>
+            <Section title={`${t("myAds.equipmentAds")}`}>
               {equipmentAds.map((l) => (
                 <AdCard
                   key={l.id}
@@ -226,21 +220,21 @@ export function MyAdsScreen({ navigation }: { navigation: any }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
-  hero: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md },
-  heroIconWrap: { width: 44, height: 44, borderRadius: radius.sm, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
-  heroTitle: { color: "#fff", fontSize: 16, fontWeight: "700" },
-  heroSubtitle: { color: "rgba(255,255,255,0.85)", fontSize: 12, marginTop: 2 },
+  hero: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.accent, borderRadius: 28, padding: spacing.md },
+  heroIconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
+  heroTitle: { color: colors.accentInk, fontSize: 18, fontWeight: "800" },
+  heroSubtitle: { color: colors.accentInkSoft, fontSize: 14, marginTop: 2 },
 
-  chooseLabel: { fontSize: 13, fontWeight: "700", color: colors.text, textAlign: "center" },
+  chooseLabel: { fontSize: 20, fontWeight: "800", color: colors.text },
   postOption: { flex: 1, borderRadius: radius.md, alignItems: "center", paddingVertical: spacing.sm + 4, paddingHorizontal: 3, gap: 4 },
-  postOptionText: { fontSize: 9.5, fontWeight: "600", color: colors.text, textAlign: "center", lineHeight: 12 },
+  postOptionText: { fontSize: 11.5, fontWeight: "600", color: colors.text, textAlign: "center", lineHeight: 12 },
 
-  sectionTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
-  adCard: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm + 4 },
+  sectionTitle: { fontSize: 20, fontWeight: "800", color: colors.text },
+  adCard: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, ...shadow, borderRadius: 22, padding: spacing.sm + 4 },
   adPhoto: { width: 52, height: 52, borderRadius: radius.sm },
   adPhotoPlaceholder: { width: 52, height: 52, borderRadius: radius.sm, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" },
-  adTitle: { fontSize: 13.5, fontWeight: "700", color: colors.text },
-  adSubtitle: { fontSize: 12, color: colors.primary, fontWeight: "600", marginTop: 1 },
-  adLocation: { fontSize: 11, color: colors.textMuted },
-  iconBtn: { width: 32, height: 32, borderRadius: radius.pill, backgroundColor: "#E9E6FB", alignItems: "center", justifyContent: "center" },
+  adTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
+  adSubtitle: { fontSize: 14, color: colors.primary, fontWeight: "600", marginTop: 1 },
+  adLocation: { fontSize: 13, color: colors.textMuted },
+  iconBtn: { width: 32, height: 32, borderRadius: radius.pill, backgroundColor: "#FFF0C2", alignItems: "center", justifyContent: "center" },
 });

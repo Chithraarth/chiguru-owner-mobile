@@ -1,48 +1,68 @@
-import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Sprout, Store, Tractor, Users } from "lucide-react-native";
-import { colors, radius, spacing } from "../../../components/theme";
-import { useT } from "../../../lib/i18n";
+import React, { useState } from "react";
+import { RefreshControl, ScrollView, StyleSheet } from "react-native";
+import { useQuery } from "@tanstack/react-query";
+import { ChevronRight } from "lucide-react-native";
+import { Text } from "../../../components/Text";
+import { Card } from "../../../components/Card";
+import { LoadingView } from "../../../components/StateViews";
+import { IconChip, ListCard, ListRow } from "../../../components/harvest";
+import { colors, spacing } from "../../../components/theme";
+import { getRecentAds } from "../../../api/endpoints/dashboard";
+import { AD_BOARD_STYLE, timeAgo } from "../ads";
 
+// The server caps one request; this asks for as many as it allows.
+const ADS_LIMIT = 100;
+
+/** Shop: farm equipment for sale, newest first. */
 export function ShopScreen({ navigation }: { navigation: any }) {
-  const { t } = useT();
-  return (
-    <View style={styles.container}>
-      <View style={styles.grid}>
-        <Pressable style={[styles.tile, { backgroundColor: "#EDEBF7" }]} onPress={() => navigation.navigate("Nursery")}>
-          <View style={styles.iconWrap}>
-            <Sprout size={26} color={colors.primary} />
-          </View>
-          <Text style={[styles.tileText, { color: colors.primary }]}>{t("more.nursery")}</Text>
-        </Pressable>
-        <Pressable style={[styles.tile, { backgroundColor: colors.accent }]} onPress={() => navigation.navigate("Marketplace")}>
-          <View style={styles.iconWrap}>
-            <Store size={26} color="#fff" />
-          </View>
-          <Text style={[styles.tileText, { color: "#fff" }]}>{t("more.market")}</Text>
-        </Pressable>
-        <Pressable style={[styles.tile, { backgroundColor: colors.secondary }]} onPress={() => navigation.navigate("Equipment")}>
-          <View style={styles.iconWrap}>
-            <Tractor size={26} color={colors.text} />
-          </View>
-          <Text style={[styles.tileText, { color: colors.text }]}>{t("more.equipment")}</Text>
-        </Pressable>
-      </View>
+  const adsQuery = useQuery({ queryKey: ["ads", "all"], queryFn: () => getRecentAds(ADS_LIMIT) });
+  const [refreshing, setRefreshing] = useState(false);
 
-      <Pressable style={styles.adminLink} onPress={() => navigation.navigate("NurseryAdmin")}>
-        <Users size={14} color={colors.textMuted} />
-        <Text style={styles.adminLinkText}>Nursery vendor admin</Text>
-      </Pressable>
-    </View>
+  async function onRefresh() {
+    setRefreshing(true);
+    await adsQuery.refetch();
+    setRefreshing(false);
+  }
+
+  if (adsQuery.isLoading) return <LoadingView label="Loading ads..." />;
+  // Shop is farm equipment for sale. Rentals are on Rent Machines, worker
+  // posts on Find Workers, produce on Market and plants in Nursery.
+  const ads = (adsQuery.data ?? []).filter((a) => a.board === "equipment");
+
+  return (
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
+      {ads.length === 0 ? (
+        <Card style={{ alignItems: "center", gap: spacing.sm }}>
+          <Text style={styles.muted}>No equipment for sale yet.</Text>
+        </Card>
+      ) : (
+        <ListCard>
+          {ads.map((ad, i) => {
+            const style = AD_BOARD_STYLE[ad.board] ?? AD_BOARD_STYLE.produce;
+            const when = timeAgo(ad.createdAt);
+            return (
+              <ListRow
+                key={ad.id}
+                title={ad.title}
+                subtitle={[style.label, ad.place, when].filter(Boolean).join(" · ")}
+                left={<IconChip icon={style.icon} index={i} />}
+                right={<ChevronRight size={18} color={colors.textMuted} />}
+                divider={i < ads.length - 1}
+                onPress={() => navigation.navigate(style.screen, style.params)}
+              />
+            );
+          })}
+        </ListCard>
+      )}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  tile: { width: "47%", borderRadius: radius.md, padding: spacing.md, alignItems: "center", gap: spacing.sm },
-  iconWrap: { width: 48, height: 48, borderRadius: radius.sm, backgroundColor: "rgba(255,255,255,0.5)", alignItems: "center", justifyContent: "center" },
-  tileText: { fontSize: 13, fontWeight: "700", textAlign: "center" },
-  adminLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: spacing.lg, paddingVertical: spacing.sm },
-  adminLinkText: { fontSize: 12.5, color: colors.textMuted, fontWeight: "500" },
+  container: { flex: 1, backgroundColor: colors.bg },
+  muted: { fontSize: 15, color: colors.textMuted, textAlign: "center" },
 });

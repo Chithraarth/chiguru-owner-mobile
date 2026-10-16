@@ -1,0 +1,70 @@
+{
+  "project_info": {
+    "project_number": "299684443899",
+    "project_id": "chiguru-fa67f",
+    "storage_bucket": "chiguru-fa67f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:299684443899:android:67fc06f6beabafd97f625e",
+        "android_client_info": {
+          "package_name": "com.thechiguru.owner"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "299684443899-cgqn6j23r9qbio878f8q8lofd93h86jt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.thechiguru.owner",
+            "certificate_hash": "99843befccfbf75ba2cbd555f43583b3d057f56e"
+          }
+        },
+        {
+          "client_id": "299684443899-g4gcdveg49bpgtblf7lqpgjh5omvnj7q.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.thechiguru.owner",
+            "certificate_hash": "ca25a93811196ae698c3e90512c79f8dee896047"
+          }
+        },
+        {
+          "client_id": "299684443899-vsu5b75sobjg44b4t1fp73tof8gf5aj8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.thechiguru.owner",
+            "certificate_hash": "1b7f99ddf6ccdb113222b97e3f44cd5f69618b54"
+          }
+        },
+        {
+          "client_id": "299684443899-sedetdu12ukvrt97h6oui2pbo4rh67lp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBnbVo3n7h8PxQ00rP9KGMNW7Mr0S8gD00"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "299684443899-sedetdu12ukvrt97h6oui2pbo4rh67lp.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "299684443899-vp9u66ilmgh9rko1de7oji0em83llbub.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.thechiguru.owner"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

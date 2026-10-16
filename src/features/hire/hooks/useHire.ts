@@ -12,18 +12,33 @@ export function useHire(listingType?: "rental" | "job") {
 
   const createMutation = useMutation({
     mutationFn: (data: Omit<CreateHireListingRequest, "ownerKey">) => createHireListing(data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["hire-listings"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["hire-listings"] });
+      // The Shop list and home "Recent ads" are built from the same ads.
+      queryClient.invalidateQueries({ queryKey: ["ads"] });
+      queryClient.invalidateQueries({ queryKey: ["recent-ads"] });
+    },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Omit<CreateHireListingRequest, "ownerKey"> }) =>
       updateHireListing(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["hire-listings"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["hire-listings"] });
+      // The Shop list and home "Recent ads" are built from the same ads.
+      queryClient.invalidateQueries({ queryKey: ["ads"] });
+      queryClient.invalidateQueries({ queryKey: ["recent-ads"] });
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteHireListing(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["hire-listings"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["hire-listings"] });
+      // The Shop list and home "Recent ads" are built from the same ads.
+      queryClient.invalidateQueries({ queryKey: ["ads"] });
+      queryClient.invalidateQueries({ queryKey: ["recent-ads"] });
+    },
   });
 
   return { ...query, createListing: createMutation, updateListing: updateMutation, deleteListing: deleteMutation };

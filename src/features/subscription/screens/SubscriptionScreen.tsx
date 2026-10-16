@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import Constants from "expo-constants";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -24,7 +25,7 @@ import {
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { LoadingView } from "../../../components/StateViews";
-import { colors, radius, spacing } from "../../../components/theme";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import {
   cancelSubscription,
   createManagerSeatAddonOrder,
@@ -37,6 +38,14 @@ import {
 import { RazorpayCheckoutModal } from "../../wallet/components/RazorpayCheckoutModal";
 import { ApiError } from "../../../api/errors";
 import type { ManagerSeatAddonOrderResponse, SubscriptionPlan } from "../../../types/api";
+import {
+  isIOS,
+  buyWithApple,
+  restoreApplePurchases,
+  manageAppleSubscription,
+  useAppleIapStore,
+  APPLE_SEAT_PRODUCT_ID,
+} from "../../iap/appleIap";
 
 function inr(n: number) {
   return `₹${Math.round(n).toLocaleString("en-IN")}`;
@@ -69,6 +78,9 @@ export function SubscriptionScreen() {
   // backgrounded — the listener must always see the *current* plan list to
   // resolve a productId back to our own plan id, not a stale closure's.
   const plansRef = useRef<SubscriptionPlan[]>([]);
+  // iPhone: purchases run through Apple; the app-wide handler verifies them.
+  const applePendingSku = useAppleIapStore((s) => s.pendingSku);
+  const appleVerifying = useAppleIapStore((s) => s.verifying);
 
   const plansQuery = useQuery({ queryKey: ["subscription-plans"], queryFn: getPlans });
   const subQuery = useQuery({ queryKey: ["subscription"], queryFn: getSubscription });
@@ -92,7 +104,7 @@ export function SubscriptionScreen() {
       }
       return tokenByProductId;
     },
-    enabled: productIds.length > 0,
+    enabled: !isIOS && productIds.length > 0,
   });
 
   const invalidateAll = () => {
@@ -104,6 +116,8 @@ export function SubscriptionScreen() {
   // this screen. A purchase's result never comes back from requestSubscription
   // itself; it always arrives here, asynchronously.
   useEffect(() => {
+    // iOS purchases are handled app-wide by useApplePurchaseHandler.
+    if (isIOS) return;
     let mounted = true;
     initConnection().catch((err: unknown) => console.warn("IAP initConnection failed", err));
 
@@ -156,6 +170,14 @@ export function SubscriptionScreen() {
       invalidateAll();
     },
     onError: (err: unknown) => {
+      if (err instanceof ApiError && err.is("MANAGE_VIA_APPLE")) {
+        manageAppleSubscription();
+        return;
+      }
+      if (err instanceof ApiError && err.is("MANAGE_VIA_GOOGLE_PLAY") && isIOS) {
+        Alert.alert("Bought on Google Play", "This plan was bought on an Android phone — manage it from the Play Store on that phone.");
+        return;
+      }
       if (err instanceof ApiError && err.is("MANAGE_VIA_GOOGLE_PLAY")) {
         // Google's own guidance: subscriptions bought via Play Billing are
         // managed from Play Store's own UI, not from inside the app.
@@ -180,6 +202,14 @@ export function SubscriptionScreen() {
   const isActive = current?.status === "ACTIVE" || current?.status === "GRACE_PERIOD";
 
   async function onChoosePlan(plan: SubscriptionPlan) {
+    if (isIOS) {
+      if (!plan.appleProductId) {
+        Alert.alert("Not available yet", "This plan isn't set up for purchase on iPhone yet.");
+        return;
+      }
+      await buyWithApple(plan.appleProductId);
+      return;
+    }
     if (!plan.googlePlayProductId) {
       Alert.alert("Not available yet", "This plan isn't set up for purchase on Android yet.");
       return;
@@ -211,6 +241,10 @@ export function SubscriptionScreen() {
   }
 
   async function onBuySeatAddon() {
+    if (isIOS) {
+      await buyWithApple(APPLE_SEAT_PRODUCT_ID);
+      return;
+    }
     setBuyingSeatAddon(true);
     try {
       const created = await createManagerSeatAddonOrder();
@@ -267,12 +301,14 @@ export function SubscriptionScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       {isActive ? (
         <View style={styles.statusCard}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
-            <Crown size={18} color="#fff" />
-            <Text style={styles.statusTitle}>{current!.plan?.name} plan active</Text>
+            <Crown size={18} color={colors.accentInk} />
+            <Text style={styles.statusTitle}>
+              {/plan$/i.test(current!.plan?.name ?? "") ? current!.plan?.name : `${current!.plan?.name ?? "Your"} plan`} active
+            </Text>
           </View>
           <Text style={styles.statusDesc}>Your farm is fully active — everything is unlocked.</Text>
           {current!.expiryDate ? (
@@ -282,12 +318,17 @@ export function SubscriptionScreen() {
           ) : null}
           {current!.autoRenew ? (
             <View style={{ marginTop: spacing.sm }}>
-              <Button title="Cancel subscription" variant="secondary" onPress={() => cancelMutation.mutate()} loading={cancelMutation.isPending} />
+              <Button
+                title={current!.provider === "APPLE" ? "Manage subscription" : "Cancel subscription"}
+                variant="secondary"
+                onPress={() => (current!.provider === "APPLE" ? manageAppleSubscription() : cancelMutation.mutate())}
+                loading={cancelMutation.isPending}
+              />
             </View>
           ) : null}
           {subQuery.data ? (
             <View style={styles.seatRow}>
-              <Users size={14} color="#fff" />
+              <Users size={14} color={colors.accentInk} />
               <Text style={styles.seatText}>
                 {subQuery.data.entitlement.managersUsed}/{subQuery.data.entitlement.managerLimit} invitees used
                 {" · "}
@@ -301,30 +342,30 @@ export function SubscriptionScreen() {
               title={`Add extra invitee seat — ${inr(subQuery.data?.entitlement.managerSeatAddonPrice ?? 99)} one-time`}
               variant="secondary"
               onPress={onBuySeatAddon}
-              loading={buyingSeatAddon && !seatAddonCheckoutVisible}
-              disabled={buyingSeatAddon}
+              loading={(buyingSeatAddon && !seatAddonCheckoutVisible) || applePendingSku === APPLE_SEAT_PRODUCT_ID}
+              disabled={buyingSeatAddon || applePendingSku !== null}
             />
           </View>
         </View>
       ) : (
         <View style={styles.statusCard}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
-            <Lock size={18} color="#fff" />
+            <Lock size={18} color={colors.accentInk} />
             <Text style={styles.statusTitle}>Subscribe to unlock</Text>
           </View>
           <Text style={styles.statusDesc}>Subscribe below to run your whole farm and add invitees.</Text>
         </View>
       )}
 
-      {verifying ? (
+      {verifying || appleVerifying === "subscription" ? (
         <Card style={{ backgroundColor: "#FFF8E6", borderColor: "#F0DFA6" }}>
-          <Text style={{ color: "#8A6D1D", fontSize: 12.5 }}>Payment received. Verifying your subscription...</Text>
+          <Text style={{ color: "#8A6D1D", fontSize: 14.5 }}>Payment received. Verifying your subscription...</Text>
         </Card>
       ) : null}
 
-      {verifyingSeatAddon ? (
+      {verifyingSeatAddon || appleVerifying === "seat" ? (
         <Card style={{ backgroundColor: "#FFF8E6", borderColor: "#F0DFA6" }}>
-          <Text style={{ color: "#8A6D1D", fontSize: 12.5 }}>Payment received. Verifying your invitee seat...</Text>
+          <Text style={{ color: "#8A6D1D", fontSize: 14.5 }}>Payment received. Verifying your invitee seat...</Text>
         </Card>
       ) : null}
 
@@ -336,7 +377,8 @@ export function SubscriptionScreen() {
       <View style={{ gap: spacing.sm }}>
         {plans.map((plan) => {
           const isCurrent = isActive && current?.plan?.id === plan.id;
-          const purchasing = purchasingPlanId === plan.id;
+          const storeProductId = isIOS ? plan.appleProductId : plan.googlePlayProductId;
+          const purchasing = isIOS ? !!storeProductId && applePendingSku === storeProductId : purchasingPlanId === plan.id;
           return (
             <Card key={plan.id} style={isCurrent ? styles.planCardCurrent : undefined}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
@@ -355,7 +397,7 @@ export function SubscriptionScreen() {
               <View style={{ marginTop: spacing.md }}>
                 <Button
                   title={isCurrent ? "Current plan" : "Choose"}
-                  disabled={purchasing || isCurrent || !plan.googlePlayProductId}
+                  disabled={purchasing || isCurrent || !storeProductId || (isIOS && applePendingSku !== null)}
                   loading={purchasing}
                   onPress={() => onChoosePlan(plan)}
                 />
@@ -364,6 +406,25 @@ export function SubscriptionScreen() {
           );
         })}
       </View>
+
+      {isIOS ? (
+        <View style={{ gap: spacing.sm }}>
+          <Button
+            title="Restore purchases"
+            variant="secondary"
+            onPress={() => restoreApplePurchases(invalidateAll)}
+          />
+          {/* Disclosure Apple requires next to auto-renewing subscriptions. */}
+          <Text style={styles.legalText}>
+            Payment is charged to your Apple ID. The subscription renews automatically every period unless cancelled at least
+            24 hours before it ends; manage or cancel it anytime in your Apple ID's Subscriptions settings.
+          </Text>
+          <View style={{ flexDirection: "row", justifyContent: "center", gap: spacing.md }}>
+            <Text style={styles.legalLink} onPress={() => Linking.openURL("https://thechiguru.com/terms")}>Terms of Use</Text>
+            <Text style={styles.legalLink} onPress={() => Linking.openURL("https://thechiguru.com/privacy")}>Privacy Policy</Text>
+          </View>
+        </View>
+      ) : null}
 
       <Card style={{ gap: spacing.sm }}>
         <Text style={styles.whyTitle}>Why do we charge this money?</Text>
@@ -392,7 +453,7 @@ export function SubscriptionScreen() {
                   <Text style={styles.paymentAmount}>{inr(Number(p.amount))}</Text>
                   <Text style={styles.paymentDate}>{new Date(p.createdAt).toLocaleDateString("en-IN")}</Text>
                 </View>
-                <View style={[styles.statusBadge, p.paymentStatus === "succeeded" ? { backgroundColor: "#E3E0EC" } : { backgroundColor: "#FDEAEA" }]}>
+                <View style={[styles.statusBadge, p.paymentStatus === "succeeded" ? { backgroundColor: "#FBF2D9" } : { backgroundColor: "#FDEAEA" }]}>
                   <Text style={[styles.statusBadgeText, { color: p.paymentStatus === "succeeded" ? colors.primary : colors.danger }]}>{p.paymentStatus}</Text>
                 </View>
               </Card>
@@ -416,33 +477,36 @@ export function SubscriptionScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
-  statusCard: { backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md },
-  statusTitle: { color: "#fff", fontSize: 15, fontWeight: "700" },
-  statusDesc: { color: "rgba(255,255,255,0.85)", fontSize: 12.5, marginTop: spacing.xs, lineHeight: 17 },
-  statusMeta: { color: "rgba(255,255,255,0.6)", fontSize: 11, marginTop: spacing.sm },
-  seatRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs, marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.2)" },
-  seatText: { color: "#fff", fontSize: 12.5, flex: 1 },
+  statusCard: { backgroundColor: colors.accent, borderRadius: 28, padding: 18 },
+  statusTitle: { color: colors.accentInk, fontSize: 20, fontWeight: "800" },
+  statusDesc: { color: colors.accentInkSoft, fontSize: 15, marginTop: spacing.xs, lineHeight: 21 },
+  statusMeta: { color: colors.accentInkSoft, fontSize: 14, marginTop: spacing.sm },
+  seatRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs, marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: "rgba(58,42,0,0.15)" },
+  seatText: { color: colors.accentInk, fontSize: 15, fontWeight: "700", flex: 1 },
 
-  honestCard: { backgroundColor: "#EFEDF7", borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: "#DDD8EC", alignItems: "center" },
-  honestTitle: { fontSize: 14.5, fontWeight: "700", color: colors.primary, textAlign: "center" },
-  honestDesc: { fontSize: 12, color: colors.primary, opacity: 0.8, marginTop: spacing.xs, textAlign: "center", lineHeight: 16 },
+  honestCard: { backgroundColor: colors.card, borderRadius: 28, padding: 18, alignItems: "center", ...shadow },
+  honestTitle: { fontSize: 16, fontWeight: "700", color: colors.primary, textAlign: "center" },
+  honestDesc: { fontSize: 14, color: colors.primary, opacity: 0.8, marginTop: spacing.xs, textAlign: "center", lineHeight: 16 },
 
-  planCardCurrent: { borderColor: colors.primary, backgroundColor: "#F5F4FA" },
-  planIconWrap: { width: 36, height: 36, borderRadius: radius.sm, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" },
-  planName: { fontSize: 15, fontWeight: "700", color: colors.text },
-  planTagline: { fontSize: 11.5, color: colors.textMuted, marginTop: 1 },
+  planCardCurrent: { borderColor: colors.primary, backgroundColor: "#FBF2D9" },
+  planIconWrap: { width: 50, height: 50, borderRadius: 25, backgroundColor: "#FFD166", alignItems: "center", justifyContent: "center" },
+  planName: { fontSize: 16.5, fontWeight: "700", color: colors.text },
+  planTagline: { fontSize: 13.5, color: colors.textMuted, marginTop: 1 },
   planPrice: { fontSize: 26, fontWeight: "700", color: colors.text, marginTop: spacing.sm },
-  planPerMonth: { fontSize: 12, color: colors.textMuted },
-  planFeature: { fontSize: 12, color: colors.text, flex: 1 },
+  planPerMonth: { fontSize: 14, color: colors.textMuted },
+  planFeature: { fontSize: 14, color: colors.text, flex: 1 },
 
-  sectionTitle: { fontSize: 14.5, fontWeight: "700", color: colors.text },
+  legalText: { fontSize: 12.5, color: colors.textMuted, lineHeight: 17, textAlign: "center" },
+  legalLink: { fontSize: 13, color: colors.primary, fontWeight: "700", textDecorationLine: "underline" },
 
-  whyTitle: { fontSize: 14.5, fontWeight: "700", color: colors.text },
-  whyText: { fontSize: 12, color: colors.text, lineHeight: 17 },
+  sectionTitle: { fontSize: 20, fontWeight: "800", color: colors.text },
 
-  emptyText: { fontSize: 13, color: colors.textMuted },
-  paymentAmount: { fontSize: 14, fontWeight: "700", color: colors.text },
-  paymentDate: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
+  whyTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
+  whyText: { fontSize: 14, color: colors.text, lineHeight: 17 },
+
+  emptyText: { fontSize: 14.5, color: colors.textMuted },
+  paymentAmount: { fontSize: 15.5, fontWeight: "700", color: colors.text },
+  paymentDate: { fontSize: 13, color: colors.textMuted, marginTop: 1 },
   statusBadge: { borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
-  statusBadgeText: { fontSize: 11, fontWeight: "700", textTransform: "capitalize" },
+  statusBadgeText: { fontSize: 13, fontWeight: "700", textTransform: "capitalize" },
 });

@@ -32,7 +32,7 @@ function buildHtml(opts: { keyId: string; orderId: string; amount: number; curre
         currency: "${currency}",
         name: "Chiguru",
         description: ${JSON.stringify(description)},
-        theme: { color: "#2E2A54" },
+        theme: { color: "#2F6B1F" },
         handler: function (response) {
           post({
             type: "success",

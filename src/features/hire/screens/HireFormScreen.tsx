@@ -1,12 +1,15 @@
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import * as Location from "expo-location";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MapPin } from "lucide-react-native";
 import { Button } from "../../../components/Button";
 import { TextField } from "../../../components/TextField";
+import { PhoneField } from "../../../components/PhoneField";
 import { ChipSelect } from "../../../components/ChipSelect";
+import { FormFooter } from "../../../components/harvest";
 import { colors, spacing } from "../../../components/theme";
 import { useHire } from "../hooks/useHire";
 import type { HireListing } from "../../../types/api";
@@ -95,11 +98,13 @@ export function HireFormScreen({ navigation, route }: { navigation: any; route: 
     if (isEdit && editListing) {
       updateListing.mutate({ id: editListing.id, data: body }, { onSuccess: () => navigation.goBack() });
     } else {
-      createListing.mutate(body, { onSuccess: () => navigation.goBack() });
+      // Land on the board the new ad shows on: Rent Machines or Find Workers.
+      createListing.mutate(body, { onSuccess: () => navigation.popTo("Hire", { initialTab: listingType }) });
     }
   }
 
   return (
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
     <KeyboardAwareScrollView
       style={styles.container}
       contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.md + insets.bottom }}
@@ -119,8 +124,8 @@ export function HireFormScreen({ navigation, route }: { navigation: any; route: 
         <TextField label="Workers needed" keyboardType="number-pad" value={workersNeeded} onChangeText={setWorkersNeeded} placeholder="10" />
       ) : null}
       <TextField label="Your name *" value={posterName} onChangeText={setPosterName} />
-      <TextField label="Contact phone *" keyboardType="phone-pad" value={phone} onChangeText={setPhone} placeholder="9XXXXXXXXX" />
-      <TextField label="WhatsApp (optional)" keyboardType="phone-pad" value={whatsapp} onChangeText={setWhatsapp} placeholder="Same as phone" />
+      <PhoneField label="Contact phone *" value={phone} onChange={setPhone} />
+      <PhoneField label="WhatsApp (optional)" value={whatsapp} onChange={setWhatsapp} placeholder="Same as phone" />
 
       <Pressable style={styles.locationBtn} onPress={useMyLocation} disabled={locating}>
         <MapPin size={15} color={colors.primary} />
@@ -139,12 +144,15 @@ export function HireFormScreen({ navigation, route }: { navigation: any; route: 
         numberOfLines={2}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Button
-        title={isEdit ? "Save changes" : isRental ? "Post for rent" : "Post requirement"}
-        onPress={submit}
-        loading={createListing.isPending || updateListing.isPending}
-      />
     </KeyboardAwareScrollView>
+    <FormFooter>
+      <Button
+          title={isEdit ? "Save changes" : isRental ? "Post for rent" : "Post requirement"}
+          onPress={submit}
+          loading={createListing.isPending || updateListing.isPending}
+        />
+    </FormFooter>
+    </View>
   );
 }
 
@@ -157,5 +165,5 @@ const styles = StyleSheet.create({
     gap: 6,
     marginBottom: spacing.md,
   },
-  locationBtnText: { color: colors.primary, fontSize: 13, fontWeight: "600" },
+  locationBtnText: { color: colors.primary, fontSize: 14.5, fontWeight: "600" },
 });

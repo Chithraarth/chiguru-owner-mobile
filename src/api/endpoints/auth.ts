@@ -1,4 +1,5 @@
 import { apiFetch, apiMutate } from "../client";
+import { getOrCreateOwnerKey } from "../../lib/ownerKey";
 import type {
   DeviceInfo,
   MyFarm,
@@ -31,4 +32,14 @@ export function getMyFarms() {
 
 export function linkFarm() {
   return apiMutate<null>("POST", "/me/link-farm");
+}
+
+/**
+ * Permanently deletes the signed-in account and all of its data on the
+ * server. Never queued offline - the caller must know it really happened.
+ * The device's owner key lets the server remove this phone's classified ads too.
+ */
+export async function deleteMyAccount() {
+  const ownerKey = await getOrCreateOwnerKey();
+  return apiFetch<{ deleted: boolean }>("/owners/me", { method: "DELETE", headers: { "X-Owner-Key": ownerKey } });
 }

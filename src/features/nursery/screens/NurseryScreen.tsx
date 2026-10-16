@@ -1,11 +1,14 @@
 import React, { useMemo, useState } from "react";
-import { Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { Text, TextInput } from "../../../components/Text";
+import { useInnerBack } from "../../../navigation/useInnerBack";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, MapPin, Phone, Search, Sprout, Star, Store, X } from "lucide-react-native";
+import { MapPin, Phone, Search, Sprout, Star, Store, X } from "lucide-react-native";
 import { Button } from "../../../components/Button";
 import { Card } from "../../../components/Card";
 import { LoadingView } from "../../../components/StateViews";
-import { colors, radius, spacing } from "../../../components/theme";
+import { IconChip, Pill } from "../../../components/harvest";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { getNurseryListings, getNurseryVendorDetail, getNurseryVendors, submitNurseryRating } from "../../../api/endpoints/nursery";
 import type { NurseryListing, NurseryVendor } from "../../../types/api";
 
@@ -80,7 +83,7 @@ function ListingCard({ listing, vendorName, vendorLocation, vendorPhone, onVendo
   );
 }
 
-function VendorDetail({ vendor, onBack, onContact }: { vendor: NurseryVendor; onBack: () => void; onContact: () => void }) {
+function VendorDetail({ vendor, onContact }: { vendor: NurseryVendor; onContact: () => void }) {
   const qc = useQueryClient();
   const [myRating, setMyRating] = useState(0);
   const [comment, setComment] = useState("");
@@ -107,12 +110,7 @@ function VendorDetail({ vendor, onBack, onContact }: { vendor: NurseryVendor; on
   const ratingCount = detail?.ratingCount ?? vendor.ratingCount ?? 0;
 
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
-      <Pressable onPress={onBack} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-        <ArrowLeft size={16} color={colors.primary} />
-        <Text style={styles.backText}>All Vendors</Text>
-      </Pressable>
-
+    <ScrollView contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
       <View style={styles.vendorHero}>
         <View style={{ flexDirection: "row", alignItems: "flex-start", gap: spacing.sm }}>
           <View style={styles.vendorHeroIcon}>
@@ -124,7 +122,7 @@ function VendorDetail({ vendor, onBack, onContact }: { vendor: NurseryVendor; on
               <StarRow value={avgRating} size={13} />
               <Text style={styles.vendorHeroSub}>{ratingCount > 0 ? `${avgRating} (${ratingCount})` : "No ratings yet"}</Text>
             </View>
-            {vendor.speciality ? <Text style={styles.vendorHeroSub}>🌿 {vendor.speciality}</Text> : null}
+            {vendor.speciality ? <Text style={styles.vendorHeroSub}>{vendor.speciality}</Text> : null}
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
               <MapPin size={11} color="rgba(255,255,255,0.8)" />
               <Text style={styles.vendorHeroSub}>{vendor.location}</Text>
@@ -229,10 +227,12 @@ function ContactSheet({ vendor, onClose }: { vendor: NurseryVendor; onClose: () 
   );
 }
 
-export function NurseryScreen() {
+export function NurseryScreen({ navigation }: { navigation: any }) {
   const [catFilter, setCatFilter] = useState("All");
   const [search, setSearch] = useState("");
   const [selectedVendor, setSelectedVendor] = useState<NurseryVendor | null>(null);
+  // Back from a vendor's page returns to the list of vendors.
+  useInnerBack(navigation, selectedVendor != null, () => setSelectedVendor(null));
   const [contactVendor, setContactVendor] = useState<NurseryVendor | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -262,7 +262,7 @@ export function NurseryScreen() {
   if (selectedVendor) {
     return (
       <View style={styles.container}>
-        <VendorDetail vendor={selectedVendor} onBack={() => setSelectedVendor(null)} onContact={() => setContactVendor(selectedVendor)} />
+        <VendorDetail vendor={selectedVendor} onContact={() => setContactVendor(selectedVendor)} />
         {contactVendor ? <ContactSheet vendor={contactVendor} onClose={() => setContactVendor(null)} /> : null}
       </View>
     );
@@ -270,7 +270,7 @@ export function NurseryScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.md }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         <View style={styles.searchWrap}>
           <Search size={16} color={colors.textMuted} />
           <TextInput
@@ -294,7 +294,7 @@ export function NurseryScreen() {
 
         {catFilter === "All" && !search.trim() ? (
           <View>
-            <Text style={styles.sectionTitle}>🏪 Nursery Vendors</Text>
+            <Text style={styles.sectionTitle}>Nursery Vendors</Text>
             {vendorsQuery.isLoading ? (
               <LoadingView label="Loading vendors..." />
             ) : vendors.length === 0 ? (
@@ -304,38 +304,40 @@ export function NurseryScreen() {
                 <Text style={styles.vendorEmptySub}>Be the first to register your nursery!</Text>
               </Card>
             ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: spacing.sm }}>
-                <View style={{ flexDirection: "row", gap: spacing.sm }}>
-                  {vendors.map((v, idx) => {
-                    const isTopRated = idx === 0 && (v.ratingCount ?? 0) > 0 && (v.avgRating ?? 0) >= 4;
-                    return (
-                      <Pressable key={v.id} style={styles.vendorCard} onPress={() => setSelectedVendor(v)}>
-                        {isTopRated ? (
-                          <View style={styles.topBadge}>
-                            <Star size={8} color="#B45309" fill="#B45309" />
-                            <Text style={styles.topBadgeText}>TOP</Text>
-                          </View>
-                        ) : null}
-                        <View style={styles.vendorCardIcon}>
-                          {v.photoUrl ? <Image source={{ uri: v.photoUrl }} style={styles.vendorCardImg} /> : <Store size={18} color={colors.primary} />}
-                        </View>
-                        <Text style={styles.vendorCardName} numberOfLines={1}>{v.name}</Text>
-                        {(v.ratingCount ?? 0) > 0 ? (
-                          <View style={{ flexDirection: "row", alignItems: "center", gap: 3, marginTop: 2 }}>
-                            <StarRow value={v.avgRating ?? 0} size={10} />
-                            <Text style={styles.vendorCardRatingCount}>({v.ratingCount})</Text>
-                          </View>
+              <View style={{ gap: 12, marginTop: spacing.sm }}>
+                {vendors.map((v, idx) => (
+                  <Pressable key={v.id} onPress={() => setSelectedVendor(v)} style={({ pressed }) => pressed && { transform: [{ scale: 0.98 }] }}>
+                    <Card style={{ gap: 10 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                        {v.photoUrl ? (
+                          <Image source={{ uri: v.photoUrl }} style={styles.vendorPhoto} />
                         ) : (
-                          <Text style={styles.vendorCardNoRating}>No ratings yet</Text>
+                          <IconChip icon={Sprout} index={idx} size={48} />
                         )}
-                        {v.speciality ? <Text style={styles.vendorCardSpeciality} numberOfLines={1}>{v.speciality}</Text> : null}
-                        <Text style={styles.vendorCardLocation} numberOfLines={1}>📍 {v.location}</Text>
-                        <Text style={styles.vendorCardCount}>{v.listingCount ?? 0} plants</Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </ScrollView>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={styles.vendorName} numberOfLines={1}>{v.name}</Text>
+                          <Text style={styles.vendorMeta} numberOfLines={1}>
+                            {v.location} · {v.listingCount ?? 0} plants
+                          </Text>
+                        </View>
+                        {(v.ratingCount ?? 0) > 0 ? <Pill text={`${(v.avgRating ?? 0).toFixed(1)} ★`} tone="warn" /> : <Pill text="New" />}
+                      </View>
+                      {v.speciality ? (
+                        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                          {v.speciality
+                            .split(/[,·]/)
+                            .map((x) => x.trim())
+                            .filter(Boolean)
+                            .slice(0, 4)
+                            .map((x) => (
+                              <Pill key={x} text={x} />
+                            ))}
+                        </View>
+                      ) : null}
+                    </Card>
+                  </Pressable>
+                ))}
+              </View>
             )}
           </View>
         ) : null}
@@ -379,67 +381,69 @@ export function NurseryScreen() {
 }
 
 const styles = StyleSheet.create({
+  vendorPhoto: { width: 48, height: 48, borderRadius: 24 },
+  vendorName: { fontSize: 18, fontWeight: "800", color: colors.text },
+  vendorMeta: { fontSize: 14, color: colors.textMuted },
   container: { flex: 1, backgroundColor: colors.bg },
 
-  searchWrap: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.sm + 4, height: 44 },
-  searchInput: { flex: 1, fontSize: 13.5, color: colors.text },
+  searchWrap: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.card, ...shadow, borderRadius: 22, paddingHorizontal: spacing.sm + 4, height: 44 },
+  searchInput: { flex: 1, fontSize: 15, color: colors.text },
 
-  chip: { paddingVertical: spacing.xs + 2, paddingHorizontal: spacing.sm + 4, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { fontSize: 12, color: colors.textMuted, fontWeight: "500" },
-  chipTextActive: { color: "#fff", fontWeight: "700" },
+  chip: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingHorizontal: 14, borderRadius: 999, borderWidth: 2.5, borderColor: colors.border, backgroundColor: "#fff" },
+  chipActive: { backgroundColor: colors.tint, borderColor: colors.primary },
+  chipText: { fontSize: 14, color: colors.textMuted, fontWeight: "500" },
+  chipTextActive: { color: colors.text, fontWeight: "800" },
 
-  sectionTitle: { fontSize: 13.5, fontWeight: "700", color: colors.text },
-  sectionLabel: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.4 },
+  sectionTitle: { fontSize: 20, fontWeight: "800", color: colors.text },
+  sectionLabel: { fontSize: 13, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.4 },
 
-  vendorEmptyTitle: { fontSize: 13, fontWeight: "700", color: colors.primary, marginTop: spacing.xs },
-  vendorEmptySub: { fontSize: 11.5, color: colors.primary, marginTop: 2, textAlign: "center" },
+  vendorEmptyTitle: { fontSize: 14.5, fontWeight: "700", color: colors.primary, marginTop: spacing.xs },
+  vendorEmptySub: { fontSize: 13.5, color: colors.primary, marginTop: 2, textAlign: "center" },
 
-  vendorCard: { width: 148, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm + 4 },
+  vendorCard: { width: 148, backgroundColor: colors.card, ...shadow, borderRadius: 22, padding: spacing.sm + 4 },
   topBadge: { position: "absolute", top: 8, right: 8, flexDirection: "row", alignItems: "center", gap: 2, backgroundColor: "#FEF3C7", borderRadius: radius.pill, paddingHorizontal: 6, paddingVertical: 2 },
-  topBadgeText: { fontSize: 8, fontWeight: "700", color: "#B45309" },
-  vendorCardIcon: { width: 40, height: 40, borderRadius: radius.sm, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center", overflow: "hidden", marginBottom: spacing.xs },
+  topBadgeText: { fontSize: 10, fontWeight: "700", color: "#B45309" },
+  vendorCardIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center", overflow: "hidden", marginBottom: spacing.xs },
   vendorCardImg: { width: "100%", height: "100%" },
-  vendorCardName: { fontSize: 12, fontWeight: "700", color: colors.text },
-  vendorCardRatingCount: { fontSize: 9, color: colors.textMuted },
-  vendorCardNoRating: { fontSize: 9, color: colors.border, marginTop: 2 },
-  vendorCardSpeciality: { fontSize: 10, color: colors.primary, marginTop: 2 },
-  vendorCardLocation: { fontSize: 10, color: colors.textMuted, marginTop: 2 },
-  vendorCardCount: { fontSize: 11.5, color: colors.primary, fontWeight: "700", marginTop: spacing.xs },
+  vendorCardName: { fontSize: 14, fontWeight: "700", color: colors.text },
+  vendorCardRatingCount: { fontSize: 11, color: colors.textMuted },
+  vendorCardNoRating: { fontSize: 11, color: colors.border, marginTop: 2 },
+  vendorCardSpeciality: { fontSize: 12, color: colors.primary, marginTop: 2 },
+  vendorCardLocation: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  vendorCardCount: { fontSize: 13.5, color: colors.primary, fontWeight: "700", marginTop: spacing.xs },
 
   thumbWrap: { width: 56, height: 56, borderRadius: radius.sm, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 },
   thumb: { width: "100%", height: "100%" },
-  listingName: { fontSize: 13.5, fontWeight: "700", color: colors.text },
-  listingDesc: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
-  listingPrice: { fontSize: 13.5, fontWeight: "700", color: colors.primary },
-  listingUnit: { fontSize: 11, color: colors.textMuted },
-  listingQty: { fontSize: 11, color: "#2563EB", fontWeight: "600" },
-  vendorLine: { fontSize: 10, color: colors.textMuted },
+  listingName: { fontSize: 15, fontWeight: "700", color: colors.text },
+  listingDesc: { fontSize: 13, color: colors.textMuted, marginTop: 1 },
+  listingPrice: { fontSize: 15, fontWeight: "700", color: colors.primary },
+  listingUnit: { fontSize: 13, color: colors.textMuted },
+  listingQty: { fontSize: 13, color: "#2563EB", fontWeight: "600" },
+  vendorLine: { fontSize: 12, color: colors.textMuted },
   callBtn: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: colors.primary, borderRadius: radius.sm, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs + 2 },
-  callBtnText: { color: "#fff", fontSize: 11.5, fontWeight: "700" },
-  callSub: { fontSize: 8.5, color: colors.textMuted, maxWidth: 56, textAlign: "center" },
+  callBtnText: { color: "#fff", fontSize: 13.5, fontWeight: "700" },
+  callSub: { fontSize: 10.5, color: colors.textMuted, maxWidth: 56, textAlign: "center" },
 
-  backText: { fontSize: 13.5, fontWeight: "700", color: colors.primary },
   vendorHero: { backgroundColor: colors.primary, borderRadius: radius.lg, padding: spacing.md },
-  vendorHeroIcon: { width: 56, height: 56, borderRadius: radius.sm, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  vendorHeroIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center", overflow: "hidden" },
   vendorHeroImg: { width: "100%", height: "100%" },
-  vendorHeroName: { color: "#fff", fontSize: 17, fontWeight: "700" },
-  vendorHeroSub: { color: "rgba(255,255,255,0.8)", fontSize: 11.5, marginTop: 1 },
-  vendorHeroDesc: { color: "rgba(255,255,255,0.8)", fontSize: 12, marginTop: spacing.sm, lineHeight: 17 },
+  vendorHeroName: { color: "#fff", fontSize: 18, fontWeight: "700" },
+  vendorHeroSub: { color: "rgba(255,255,255,0.8)", fontSize: 13.5, marginTop: 1 },
+  vendorHeroDesc: { color: "rgba(255,255,255,0.8)", fontSize: 14, marginTop: spacing.sm, lineHeight: 17 },
   contactBtn: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#fff", borderRadius: radius.sm, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs + 4 },
-  contactBtnText: { color: colors.primary, fontSize: 11.5, fontWeight: "700" },
+  contactBtnText: { color: colors.primary, fontSize: 13.5, fontWeight: "700" },
 
-  commentInput: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, padding: spacing.sm, fontSize: 13, color: colors.text, minHeight: 56, marginTop: spacing.sm, marginBottom: spacing.sm, textAlignVertical: "top" },
-  reviewComment: { fontSize: 13, color: colors.text, marginTop: 6 },
+  commentInput: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, padding: spacing.sm, fontSize: 14.5, color: colors.text, minHeight: 56, marginTop: spacing.sm, marginBottom: spacing.sm, textAlignVertical: "top" },
+  reviewComment: { fontSize: 14.5, color: colors.text, marginTop: 6 },
 
-  emptyText: { fontSize: 13, color: colors.textMuted, marginTop: spacing.sm },
+  emptyText: { fontSize: 14.5, color: colors.textMuted, marginTop: spacing.sm },
 
   sheetOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
   sheet: { backgroundColor: colors.card, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg, gap: spacing.md },
-  sheetTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
-  sheetLocation: { fontSize: 12.5, color: colors.textMuted },
+  sheetTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
+  sheetLocation: { fontSize: 14.5, color: colors.textMuted },
   sheetCallBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm, backgroundColor: colors.primary, borderRadius: radius.lg, paddingVertical: spacing.md },
   sheetWaBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm, backgroundColor: "#25D366", borderRadius: radius.lg, paddingVertical: spacing.md },
-  sheetCallText: { color: "#fff", fontSize: 15, fontWeight: "700" },
-  sheetFooter: { fontSize: 11, color: colors.textMuted, textAlign: "center" },
+  sheetCallText: { color: "#fff", fontSize: 16.5, fontWeight: "700" },
+  sheetFooter: { fontSize: 13, color: colors.textMuted, textAlign: "center" },
 });

@@ -1,10 +1,13 @@
 import React, { useState } from "react";
-import { Image, ScrollView, StyleSheet, Text } from "react-native";
+import { Image, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../../components/Text";
+import { Camera } from "lucide-react-native";
 import NetInfo from "@react-native-community/netinfo";
 import * as ImagePicker from "expo-image-picker";
 import { Button } from "../../../../components/Button";
 import { TextField } from "../../../../components/TextField";
 import { ChipSelect } from "../../../../components/ChipSelect";
+import { FormFooter } from "../../../../components/harvest";
 import { colors, spacing } from "../../../../components/theme";
 import { useExpenses } from "../hooks/useExpenses";
 import { useInviteeMe } from "../../hooks/useInviteeMe";
@@ -113,7 +116,8 @@ export function ExpenseFormScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 110 }}>
       <TextField label="Amount spent *" keyboardType="decimal-pad" value={amount} onChangeText={setAmount} />
       <ChipSelect
         label="Date"
@@ -147,13 +151,16 @@ export function ExpenseFormScreen({ navigation }: { navigation: any }) {
       {photoUri ? (
         <Image source={{ uri: photoUri }} style={styles.preview} />
       ) : (
-        <Button title="📷 Take bill photo *" variant="secondary" onPress={pickReceipt} loading={compressing} />
+        <Button title="Take bill photo *" icon={Camera} variant="light" onPress={pickReceipt} loading={compressing} />
       )}
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <Button title="Save expense" onPress={submit} loading={createExpense.isPending} disabled={compressing} />
     </ScrollView>
+    <FormFooter>
+      <Button title="Save expense" onPress={submit} loading={createExpense.isPending} disabled={compressing} />
+    </FormFooter>
+    </View>
   );
 }
 

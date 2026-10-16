@@ -1,5 +1,6 @@
 import React from "react";
-import { StyleSheet, Text, TextInput, TextInputProps, View, ViewStyle } from "react-native";
+import { StyleSheet, TextInputProps, View, ViewStyle } from "react-native";
+import { Text, TextInput } from "./Text";
 import { colors, radius, spacing } from "./theme";
 
 interface TextFieldProps extends TextInputProps {
@@ -35,19 +36,20 @@ export function TextField({ label, error, style, containerStyle, rightElement, l
 }
 
 const styles = StyleSheet.create({
-  label: { fontSize: 14, fontWeight: "500", color: colors.text, marginBottom: spacing.xs },
+  label: { fontSize: 14, fontWeight: "600", color: colors.textMuted, marginBottom: 6 },
   input: {
-    borderWidth: 1,
+    minHeight: 54,
+    borderWidth: 2,
     borderColor: colors.border,
-    borderRadius: radius.sm,
+    borderRadius: radius.md,
     paddingVertical: spacing.sm + 2,
     paddingHorizontal: spacing.md,
-    fontSize: 16,
+    fontSize: 17,
     color: colors.text,
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
   },
   inputError: { borderColor: colors.danger },
-  errorText: { color: colors.danger, fontSize: 12, marginTop: spacing.xs },
+  errorText: { color: colors.danger, fontSize: 13, fontWeight: "600", marginTop: spacing.xs },
   rightElement: {
     position: "absolute",
     right: spacing.sm,

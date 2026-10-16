@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../../components/Text";
 import {
   ChevronLeft,
   ChevronRight,
@@ -13,13 +14,15 @@ import {
   Scissors,
   Wheat,
   Wrench,
+  Check,
 } from "lucide-react-native";
 import { Card } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { EmptyState, LoadingView } from "../../../components/StateViews";
-import { colors, radius, spacing } from "../../../components/theme";
+import { HeaderAddButton, IconChip } from "../../../components/harvest";
+import { colors, radius, spacing, shadow } from "../../../components/theme";
 import { useYearPlan } from "../hooks/useYearPlan";
-import { ApiError, isSubscriptionRequired } from "../../../api/errors";
+import { ApiError, isGateError } from "../../../api/errors";
 import type { PlanTask } from "../../../types/api";
 
 const CAT_LABEL: Record<string, string> = {
@@ -123,7 +126,7 @@ function MonthGrid({
                   isToday && !isSel && styles.dayNumToday,
                 ]}
               >
-                <Text style={[styles.dayNumText, (isToday || isSel) && styles.dayNumTextActive]}>{d}</Text>
+                <Text style={[styles.dayNumText, (isToday || isSel) && styles.dayNumTextActive, isToday && !isSel && { color: colors.accentInk }]}>{d}</Text>
               </View>
               <View
                 style={[
@@ -191,8 +194,8 @@ export function YearPlanScreen({ navigation }: { navigation: any }) {
   function onGenerate() {
     generate.mutate(undefined, {
       onError: (err) => {
-        if (isSubscriptionRequired(err)) {
-          Alert.alert("Subscription required", "Subscribe or start your free trial to generate an AI year plan.");
+        if (isGateError(err)) {
+          // The plan/wallet prompt already explained it, with a button to fix it.
         } else if (err instanceof ApiError && err.message.includes("no_crops")) {
           Alert.alert("Add a crop first", "Add at least one crop before generating a plan.");
         } else {
@@ -212,6 +215,10 @@ export function YearPlanScreen({ navigation }: { navigation: any }) {
   function cropName(id: number | null) {
     return id != null ? crops.find((c) => c.id === id)?.name : undefined;
   }
+
+  useEffect(() => {
+    navigation.setOptions({ headerRight: () => <HeaderAddButton label="Add task" onPress={openAdd} /> });
+  });
 
   function openAdd() {
     navigation.navigate("PlanTaskForm", { defaultMonth: selMonth, defaultDay: selDay });
@@ -253,12 +260,41 @@ export function YearPlanScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xl }}>
-      <Text style={styles.subtitle}>Your 12-month farm work calendar.</Text>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: spacing.xl }}>
+      {/* Month chips, as on the canvas */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+        {shownMonths.map((m) => {
+          const on = m === selMonth;
+          return (
+            <Pressable
+              key={m}
+              onPress={() => {
+                setSelMonth(m);
+                setSelDay(null);
+              }}
+              style={[styles.monthChip, on && styles.monthChipOn]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
+            >
+              {on ? <Check size={16} color={colors.text} strokeWidth={2.6} /> : null}
+              <Text style={styles.monthChipText}>{monthLabel(m).split(" ")[0]}</Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
 
-      <Card style={{ marginBottom: spacing.md }}>
+      <Card style={{ gap: 10 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <IconChip icon={Sparkles} index={4} size={48} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.aiTitle}>{hasTasks ? "Rebuild my plan with AI" : "Plan my year with AI"}</Text>
+            <Text style={styles.aiSub}>Uses your crops, area and weather</Text>
+          </View>
+        </View>
         <Button
-          title={generate.isPending ? "Generating..." : hasTasks ? "Rebuild plan with AI" : "Build AI plan"}
+          title={generate.isPending ? "Generating..." : "Generate plan"}
+          variant="light"
+          icon={Sparkles}
           onPress={onGenerate}
           loading={generate.isPending}
           disabled={!hasCrops}
@@ -269,13 +305,8 @@ export function YearPlanScreen({ navigation }: { navigation: any }) {
             <Text style={styles.link} onPress={() => navigation.navigate("Crops")}>Go to Crops</Text>
           </Text>
         ) : hasTasks ? (
-          <>
-            <Text style={styles.hint}>Rebuilding replaces AI tasks not yet marked done. Your own tasks are kept.</Text>
-            <Text style={styles.hint}>AI suggestions — confirm doses with your local KVK before applying.</Text>
-          </>
-        ) : (
-          <Text style={styles.hint}>Generates the next 12 months of fertiliser, spray, irrigation and harvest tasks.</Text>
-        )}
+          <Text style={styles.hint}>Rebuilding replaces AI tasks not yet done — your own tasks are kept. Confirm doses with your local KVK.</Text>
+        ) : null}
       </Card>
 
       {isLoading ? (
@@ -310,8 +341,8 @@ export function YearPlanScreen({ navigation }: { navigation: any }) {
 
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionLabel}>PENDING WORKS</Text>
-            <Pressable onPress={openAdd} hitSlop={8} style={styles.addBtn}>
-              <Plus size={16} color={colors.primary} />
+            <Pressable onPress={openAdd} hitSlop={8} style={styles.addBtn} accessibilityLabel="Add task">
+              <Plus size={20} color="#FFFFFF" strokeWidth={2.4} />
             </Pressable>
           </View>
           {pending.length === 0 && overdue.length === 0 ? (
@@ -339,10 +370,25 @@ export function YearPlanScreen({ navigation }: { navigation: any }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  subtitle: { fontSize: 13, color: colors.textMuted, marginBottom: spacing.md },
-  hint: { fontSize: 12, color: colors.textMuted, marginTop: spacing.sm },
+  subtitle: { fontSize: 14.5, color: colors.textMuted, marginBottom: spacing.md },
+  hint: { fontSize: 14, color: colors.textMuted, marginTop: spacing.sm },
   link: { color: colors.primary, fontWeight: "600" },
 
+  monthChip: {
+    minHeight: 48,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+    borderWidth: 2.5,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  monthChipOn: { borderColor: colors.primary, backgroundColor: colors.tint },
+  monthChipText: { fontSize: 16, fontWeight: "700", color: colors.text },
+  aiTitle: { fontSize: 17, fontWeight: "800", color: colors.text },
+  aiSub: { fontSize: 14, color: colors.textMuted },
   pagerRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -350,47 +396,46 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm + 2,
     paddingBottom: spacing.xs,
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.bg,
   },
-  pagerMonth: { fontSize: 16, fontWeight: "700", color: colors.text },
-  pagerSub: { fontSize: 12, color: colors.accent, fontWeight: "600", marginTop: 1 },
+  pagerMonth: { fontSize: 22, fontWeight: "800", color: colors.text },
+  pagerSub: { fontSize: 14, color: colors.primary, fontWeight: "600", marginTop: 1 },
 
   weekRow: { flexDirection: "row" },
-  weekdayText: { flex: 1, textAlign: "center", fontSize: 11, fontWeight: "600", color: colors.textMuted },
+  weekdayText: { flex: 1, textAlign: "center", fontSize: 13, fontWeight: "600", color: colors.textMuted },
   gridRow: { flexDirection: "row", flexWrap: "wrap" },
   dayCell: { width: `${100 / 7}%`, alignItems: "center", paddingVertical: 4 },
-  dayNumWrap: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
-  dayNumToday: { backgroundColor: colors.primary },
-  dayNumSelected: { backgroundColor: colors.accent },
-  dayNumText: { fontSize: 13, color: colors.text },
+  dayNumWrap: { width: 36, height: 36, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  dayNumToday: { backgroundColor: colors.accent },
+  dayNumSelected: { backgroundColor: colors.primary },
+  dayNumText: { fontSize: 14.5, color: colors.text },
   dayNumTextActive: { color: "#fff", fontWeight: "700" },
   dayDot: { width: 5, height: 5, borderRadius: 2.5, marginTop: 2, backgroundColor: "transparent" },
 
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.sm },
-  sectionLabel: { fontSize: 11, fontWeight: "700", color: colors.primary, letterSpacing: 0.6 },
-  addBtn: { width: 26, height: 26, borderRadius: 13, backgroundColor: colors.secondary, alignItems: "center", justifyContent: "center" },
-  muted: { color: colors.textMuted, fontSize: 13, paddingVertical: spacing.sm },
+  sectionLabel: { fontSize: 20, fontWeight: "800", color: colors.text },
+  addBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+  muted: { color: colors.textMuted, fontSize: 14.5, paddingVertical: spacing.sm },
 
   taskCard: {
     flexDirection: "row",
     gap: spacing.sm,
     backgroundColor: colors.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderRadius: 22,
+    ...shadow,
     padding: spacing.md,
     alignItems: "flex-start",
   },
   checkbox: { paddingTop: 2 },
   checkboxDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: colors.border,
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    borderWidth: 2.5,
+    borderColor: colors.primary,
   },
   overdueTag: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: "700",
     color: "#B7791F",
     backgroundColor: "#FEF3C7",
@@ -400,11 +445,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     marginBottom: 4,
   },
-  taskTitle: { fontSize: 15, fontWeight: "600", color: colors.text },
-  taskDetails: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
+  taskTitle: { fontSize: 16.5, fontWeight: "700", color: colors.text },
+  taskDetails: { fontSize: 14.5, color: colors.textMuted, marginTop: 2 },
   taskMetaRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: spacing.xs, flexWrap: "wrap" },
   catChip: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.pill },
-  catChipText: { fontSize: 11, fontWeight: "700" },
-  taskMeta: { fontSize: 12, color: colors.textMuted },
+  catChipText: { fontSize: 13, fontWeight: "700" },
+  taskMeta: { fontSize: 14, color: colors.textMuted },
   taskActions: { gap: spacing.sm, alignItems: "center", paddingTop: 2 },
 });

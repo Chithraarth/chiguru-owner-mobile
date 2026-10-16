@@ -1,4 +1,5 @@
-import { apiFetch, apiMutate, apiUrl, buildHeaders } from "../client";
+import { apiFetch, apiMutate, apiUrl, buildHeaders, reportIfGate } from "../client";
+import { ApiError } from "../errors";
 import type { ChatMessage, Conversation, DiagnosisResult } from "../../types/api";
 
 export function getConversations() {
@@ -37,6 +38,13 @@ export async function sendChatMessage(
       headers,
       body: JSON.stringify({ content }),
     });
+    if (!res.ok) {
+      // Refusals (no plan, empty wallet, ...) come back as plain JSON, not a stream.
+      const body = await res.json().catch(() => null);
+      const err = reportIfGate(new ApiError(res.status, body?.message ?? body?.error ?? "AI service error", body?.code, body));
+      onError(err.message);
+      return;
+    }
     const text = await res.text();
     let full = "";
     for (const line of text.split("\n")) {
