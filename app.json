@@ -10,7 +10,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.thechiguru.owner",
       "appleTeamId": "UZKCN9NQ7G",
-      "buildNumber": "15",
+      "buildNumber": "16",
       "usesAppleSignIn": true,
       "googleServicesFile": "./ios/Chiguru/GoogleService-Info.plist",
       "infoPlist": {
